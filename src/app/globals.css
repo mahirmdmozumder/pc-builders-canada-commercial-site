@@ -17,8 +17,18 @@
   --color-ink-800: #151a21;
   --color-ink-700: #1c232c;
   --color-ink-600: #29323e;
-  --color-ink-500: #3b4654;
-  --color-ink-400: #5d6b7c;
+  /*
+   * ink-400 and ink-500 are TEXT colours (captions, hints, fine print), so
+   * they are set for contrast, not for an even visual ramp. Measured against
+   * the two surfaces they appear on:
+   *   ink-400 on ink-900  5.5:1    ink-400 on ink-850  5.3:1
+   *   ink-500 on ink-900  4.8:1    ink-500 on ink-850  4.5:1
+   * All above the 4.5:1 WCAG AA threshold for body text. The original values
+   * (#3b4654, #5d6b7c) looked right and measured 2.0:1 and 3.6:1, which is
+   * why they were changed.
+   */
+  --color-ink-500: #737f8f;
+  --color-ink-400: #7c8a9c;
   --color-ink-300: #8b98a8;
   --color-ink-200: #b7c2cf;
   --color-ink-100: #dde4ec;

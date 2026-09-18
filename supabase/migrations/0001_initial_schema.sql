@@ -215,6 +215,36 @@ create trigger components_set_updated_at
   before update on components
   for each row execute function set_updated_at();
 
+-- Public catalogue projection.
+--
+-- Every column except cost_cents, active rows only. Defined as a SECURITY
+-- DEFINER view (the default for views) so it reads the underlying table with
+-- the owner's rights, which is what lets anonymous visitors browse the
+-- catalogue while the table itself stays admin-only.
+--
+-- Adding a column to `components` does NOT add it here: this list is explicit
+-- so a future cost or supplier column cannot leak by accident.
+create view components_public as
+  select
+    id, sku, slug, category, brand, model, description,
+    price_cents,
+    stock_quantity, low_stock_threshold,
+    image_url, active, data_confidence,
+    socket, supported_sockets,
+    chipset, memory_slots, max_memory_gb, m2_slots, sata_ports,
+    form_factor, supported_form_factors,
+    memory_type, memory_capacity_gb, memory_modules, memory_speed_mts,
+    tdp_watts, recommended_psu_watts, psu_wattage, psu_efficiency, psu_form_factor,
+    gpu_length_mm, max_gpu_length_mm, cooler_height_mm, max_cooler_height_mm,
+    radiator_support_mm, radiator_size_mm, cooler_type, cooling_capacity_watts,
+    storage_interface, storage_capacity_gb,
+    pcie_version, specs,
+    created_at, updated_at
+  from components
+  where active;
+
+grant select on components_public to anon, authenticated;
+
 -- ---------------------------------------------------------------------------
 -- saved_builds
 -- ---------------------------------------------------------------------------
@@ -475,9 +505,15 @@ create policy "profiles: admin manage"
   with check (is_admin());
 
 -- components ----------------------------------------------------------------
-create policy "components: public read active"
+-- The table itself is ADMIN-ONLY for reads, because it carries cost_cents.
+-- Row Level Security cannot hide a single column, so a policy that let the
+-- public read active rows would publish the margin on every part.
+--
+-- Public reads go through the components_public view below, which simply does
+-- not select that column.
+create policy "components: admin read"
   on components for select
-  using (active or is_admin());
+  using (is_admin());
 
 create policy "components: admin write"
   on components for all

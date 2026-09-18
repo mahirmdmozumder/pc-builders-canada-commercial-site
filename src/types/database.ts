@@ -82,6 +82,14 @@ export interface Database {
       contact_messages: Table<ContactMessage>;
     };
     Views: {
+      /**
+       * Public catalogue projection: every column except cost_cents. Anonymous
+       * and signed-in visitors read this; only admins read the table.
+       */
+      components_public: {
+        Relationships: [];
+        Row: Simplify<Omit<ComponentRecord, 'cost_cents'>>;
+      };
       low_stock_components: {
         Relationships: [];
         Row: Simplify<Pick<

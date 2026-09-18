@@ -1,8 +1,11 @@
 import { defineConfig } from 'vitest/config';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
+  resolve: {
+    // Resolves the "@/*" alias from tsconfig natively, so the test runner and
+    // the Next build agree on module resolution without an extra plugin.
+    tsconfigPaths: true,
+  },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],

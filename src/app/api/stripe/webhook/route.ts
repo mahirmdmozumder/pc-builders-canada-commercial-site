@@ -108,8 +108,7 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
   // Idempotency: a replayed event must not decrement stock a second time.
   if (typed.payment_status === 'paid') return;
 
-  const paid = session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
-  if (!paid) return;
+  if (!isSessionPaid(session)) return;
 
   const shipping = extractShippingAddress(session);
 
@@ -216,7 +215,18 @@ async function handleRefund(charge: Stripe.Charge) {
   });
 }
 
-function extractShippingAddress(session: Stripe.Checkout.Session) {
+/**
+ * Whether a completed session actually represents money received.
+ *
+ * Exported so the rule can be tested directly: "session completed" is not the
+ * same event as "payment succeeded", and treating them as equivalent would
+ * mark unpaid orders as paid.
+ */
+export function isSessionPaid(session: Pick<Stripe.Checkout.Session, 'payment_status'>): boolean {
+  return session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
+}
+
+export function extractShippingAddress(session: Stripe.Checkout.Session) {
   const details = session.collected_information?.shipping_details ?? null;
   const address = details?.address;
   if (!address) return null;

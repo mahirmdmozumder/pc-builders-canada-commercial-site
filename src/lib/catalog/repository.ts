@@ -1,4 +1,4 @@
-import { getSupabasePublicClient, getSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabaseAdminClient, getSupabasePublicClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/env';
 import { SAMPLE_COMPONENTS } from '@/lib/catalog/sample-catalog';
 import {
@@ -19,8 +19,10 @@ import type { SavedBuildItem } from '@/types/domain';
  * one is in play, and the UI says so rather than passing sample data off as a
  * live inventory.
  *
- * Cost price is stripped here, at the boundary, so a margin figure cannot
- * leak into a public page by accident.
+ * Public reads go through the `components_public` view, which does not
+ * contain cost_cents at all. Stripping the column in application code would
+ * be a second line of defence; not selecting it in the first place is the
+ * first. See docs/security.md.
  */
 
 export type CatalogSource = 'database' | 'sample';
@@ -65,8 +67,8 @@ export async function listComponents(
   const supabase = getSupabasePublicClient();
   if (!supabase) return filterSample(options).map(stripCost);
 
-  let query = supabase.from('components').select('*');
-  if (!options.includeInactive) query = query.eq('active', true);
+  // The view is already filtered to active rows.
+  let query = supabase.from('components_public').select('*');
   if (options.category) query = query.eq('category', options.category);
   if (options.categories?.length) query = query.in('category', options.categories);
   if (options.inStockOnly) query = query.gt('stock_quantity', 0);
@@ -84,14 +86,20 @@ export async function listComponents(
     console.error('[catalog] component query failed, using sample catalogue', error?.message);
     return filterSample(options).map(stripCost);
   }
-  return (data as ComponentRecord[]).map(stripCost);
+  return data as unknown as PublicComponent[];
 }
 
-/** Admin-only: includes cost price. Callers must have verified the admin role. */
+/**
+ * Admin-only: reads the underlying table, cost price included.
+ *
+ * Callers MUST have verified the admin role first (every caller goes through
+ * requireAdmin()). The table's own policy restricts reads to admins, so a
+ * missed check fails closed rather than leaking margin.
+ */
 export async function listComponentsWithCost(
   options: ListComponentsOptions = {},
 ): Promise<ComponentRecord[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = getSupabaseAdminClient();
   if (!supabase) return filterSample({ ...options, includeInactive: true });
 
   let query = supabase.from('components').select('*');
@@ -118,7 +126,7 @@ export async function getComponentsByIds(ids: string[]): Promise<Map<string, Pub
     return map;
   }
 
-  const { data, error } = await supabase.from('components').select('*').in('id', ids);
+  const { data, error } = await supabase.from('components_public').select('*').in('id', ids);
   if (error || !data) {
     const map = new Map<string, PublicComponent>();
     for (const row of SAMPLE_COMPONENTS) {
@@ -126,7 +134,7 @@ export async function getComponentsByIds(ids: string[]): Promise<Map<string, Pub
     }
     return map;
   }
-  return new Map((data as ComponentRecord[]).map((row) => [row.id, stripCost(row)]));
+  return new Map((data as unknown as PublicComponent[]).map((row) => [row.id, row]));
 }
 
 export async function getComponent(id: string): Promise<PublicComponent | null> {
