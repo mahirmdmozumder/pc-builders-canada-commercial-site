@@ -291,3 +291,11 @@ Stated plainly rather than left for a reader to discover:
 - Customer-facing build photos attached to an order during assembly
 - Rate limiting on the public quote and contact endpoints
 - End-to-end tests with Playwright covering configure → cart → checkout
+
+---
+
+## Licence
+
+Copyright (c) 2026 Arnob Sarfraj. All rights reserved. See [LICENSE](LICENSE).
+This is proprietary software for PC Builders Canada, published here as a
+portfolio reference rather than as an open-source project.

@@ -53,6 +53,10 @@ const nextConfig: NextConfig = {
   // advertise the framework version.
   poweredByHeader: false,
 
+  // Next writes editor scratch files into the project root on `next dev`.
+  // They are not part of the application and do not belong in the repository.
+  agentRules: false,
+
   async headers() {
     return [
       {
