@@ -99,18 +99,103 @@ Only once test mode works end to end:
 
 ## 4. Custom domain
 
-1. In Vercel, **Project → Settings → Domains**, add `yourdomain.ca` and `www.yourdomain.ca`.
-2. At your DNS provider:
-   - apex `yourdomain.ca` → `A` record to the address Vercel shows
-   - `www` → `CNAME` to `cname.vercel-dns.com`
-3. If using Cloudflare, set those records to **DNS only** (grey cloud) rather than proxied while
-   the certificate is issued. Proxying can be re-enabled afterwards; if you do, set the SSL mode to
-   **Full (strict)**. "Flexible" would make Cloudflare talk to Vercel over plain HTTP, which
-   defeats the point.
-4. Wait for Vercel to issue the certificate, then confirm `https://` works and `http://` redirects.
-5. Update `NEXT_PUBLIC_SITE_URL` to the final domain and redeploy, so canonical URLs, the sitemap
-   and Stripe return URLs all point at the right host.
-6. Update the Supabase redirect URL and the Stripe webhook endpoint to the final domain.
+Vercel terminates TLS and serves from its own edge network, so the registrar's
+only job is to point the name at Vercel. Nothing else needs to change there.
+
+### Add the domain in Vercel first
+
+1. **Project → Settings → Domains**, add the apex (`example.ca`) and `www.example.ca`.
+2. Vercel then shows the exact records to create. **Use the values Vercel
+   displays**, not values copied from a guide including this one: Vercel has
+   changed its apex address before, and a stale IP produces a domain that
+   resolves nowhere.
+3. At the time of writing Vercel asks for an `A` record on the apex pointing to
+   `76.76.21.21`, and a `CNAME` on `www` pointing to `cname.vercel-dns.com`.
+   Confirm both against the dashboard.
+
+### Domain.com and Network Solutions
+
+Both are Newfold Digital brands and their control panels are laid out the same
+way. Labels shift between account types, so look for the equivalent wording if
+yours differs.
+
+1. Sign in, open **My Domains**, and select the domain.
+2. Find **DNS & Nameservers**.
+3. Check the **Nameservers** section first. It must be using the registrar's own
+   nameservers, typically `NS1.DOMAIN.COM` and `NS2.DOMAIN.COM`. If it points at
+   a web-hosting product's nameservers instead, the DNS records panel you are
+   about to edit is not the one answering queries, and nothing you change will
+   take effect.
+4. Open **DNS Records**. A newly registered domain usually ships with parking
+   records: an `A` record on `@` pointing at a "coming soon" page, and often a
+   `www` `CNAME` or a URL-forwarding rule. **Delete those first.** Two `A`
+   records on the apex means traffic lands on the parking page roughly half the
+   time, which is a confusing failure to diagnose later.
+5. Add the apex record:
+
+   | Field | Value |
+   | --- | --- |
+   | Type | `A` |
+   | Name / Host | `@` |
+   | Value / Points to | the address Vercel shows |
+   | TTL | `600` |
+
+6. Add the www record:
+
+   | Field | Value |
+   | --- | --- |
+   | Type | `CNAME` |
+   | Name / Host | `www` |
+   | Value / Points to | `cname.vercel-dns.com` |
+   | TTL | `600` |
+
+7. Save. A low TTL during setup means a mistake costs minutes rather than a day.
+   Raise it to `3600` once the site is confirmed working.
+
+### Watch for these two registrar behaviours
+
+- **URL forwarding is not hosting.** Registrars offer domain forwarding, which
+  answers with an HTTP redirect rather than pointing DNS at a server. If
+  forwarding is enabled, turn it off. It breaks TLS certificate issuance and
+  produces a redirect loop.
+- **Do not enable the registrar's own website builder or hosting** on the
+  domain. It will overwrite the DNS records.
+
+### Confirm it resolves
+
+Propagation is usually minutes on a fresh domain with no cached records, but can
+take up to 48 hours. Check from the command line rather than the browser, which
+caches aggressively:
+
+```bash
+nslookup example.ca
+nslookup www.example.ca
+```
+
+The apex should return the Vercel address; `www` should resolve through
+`cname.vercel-dns.com`. Vercel's Domains page shows a green check on each once it
+agrees.
+
+### After the certificate is issued
+
+1. Confirm `https://example.ca` loads and `http://` redirects to it.
+2. Set `NEXT_PUBLIC_SITE_URL` to `https://example.ca` in the Vercel **Production**
+   environment and redeploy. Canonical URLs, the sitemap, Open Graph tags and the
+   Stripe return URLs all read from this, and they will keep pointing at the
+   `.vercel.app` host until it changes.
+3. In Supabase, update **Authentication → URL Configuration**: site URL to the
+   domain, and `https://example.ca/auth/callback` as a redirect URL. Password
+   reset and email confirmation links break without this.
+4. In Stripe, edit the webhook endpoint to `https://example.ca/api/stripe/webhook`.
+   Its signing secret does not change.
+
+### Cloudflare is optional here
+
+Vercel already provides the CDN and the certificate, so putting Cloudflare in
+front adds a hop and a class of misconfiguration for little gain. If you do move
+nameservers to Cloudflare later, set SSL mode to **Full (strict)**. "Flexible"
+makes Cloudflare talk to Vercel over plain HTTP, which is worse than not using
+it at all.
 
 ---
 
