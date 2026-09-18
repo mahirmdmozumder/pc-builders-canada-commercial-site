@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCart } from '@/lib/cart/store';
 import { useClientSession } from '@/lib/auth/use-session';
+import { useHydrated } from '@/lib/hooks/use-hydrated';
 import { cn } from '@/lib/utils';
 import { buttonClass } from '@/components/ui';
 
@@ -22,15 +23,12 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { signedIn, isAdmin } = useClientSession();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const lines = useCart((s) => s.lines);
+  const hydrated = useHydrated();
 
-  // Cart count comes from localStorage, which the server cannot know. Render
-  // nothing until mount so the server and client markup agree.
-  useEffect(() => setMounted(true), []);
-  useEffect(() => setOpen(false), [pathname]);
-
-  const count = mounted ? lines.reduce((sum, l) => sum + l.quantity, 0) : 0;
+  // The cart count lives in localStorage, which the server cannot know, so it
+  // stays at zero until hydration rather than causing a markup mismatch.
+  const count = hydrated ? lines.reduce((sum, l) => sum + l.quantity, 0) : 0;
 
   return (
     <header className="sticky top-0 z-50 border-b border-ink-700 bg-ink-900/95 backdrop-blur">
@@ -103,7 +101,12 @@ export function SiteHeader() {
       </div>
 
       {open ? (
-        <nav id="mobile-nav" className="border-t border-ink-700 bg-ink-850 lg:hidden" aria-label="Main">
+        <nav
+          id="mobile-nav"
+          className="border-t border-ink-700 bg-ink-850 lg:hidden"
+          aria-label="Main"
+          onClick={() => setOpen(false)}
+        >
           <div className="space-y-1 px-4 py-3">
             {NAV.map((item) => (
               <Link

@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { env, isSupabaseAdminConfigured, isSupabaseConfigured } from '@/lib/env';
+import type { Database } from '@/types/database';
 
 /**
  * Server-side Supabase clients.
@@ -23,7 +24,7 @@ export async function getSupabaseServerClient() {
 
   const cookieStore = await cookies();
 
-  return createServerClient(env.supabaseUrl!, env.supabaseAnonKey!, {
+  return createServerClient<Database>(env.supabaseUrl!, env.supabaseAnonKey!, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -42,7 +43,7 @@ export async function getSupabaseServerClient() {
   });
 }
 
-let publicClient: ReturnType<typeof createClient> | null = null;
+let publicClient: ReturnType<typeof createClient<Database>> | null = null;
 
 /**
  * Anon-key client with NO cookie access, for data that is public by policy:
@@ -55,17 +56,17 @@ let publicClient: ReturnType<typeof createClient> | null = null;
  */
 export function getSupabasePublicClient() {
   if (!isSupabaseConfigured) return null;
-  publicClient ??= createClient(env.supabaseUrl!, env.supabaseAnonKey!, {
+  publicClient ??= createClient<Database>(env.supabaseUrl!, env.supabaseAnonKey!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return publicClient;
 }
 
-let adminClient: ReturnType<typeof createClient> | null = null;
+let adminClient: ReturnType<typeof createClient<Database>> | null = null;
 
 export function getSupabaseAdminClient() {
   if (!isSupabaseAdminConfigured) return null;
-  adminClient ??= createClient(env.supabaseUrl!, env.supabaseServiceRoleKey!, {
+  adminClient ??= createClient<Database>(env.supabaseUrl!, env.supabaseServiceRoleKey!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return adminClient;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { isSupabaseConfigured } from '@/lib/env';
 
 /**
  * Client-side session state, used only for cosmetic chrome: which link the
@@ -21,19 +22,18 @@ export interface ClientSession {
 }
 
 export function useClientSession(): ClientSession {
+  // Whether auth exists at all is known synchronously from the build-time
+  // environment, so the "no accounts here" case never needs a state update.
   const [state, setState] = useState<ClientSession>({
     signedIn: false,
     isAdmin: false,
     email: null,
-    loading: true,
+    loading: isSupabaseConfigured,
   });
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase) {
-      setState({ signedIn: false, isAdmin: false, email: null, loading: false });
-      return;
-    }
+    if (!supabase) return;
 
     let active = true;
 
