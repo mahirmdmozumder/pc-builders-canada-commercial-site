@@ -25,7 +25,7 @@ thing switched on.
    key bypasses RLS entirely and must only ever be set as a server-side environment variable.
 
 4. Under **Authentication → URL Configuration**, set the site URL to your production domain and add
-   `https://yourdomain.ca/auth/callback` as a redirect URL. Add the Vercel preview domain too if
+   `https://pcbuilderscanada.com/auth/callback` as a redirect URL. Add the Vercel preview domain too if
    you want sign-in to work on previews.
 
 ### Verifying RLS is actually on
@@ -44,7 +44,7 @@ RLS off is readable by anyone holding the anon key, which is everyone.
 
 | Variable | Production | Preview / Development |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | `https://yourdomain.ca` | the preview URL, or `http://localhost:3000` |
+| `NEXT_PUBLIC_SITE_URL` | `https://pcbuilderscanada.com` | the preview URL, or `http://localhost:3000` |
 | `NEXT_PUBLIC_SUPABASE_URL` | project URL | same, or a separate staging project |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key | same |
 | `SUPABASE_SERVICE_ROLE_KEY` | service-role key | same |
@@ -52,7 +52,7 @@ RLS off is readable by anyone holding the anon key, which is everyone.
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` | **`pk_test_...`** |
 | `STRIPE_WEBHOOK_SECRET` | production endpoint secret | test endpoint secret |
 | `RESEND_API_KEY` | optional | optional |
-| `EMAIL_FROM` | `PC Builders Canada <orders@yourdomain.ca>` | optional |
+| `EMAIL_FROM` | `PC Builders Canada <orders@pcbuilderscanada.com>` | optional |
 | `ADMIN_NOTIFICATION_EMAIL` | where operational alerts go | optional |
 
    The app refuses to create a Stripe session with a live secret key outside production. That guard
@@ -104,7 +104,7 @@ only job is to point the name at Vercel. Nothing else needs to change there.
 
 ### Add the domain in Vercel first
 
-1. **Project → Settings → Domains**, add the apex (`example.ca`) and `www.example.ca`.
+1. **Project → Settings → Domains**, add the apex (`pcbuilderscanada.com`) and `www.pcbuilderscanada.com`.
 2. Vercel then shows the exact records to create. **Use the values Vercel
    displays**, not values copied from a guide including this one: Vercel has
    changed its apex address before, and a stale IP produces a domain that
@@ -113,11 +113,38 @@ only job is to point the name at Vercel. Nothing else needs to change there.
    `76.76.21.21`, and a `CNAME` on `www` pointing to `cname.vercel-dns.com`.
    Confirm both against the dashboard.
 
-### Domain.com and Network Solutions
+### Where this domain's DNS actually lives
 
-Both are Newfold Digital brands and their control panels are laid out the same
-way. Labels shift between account types, so look for the equivalent wording if
-yours differs.
+`pcbuilderscanada.com` answers from `ns95.worldnic.com` and `ns96.worldnic.com`.
+Those are **Network Solutions** nameservers, so the records are edited in the
+Network Solutions account, not in a Domain.com panel, regardless of which brand
+the domain was purchased through. Editing the wrong panel changes nothing,
+because the nameservers listed above are what the internet asks.
+
+Confirm at any time with:
+
+```bash
+nslookup -type=NS pcbuilderscanada.com
+```
+
+### Records that were already on the domain
+
+Before the Vercel records go on, the domain pointed at Netlify:
+
+| Host | Type | Value | Serving |
+| --- | --- | --- | --- |
+| `@` | `A` | `75.2.60.5`, `99.83.190.102` | Netlify 404 |
+| `www` | `CNAME` | `pcbuilderscanada.netlify.app` | Netlify 404 |
+
+Nothing was published behind either, so replacing them loses nothing. They do
+have to be **removed rather than added to**: a leftover apex `A` record splits
+traffic between Netlify and Vercel at random.
+
+### Editing the records
+
+Network Solutions and Domain.com are both Newfold Digital brands with similarly
+laid out panels. Labels shift between account types, so look for the equivalent
+wording if yours differs.
 
 1. Sign in, open **My Domains**, and select the domain.
 2. Find **DNS & Nameservers**.
@@ -168,8 +195,8 @@ take up to 48 hours. Check from the command line rather than the browser, which
 caches aggressively:
 
 ```bash
-nslookup example.ca
-nslookup www.example.ca
+nslookup pcbuilderscanada.com
+nslookup www.pcbuilderscanada.com
 ```
 
 The apex should return the Vercel address; `www` should resolve through
@@ -178,15 +205,15 @@ agrees.
 
 ### After the certificate is issued
 
-1. Confirm `https://example.ca` loads and `http://` redirects to it.
-2. Set `NEXT_PUBLIC_SITE_URL` to `https://example.ca` in the Vercel **Production**
+1. Confirm `https://pcbuilderscanada.com` loads and `http://` redirects to it.
+2. Set `NEXT_PUBLIC_SITE_URL` to `https://pcbuilderscanada.com` in the Vercel **Production**
    environment and redeploy. Canonical URLs, the sitemap, Open Graph tags and the
    Stripe return URLs all read from this, and they will keep pointing at the
    `.vercel.app` host until it changes.
 3. In Supabase, update **Authentication → URL Configuration**: site URL to the
-   domain, and `https://example.ca/auth/callback` as a redirect URL. Password
+   domain, and `https://pcbuilderscanada.com/auth/callback` as a redirect URL. Password
    reset and email confirmation links break without this.
-4. In Stripe, edit the webhook endpoint to `https://example.ca/api/stripe/webhook`.
+4. In Stripe, edit the webhook endpoint to `https://pcbuilderscanada.com/api/stripe/webhook`.
    Its signing secret does not change.
 
 ### Cloudflare is optional here
@@ -206,7 +233,7 @@ There is no sign-up path to `admin` by design.
 1. Register through the site as a normal customer.
 2. In the Supabase SQL editor:
    ```sql
-   update profiles set role = 'admin' where email = 'you@yourdomain.ca';
+   update profiles set role = 'admin' where email = 'you@pcbuilderscanada.com';
    ```
 3. Sign out, sign back in, and `/admin` is available.
 
