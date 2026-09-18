@@ -5,6 +5,7 @@ import { PresetCard } from '@/components/build/preset-card';
 import { BUILD_PRESETS } from '@/lib/catalog/presets';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { formatMoney } from '@/lib/utils';
+import { OrganizationJsonLd } from '@/components/seo/structured-data';
 
 export const metadata: Metadata = {
   title: 'Custom Gaming & Workstation PCs Built in Canada',
@@ -23,6 +24,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <OrganizationJsonLd />
       <Hero fromCents={cheapest} />
       <Pillars />
       <FeaturedBuilds featured={featured} />
