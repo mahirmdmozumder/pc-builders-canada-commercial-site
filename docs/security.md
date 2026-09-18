@@ -72,6 +72,22 @@ create policy "ticket messages: owner read non-internal" on ticket_messages for 
 `is_admin()` is `SECURITY DEFINER` so it can read `profiles` without triggering the policy that
 calls it, which would otherwise recurse.
 
+### Cost price is not readable by the public
+
+Row Level Security operates on rows, not columns, so a policy allowing anyone
+to read active `components` rows would have published `cost_cents` — the
+margin on every part — to anyone holding the anon key.
+
+The fix is structural rather than a filter in application code:
+
+- `components` is **admin-only** for reads.
+- Public traffic reads `components_public`, a view with an explicit column
+  list that omits cost. Adding a column to the table does not add it to the
+  view, so a future cost or supplier field cannot leak by being added.
+- Admin cost reads use the **session** client, not the service-role client.
+  If a page ever forgets its `requireAdmin()` call, the policy returns nothing
+  instead of returning margin. Fail closed, not fail open.
+
 ## Payment security
 
 - **No card data touches this application.** Stripe Checkout collects it on Stripe's domain. The

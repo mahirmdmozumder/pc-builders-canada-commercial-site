@@ -1,4 +1,4 @@
-import { getSupabaseAdminClient, getSupabasePublicClient } from '@/lib/supabase/server';
+import { getSupabasePublicClient, getSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/env';
 import { SAMPLE_COMPONENTS } from '@/lib/catalog/sample-catalog';
 import {
@@ -92,14 +92,15 @@ export async function listComponents(
 /**
  * Admin-only: reads the underlying table, cost price included.
  *
- * Callers MUST have verified the admin role first (every caller goes through
- * requireAdmin()). The table's own policy restricts reads to admins, so a
- * missed check fails closed rather than leaking margin.
+ * Uses the SESSION client, not the service-role client, on purpose. The
+ * table's select policy requires is_admin(), so if a caller ever forgets its
+ * requireAdmin() check this query returns nothing rather than leaking margin.
+ * A service-role client would have happily returned the rows.
  */
 export async function listComponentsWithCost(
   options: ListComponentsOptions = {},
 ): Promise<ComponentRecord[]> {
-  const supabase = getSupabaseAdminClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return filterSample({ ...options, includeInactive: true });
 
   let query = supabase.from('components').select('*');
