@@ -2,9 +2,10 @@
 
 ## Authentication
 
-Supabase Auth, email and password. The browser client signs in and receives a session; middleware
-refreshes the token on each request and writes the rotated cookies back. Without that refresh a
-signed-in user silently becomes signed-out on the next server render.
+Supabase Auth, email and password. The browser client signs in and receives a session; the proxy
+layer (`src/proxy.ts`, what earlier Next versions called middleware) refreshes the token on each
+request and writes the rotated cookies back. Without that refresh a signed-in user silently
+becomes signed-out on the next server render.
 
 Server-side, sessions are read with `supabase.auth.getUser()`, never `getSession()`. `getUser()`
 revalidates the token with Supabase; `getSession()` trusts a cookie the client could have edited.
@@ -28,7 +29,7 @@ Three layers, each doing a different job:
 
 | Layer | Checks | Why it is not sufficient alone |
 | --- | --- | --- |
-| Middleware | Is anyone signed in? | Knows nothing about roles; matcher config can be wrong |
+| Proxy (`src/proxy.ts`) | Is anyone signed in? | Knows nothing about roles; matcher config can be wrong |
 | `requireAdmin()` | Is this user's `profiles.role` = admin? | Only runs where a developer remembered to call it |
 | Row Level Security | Does the database allow this row? | Runs always, including on queries nobody reviewed |
 

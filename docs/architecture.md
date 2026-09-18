@@ -105,7 +105,7 @@ writes, which must not be creatable by a client under any circumstances.
 
 Neither is redundant. The application check produces good UX (a redirect rather than an empty
 page); the database check is what holds if a query forgets a filter, or if a route is added without
-its guard. Middleware does a third, weaker check — it only knows whether someone is signed in —
+its guard. The proxy layer does a third, weaker check — it only knows whether someone is signed in —
 and is treated as convenience, not security.
 
 Role escalation gets its own defence: a trigger rejects any `role` change attempted by a

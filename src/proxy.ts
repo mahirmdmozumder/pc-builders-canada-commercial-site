@@ -4,6 +4,9 @@ import { createServerClient } from '@supabase/ssr';
 /**
  * Session refresh, and a first gate on private routes.
  *
+ * Named `proxy` in a `proxy.ts` file: Next 16 renamed the middleware file
+ * convention, and the old name logs a deprecation warning on every boot.
+ *
  * Supabase access tokens are short-lived. Without a refresh on each request a
  * signed-in user silently becomes signed-out on the next server render. This
  * middleware refreshes the token and writes the rotated cookies back.
@@ -18,7 +21,7 @@ import { createServerClient } from '@supabase/ssr';
 
 const PROTECTED_PREFIXES = ['/account', '/admin'];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
