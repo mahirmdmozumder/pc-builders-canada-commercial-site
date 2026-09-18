@@ -12,13 +12,13 @@ npm install      # only needed the first time
 npm run dev
 ```
 
-Open <http://localhost:3000>. The catalogue falls back to the in-repo sample
-dataset, so everything except accounts and payment works.
+Open <http://localhost:3000>. The catalogue falls back to the in-repo dataset,
+so everything except accounts and payment works.
 
 ### Automated checks
 
 ```bash
-npm test           # 87 tests: compatibility, power, pricing, cart, validation
+npm test           # 93 tests: compatibility, power, pricing, cart, validation
 npm run typecheck  # tsc --noEmit
 npm run lint       # ESLint
 npm run build      # production build
@@ -39,11 +39,12 @@ wrong result is obvious.
 2. Pick a motherboard with a different socket — an Intel board under an AMD
    processor. **Expect:** a red "Socket mismatch" failure naming both sockets,
    and the add-to-cart button disabled.
-3. Fix the socket, then open the memory category. **Expect:** the DDR4 kit is
-   hidden by the "hide parts that do not fit" filter. Untick that filter and it
-   reappears with a red note explaining why.
-4. Select a graphics card, then choose the Cooler Master NR200P case.
-   **Expect:** a failure saying the card is too long, with both measurements.
+3. Fix the socket by choosing an AM5 board, then pick the ROG STRIX B850-I,
+   which is the mini-ITX board with only two memory slots. Add a memory kit and
+   set its quantity to two. **Expect:** a failure reading "4 memory modules
+   selected but the board has 2 slots".
+4. With that same board still selected, add three NVMe drives. **Expect:** a
+   failure saying the drives outnumber the M.2 slots.
 5. Build something complete and valid. **Expect:** "Compatible", ten checks
    listed, and an estimated draw with a breakdown when you expand it.
 6. Change the province dropdown from Ontario to Alberta. **Expect:** the tax
@@ -51,10 +52,17 @@ wrong result is obvious.
 7. Reload the page. **Expect:** your build is still there, restored from
    browser storage.
 
+**Power and pricing**
+
+6b. Select the Ryzen 9 9950X with the RTX 5080 and the 650 W supply.
+    **Expect:** the power panel turns amber and says the supply is tight, with
+    the estimated draw and the recommended capacity both shown.
+
 **Presets and pricing**
 
 8. Visit `/gaming-pcs`. **Expect:** cards with prices computed from the
-   catalogue, not hard-coded.
+   catalogue, not hard-coded. The 1440p configuration should total roughly
+   $5,000 including assembly, shipping and Ontario tax.
 9. Open one in the configurator. **Expect:** the parts load and the checks pass.
 
 **Cart** (`/cart`)
@@ -62,8 +70,8 @@ wrong result is obvious.
 10. Add a build to the cart. **Expect:** parts, assembly, shipping and tax
     listed separately, and the assembly fee charged once.
 11. Set the quantity to two. **Expect:** two assembly fees.
-12. Add the RTX 5090 on its own and set quantity to five. **Expect:** an
-    out-of-stock warning, because that sample row has two in stock, and the
+12. Add any single component and set its quantity to nine. **Expect:** an
+    out-of-stock warning, because every row opens at five units, and the
     checkout button blocked.
 
 **Honest failure modes**
@@ -108,8 +116,8 @@ This turns on accounts, saved builds, quotes, support tickets and the admin.
 
 ### What to check
 
-1. The sample-data banner on `/build` is gone. The catalogue now comes from
-   Postgres.
+1. The "sample catalogue" banner on `/build` is gone. The catalogue now comes
+   from Postgres.
 2. Register at `/register`, then sign in. **Expect:** the header shows
    "Account".
 3. Save a build. **Expect:** it appears under `/account/builds` with its

@@ -205,7 +205,7 @@ npm run dev
 | `npm run build` | Production build |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest (87 tests) |
+| `npm test` | Vitest (93 tests) |
 | `npm run db:seed:generate` | Regenerates `supabase/seed/seed.sql` from the TypeScript catalogue |
 
 ### Connecting Supabase
@@ -250,7 +250,7 @@ run before switching to live payments.
 npm test
 ```
 
-87 tests covering the logic where a mistake costs money or misleads a customer:
+93 tests covering the logic where a mistake costs money or misleads a customer:
 
 - **Compatibility engine** — every rule, in both the passing and failing direction, plus the
   "missing data reports unknown" property
@@ -270,11 +270,21 @@ hardware rules and trust boundaries.
 
 Stated plainly rather than left for a reader to discover:
 
-- **The catalogue is sample data.** Part names are real; the specifications and prices in
-  `src/lib/catalog/sample-catalog.ts` have not been verified against manufacturer documentation.
-  Every row is marked `data_confidence: 'sample'` and the UI labels it as unverified. Flip rows to
-  `verified` as they are checked.
+- **The catalogue was checked against Canadian retail on 18 September 2026.** Prices and the
+  compatibility-critical specifications on each row were read from a retailer or manufacturer
+  listing on that date, and each row records the date in `specs.price_checked`. Rows where a single
+  figure could not be confirmed stay marked `data_confidence: 'sample'`, name the unconfirmed field
+  in `specs.unverified`, and are labelled as unverified in the storefront.
+- **Prices go stale.** Memory and storage moved sharply through 2026 and graphics card
+  availability churns monthly, so re-check before quoting. Several models had already been
+  discontinued between revisions.
+- **Stock levels are nominal.** Every row opens at five units so the storefront is usable. Set them
+  from `/admin/inventory` against what is actually on the shelf before trading.
+- **`cost_cents` is null on every row.** There is no distributor pricing yet, and inventing a cost
+  would produce a fake margin column in the admin.
 - **Tax rates need confirming** against current CRA guidance before invoicing anyone.
+- **Windows licence prices are placeholders.** OEM licence cost depends on a Microsoft reseller
+  account, not on retail pricing.
 - **Policy pages are drafts** and carry a visible notice saying so.
 - **The portfolio is empty** because no builds have been documented yet. It shows an empty state
   rather than invented work.

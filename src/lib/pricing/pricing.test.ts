@@ -56,9 +56,9 @@ describe('build pricing', () => {
   });
 
   it('multiplies by quantity', () => {
-    const one = priceBuild(buildFromIds(['ssd-samsung-990-pro-2tb']));
+    const one = priceBuild(buildFromIds(['ssd-wd-black-sn850x-2tb']));
     const two = priceBuild(
-      buildFromIds(['ssd-samsung-990-pro-2tb'], { 'ssd-samsung-990-pro-2tb': 2 }),
+      buildFromIds(['ssd-wd-black-sn850x-2tb'], { 'ssd-wd-black-sn850x-2tb': 2 }),
     );
     expect(two.subtotalCents).toBe(one.subtotalCents * 2);
   });
@@ -75,7 +75,7 @@ describe('build pricing', () => {
   });
 
   it('charges no assembly fee for a parts-only order', () => {
-    const price = priceBuild(buildFromIds(['ssd-samsung-990-pro-2tb', 'acc-arctic-p12-5pack']));
+    const price = priceBuild(buildFromIds(['ssd-wd-black-sn850x-2tb', 'ssd-kingston-nv3-1tb']));
     expect(price.servicesCents).toBe(0);
   });
 

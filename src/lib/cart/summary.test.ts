@@ -56,13 +56,13 @@ describe('cart resolution', () => {
   });
 
   it('reports a compatibility failure as a blocking problem', async () => {
-    const broken = COMPATIBLE_AM5_BUILD.filter((id) => id !== 'ram-corsair-vengeance-32gb-ddr5-6000');
+    const broken = COMPATIBLE_AM5_BUILD.filter((id) => id !== 'mb-asus-rog-strix-b850-f');
     const cart = await resolveCart({
       lines: [
         {
           kind: 'build',
-          name: 'DDR4 in a DDR5 board',
-          items: itemsFor([...broken, 'ram-corsair-lpx-32gb-ddr4-3600']),
+          name: 'AM5 processor on an LGA1851 board',
+          items: itemsFor([...broken, 'mb-msi-mpg-z890-carbon']),
           quantity: 1,
         },
       ],
@@ -70,13 +70,13 @@ describe('cart resolution', () => {
     });
 
     expect(cart.problems.length).toBeGreaterThan(0);
-    expect(cart.problems.join(' ')).toContain('DDR4');
+    expect(cart.problems.join(' ')).toContain('Socket mismatch');
   });
 
   it('reports insufficient stock as a problem rather than silently overselling', async () => {
-    // The 5090 sample row carries a stock level of 2.
+    // Opening stock is 5 units; asking for 9 must not quietly succeed.
     const cart = await resolveCart({
-      lines: [{ kind: 'component', component_id: 'gpu-gigabyte-rtx-5090', quantity: 5 }],
+      lines: [{ kind: 'component', component_id: 'gpu-gigabyte-rtx-5080-gaming-oc', quantity: 9 }],
       province: 'ON',
     });
 
@@ -96,7 +96,7 @@ describe('cart resolution', () => {
 
   it('does not charge assembly on a parts-only cart', async () => {
     const cart = await resolveCart({
-      lines: [{ kind: 'component', component_id: 'ssd-samsung-990-pro-2tb', quantity: 1 }],
+      lines: [{ kind: 'component', component_id: 'ssd-wd-black-sn850x-2tb', quantity: 1 }],
       province: 'ON',
     });
     expect(cart.price.servicesCents).toBe(0);

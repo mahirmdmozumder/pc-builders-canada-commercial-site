@@ -4,7 +4,7 @@ import {
   PSU_HEADROOM_MULTIPLIER,
   SYSTEM_OVERHEAD_WATTS,
 } from '@/lib/power/calculator';
-import { buildFromIds, COMPATIBLE_AM5_BUILD } from '@/lib/catalog/test-helpers';
+import { buildFromIds, fakeComponent, COMPATIBLE_AM5_BUILD } from '@/lib/catalog/test-helpers';
 
 describe('power estimation', () => {
   it('returns zero for an empty build', () => {
@@ -31,15 +31,15 @@ describe('power estimation', () => {
   });
 
   it('multiplies by quantity', () => {
-    const single = estimatePower(buildFromIds(['ssd-samsung-990-pro-2tb']));
-    const triple = estimatePower(buildFromIds(['ssd-samsung-990-pro-2tb'], { 'ssd-samsung-990-pro-2tb': 3 }));
+    const single = estimatePower(buildFromIds(['ssd-wd-black-sn850x-2tb']));
+    const triple = estimatePower(buildFromIds(['ssd-wd-black-sn850x-2tb'], { 'ssd-wd-black-sn850x-2tb': 3 }));
     expect(triple.lineItems[0].watts).toBe(single.lineItems[0].watts * 3);
   });
 
   it('marks a line as estimated when the part has no recorded power figure', () => {
     // The sleeved cable kit has no tdp_watts and no category default > 0,
     // so it contributes nothing; the OS licence likewise.
-    const estimate = estimatePower(buildFromIds(['acc-sleeved-cable-kit', 'os-windows-11-pro']));
+    const estimate = estimatePower(buildFromIds(['os-windows-11-pro', 'os-none']));
     expect(estimate.estimatedWatts).toBe(0);
   });
 
@@ -55,20 +55,32 @@ describe('power estimation', () => {
   it('respects a vendor-stated minimum PSU that exceeds the calculated headroom', () => {
     // A 5060 Ti draws little but the vendor asks for 600 W.
     const estimate = estimatePower(
-      buildFromIds(['cpu-amd-ryzen-5-7600x', 'gpu-asus-prime-rtx-5060-ti']),
+      buildFromIds(['cpu-amd-ryzen-5-7600x', 'gpu-msi-rtx-5060-ti-16g']),
     );
     expect(estimate.recommendedPsuWatts).toBeGreaterThanOrEqual(600);
   });
 
   it('flags an undersized PSU as insufficient', () => {
-    const estimate = estimatePower(
-      buildFromIds([
+    // A synthetic 450 W supply: the smallest unit the shop stocks is 650 W,
+    // and this rule should be provable without waiting for a cheaper one.
+    const estimate = estimatePower([
+      ...buildFromIds([
         'cpu-amd-ryzen-9-9950x',
-        'gpu-gigabyte-rtx-5090',
+        'gpu-gigabyte-rtx-5080-gaming-oc',
         'mb-msi-mag-x870-tomahawk',
-        'psu-msi-mag-a650bn',
+        'ram-teamgroup-delta-64gb-ddr5-6000',
       ]),
-    );
+      {
+        category: 'psu' as const,
+        component: fakeComponent({
+          id: 'psu-small-test',
+          category: 'psu',
+          psu_wattage: 450,
+          psu_form_factor: 'atx',
+        }),
+        quantity: 1,
+      },
+    ]);
     expect(estimate.status).toBe('insufficient');
     expect(estimate.loadRatio).toBeGreaterThan(1);
   });
@@ -77,10 +89,10 @@ describe('power estimation', () => {
     const estimate = estimatePower(
       buildFromIds([
         'cpu-amd-ryzen-7-9800x3d',
-        'gpu-msi-ventus-rtx-5080',
+        'gpu-gigabyte-rtx-5080-gaming-oc',
         'mb-asus-rog-strix-b850-f',
-        'ram-corsair-vengeance-32gb-ddr5-6000',
-        'psu-corsair-rm750e',
+        'ram-teamgroup-vulcan-32gb-ddr5-6000',
+        'psu-deepcool-pn650m',
       ]),
     );
     expect(estimate.status).toBe('tight');
