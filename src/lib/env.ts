@@ -18,12 +18,26 @@ function readPublic(name: string): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
+/**
+ * Strips a trailing slash from a base URL.
+ *
+ * Every consumer builds paths by appending to this ("/checkout/success"), so a
+ * value pasted with a trailing slash would produce a double slash in the
+ * Stripe return URL and drop a paying customer on a broken page. Pasting a URL
+ * with the slash on the end is the normal thing to do, so the code absorbs it
+ * rather than relying on whoever fills in the dashboard.
+ */
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
 export const env = {
-  siteUrl:
+  siteUrl: normalizeBaseUrl(
     readPublic('NEXT_PUBLIC_SITE_URL') ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : 'http://localhost:3000'),
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : 'http://localhost:3000'),
+  ),
 
   supabaseUrl: readPublic('NEXT_PUBLIC_SUPABASE_URL'),
   supabaseAnonKey: readPublic('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
