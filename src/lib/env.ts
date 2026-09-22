@@ -13,8 +13,14 @@
  *     fakes a successful payment.
  */
 
-function readPublic(name: string): string | undefined {
-  const value = process.env[name];
+/**
+ * Treats an empty string the same as an unset variable.
+ *
+ * A dashboard field saved blank arrives as "" rather than undefined, and an
+ * empty credential should read as "not configured", not as a configured
+ * service with an empty key.
+ */
+function clean(value: string | undefined): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
@@ -31,25 +37,45 @@ function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, '');
 }
 
+/**
+ * Every NEXT_PUBLIC_ variable below is written out in full, deliberately.
+ *
+ * Next.js makes these available in the browser by TEXTUALLY replacing
+ * `process.env.NEXT_PUBLIC_WHATEVER` with its value while bundling. There is
+ * no process environment in a browser, so the literal spelling is the whole
+ * mechanism. Reading them through a helper — `process.env[name]` — cannot be
+ * substituted, because the bundler has no way to know which key `name` will
+ * hold. Such code works perfectly on the server and silently yields undefined
+ * in the browser.
+ *
+ * That failure is nastier than it sounds: the server renders a page as though
+ * the service were configured, then the browser rehydrates it as though it
+ * were not, and the page changes in front of the visitor. It presented as
+ * "Accounts are not available on this deployment" appearing on a correctly
+ * configured deployment.
+ *
+ * So: never introduce a loop or a helper that looks these up by name. The
+ * repetition below is load-bearing.
+ */
 export const env = {
   siteUrl: normalizeBaseUrl(
-    readPublic('NEXT_PUBLIC_SITE_URL') ??
+    clean(process.env.NEXT_PUBLIC_SITE_URL) ??
       (process.env.VERCEL_PROJECT_PRODUCTION_URL
         ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
         : 'http://localhost:3000'),
   ),
 
-  supabaseUrl: readPublic('NEXT_PUBLIC_SUPABASE_URL'),
-  supabaseAnonKey: readPublic('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
-  supabaseServiceRoleKey: readPublic('SUPABASE_SERVICE_ROLE_KEY'),
+  supabaseUrl: clean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+  supabaseAnonKey: clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+  supabaseServiceRoleKey: clean(process.env.SUPABASE_SERVICE_ROLE_KEY),
 
-  stripeSecretKey: readPublic('STRIPE_SECRET_KEY'),
-  stripePublishableKey: readPublic('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'),
-  stripeWebhookSecret: readPublic('STRIPE_WEBHOOK_SECRET'),
+  stripeSecretKey: clean(process.env.STRIPE_SECRET_KEY),
+  stripePublishableKey: clean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY),
+  stripeWebhookSecret: clean(process.env.STRIPE_WEBHOOK_SECRET),
 
-  resendApiKey: readPublic('RESEND_API_KEY'),
-  emailFrom: readPublic('EMAIL_FROM'),
-  adminNotificationEmail: readPublic('ADMIN_NOTIFICATION_EMAIL'),
+  resendApiKey: clean(process.env.RESEND_API_KEY),
+  emailFrom: clean(process.env.EMAIL_FROM),
+  adminNotificationEmail: clean(process.env.ADMIN_NOTIFICATION_EMAIL),
 } as const;
 
 export const isSupabaseConfigured = Boolean(env.supabaseUrl && env.supabaseAnonKey);
