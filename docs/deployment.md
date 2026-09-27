@@ -115,9 +115,10 @@ only job is to point the name at Vercel. Nothing else needs to change there.
    displays**, not values copied from a guide including this one: Vercel has
    changed its apex address before, and a stale IP produces a domain that
    resolves nowhere.
-3. At the time of writing Vercel asks for an `A` record on the apex pointing to
-   `76.76.21.21`, and a `CNAME` on `www` pointing to `cname.vercel-dns.com`.
-   Confirm both against the dashboard.
+3. The apex `A` record is Vercel's shared address, `76.76.21.21` at the time of
+   writing. The `www` `CNAME` is **unique to each project** and looks like
+   `d1d4fc829fe7bc7c.vercel-dns-017.com`. There is no universal www value any
+   more, so that one has to be read off the dashboard. Confirm both there.
 
 ### Where this domain's DNS actually lives
 
@@ -152,14 +153,17 @@ Network Solutions and Domain.com are both Newfold Digital brands with similarly
 laid out panels. Labels shift between account types, so look for the equivalent
 wording if yours differs.
 
-1. Sign in, open **My Domains**, and select the domain.
-2. Find **DNS & Nameservers**.
-3. Check the **Nameservers** section first. It must be using the registrar's own
-   nameservers, typically `NS1.DOMAIN.COM` and `NS2.DOMAIN.COM`. If it points at
-   a web-hosting product's nameservers instead, the DNS records panel you are
-   about to edit is not the one answering queries, and nothing you change will
-   take effect.
-4. Open **DNS Records**. A newly registered domain usually ships with parking
+1. Sign in and open the domain from your domain list.
+2. Scroll to the **Advanced Tools** section at the bottom of the overview page.
+   This is where DNS lives; there is no "Manage DNS" button higher up.
+3. Check **Nameservers (DNS)** first. For this domain they read
+   `NS95.WORLDNIC.COM` and `NS96.WORLDNIC.COM`, both marked default, which is
+   correct. If they point at a web-hosting product instead, the records panel
+   below is not the one answering queries and nothing you change will take
+   effect.
+4. Open **Advanced DNS Records**. The link shows a summary of what already
+   exists, such as "Edits on A(2), CNAME(1)". A newly registered domain ships
+   with parking
    records: an `A` record on `@` pointing at a "coming soon" page, and often a
    `www` `CNAME` or a URL-forwarding rule. **Delete those first.** Two `A`
    records on the apex means traffic lands on the parking page roughly half the
@@ -179,7 +183,7 @@ wording if yours differs.
    | --- | --- |
    | Type | `CNAME` |
    | Name / Host | `www` |
-   | Value / Points to | `cname.vercel-dns.com` |
+   | Value / Points to | the per-project target from the Vercel www card |
    | TTL | `600` |
 
 7. Save. A low TTL during setup means a mistake costs minutes rather than a day.
@@ -192,7 +196,10 @@ wording if yours differs.
   forwarding is enabled, turn it off. It breaks TLS certificate issuance and
   produces a redirect loop.
 - **Do not enable the registrar's own website builder or hosting** on the
-  domain. It will overwrite the DNS records.
+  domain. The **Domain Connections** panel offering Connect Website, Connect
+  Email and Connect Hosting attaches their products and rewrites the DNS
+  records. "Not connected to any services" is the correct state when traffic is
+  routed by DNS records instead.
 
 ### Confirm it resolves
 
@@ -205,9 +212,9 @@ nslookup pcbuilderscanada.com
 nslookup www.pcbuilderscanada.com
 ```
 
-The apex should return the Vercel address; `www` should resolve through
-`cname.vercel-dns.com`. Vercel's Domains page shows a green check on each once it
-agrees.
+The apex should return the Vercel address; `www` should resolve through the
+per-project `*.vercel-dns-*.com` target. Vercel's Domains page shows a green
+check on each once it agrees.
 
 ### After the certificate is issued
 
