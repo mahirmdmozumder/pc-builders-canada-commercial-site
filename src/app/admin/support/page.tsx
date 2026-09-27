@@ -76,7 +76,7 @@ export default async function AdminSupportPage() {
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/support/${ticket.id}`}
-                        className="font-medium text-white hover:text-maple-400"
+                        className="font-medium text-white hover:text-gold-400"
                       >
                         {ticket.subject}
                       </Link>

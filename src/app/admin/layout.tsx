@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
         <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-4 px-4 sm:px-6">
           <Link href="/admin" className="text-sm font-semibold tracking-tight text-white">
             PC Builders Canada
-            <span className="ml-2 rounded border border-maple-600/40 bg-maple-600/10 px-1.5 py-0.5 text-[0.65rem] tracking-wide text-maple-400 uppercase">
+            <span className="ml-2 rounded border border-gold-600/40 bg-gold-600/10 px-1.5 py-0.5 text-[0.65rem] tracking-wide text-gold-400 uppercase">
               Admin
             </span>
           </Link>

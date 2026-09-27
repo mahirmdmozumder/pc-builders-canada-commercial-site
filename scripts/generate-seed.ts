@@ -54,6 +54,8 @@ const COLUMNS = [
   'image_url',
   'active',
   'data_confidence',
+  'condition',
+  'condition_notes',
   'socket',
   'supported_sockets',
   'chipset',
@@ -102,6 +104,8 @@ function rowValues(c: ComponentRecord): string {
     sqlString(c.image_url),
     String(c.active),
     sqlString(c.data_confidence),
+    sqlString(c.condition),
+    sqlString(c.condition_notes),
     sqlString(c.socket),
     sqlTextArray(c.supported_sockets),
     sqlString(c.chipset),
@@ -143,10 +147,25 @@ const header = `-- =============================================================
 -- Source: src/lib/catalog/sample-catalog.ts
 -- Regenerate with: npm run db:seed:generate
 --
--- Every row is inserted with data_confidence = 'sample'. These part
--- specifications have NOT been verified against manufacturer documentation
--- and the prices are placeholders. Verify a row, then set its
--- data_confidence to 'verified'.
+-- Each row carries its OWN data_confidence, copied from the source catalogue.
+--
+--   'verified' - price and compatibility-critical fields were read from a
+--                retailer or manufacturer listing. The date is in
+--                specs.price_checked.
+--   'sample'   - at least one figure is unconfirmed. specs.unverified names
+--                which one, and the storefront prints that caveat.
+--
+-- Prices are retail as observed on the check date, not a margin model.
+-- cost_cents is null throughout because there is no distributor pricing yet,
+-- and inventing one would produce a fake margin column in the admin.
+--
+-- Stock quantities are nominal opening figures so the storefront is usable.
+-- They are NOT real counts. Set them from /admin/inventory against what is
+-- actually on the shelf before trading.
+--
+-- Every row seeds as condition = 'new'. Refurbished and open-box units are
+-- entered through /admin/components, where the condition notes are required,
+-- because those notes describe one specific physical unit.
 -- ===========================================================================
 
 insert into components (

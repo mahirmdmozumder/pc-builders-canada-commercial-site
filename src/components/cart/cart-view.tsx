@@ -111,7 +111,7 @@ function CartViewInner() {
 
                   {line.kind === 'build' && resolved?.parts.length ? (
                     <details className="mt-3">
-                      <summary className="cursor-pointer text-sm text-maple-400">
+                      <summary className="cursor-pointer text-sm text-gold-400">
                         {resolved.parts.length} parts
                       </summary>
                       <ul className="mt-2 space-y-1 text-sm text-ink-300">
@@ -153,7 +153,7 @@ function CartViewInner() {
                       <select
                         value={line.quantity}
                         onChange={(e) => setQuantity(line.id, Number(e.target.value))}
-                        className="rounded border border-ink-600 bg-ink-900 px-2 py-1 text-sm text-ink-100 focus:border-maple-500 focus:outline-none"
+                        className="rounded border border-ink-600 bg-ink-900 px-2 py-1 text-sm text-ink-100 focus:border-gold-500 focus:outline-none"
                       >
                         {Array.from({ length: line.kind === 'build' ? 3 : 10 }, (_, i) => i + 1).map(
                           (n) => (
@@ -178,7 +178,7 @@ function CartViewInner() {
           );
         })}
 
-        <Link href="/build" className="inline-block text-sm text-maple-400 hover:text-maple-300">
+        <Link href="/build" className="inline-block text-sm text-gold-400 hover:text-gold-300">
           &larr; Keep configuring
         </Link>
       </div>

@@ -269,7 +269,7 @@ export function PricePanel({
           id="province"
           value={province}
           onChange={(e) => onProvinceChange(e.target.value)}
-          className="mt-1 w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-ink-100 focus:border-maple-500 focus:outline-none"
+          className="mt-1 w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-ink-100 focus:border-gold-500 focus:outline-none"
         >
           {PROVINCE_OPTIONS.map((p) => (
             <option key={p.code} value={p.code}>

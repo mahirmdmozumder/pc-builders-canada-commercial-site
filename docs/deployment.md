@@ -16,12 +16,21 @@ thing switched on.
    - `supabase/migrations/0001_initial_schema.sql`
    - `supabase/migrations/0002_order_functions.sql`
    - `supabase/migrations/0003_fix_admin_bootstrap.sql`
+   - `supabase/migrations/0004_whole_unit_categories_and_condition.sql`
+     — run its two PARTS separately, one after the other. Postgres will not
+     accept a new enum value and a use of that value in the same transaction,
+     and the SQL editor runs everything you paste as one.
    - `supabase/seed/seed.sql` (optional: loads the catalogue)
 
    If you set a project up before 0003 existed, run it now. Without it the
    promote-to-admin statement in step 5 fails with "Only an administrator may
    change a user role", because the guard could not tell the SQL editor apart
    from a customer trying to promote themselves.
+
+   0004 adds the networking, NAS and mini-PC categories and the `condition`
+   column that refurbished and open-box listings need. Without it those
+   storefront pages load but list nothing, and saving a refurbished unit in the
+   admin fails.
 3. From **Project Settings → API**, copy:
    - Project URL
    - `anon` public key

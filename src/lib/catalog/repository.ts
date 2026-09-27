@@ -4,6 +4,7 @@ import { SAMPLE_COMPONENTS } from '@/lib/catalog/sample-catalog';
 import {
   stripCost,
   type ComponentCategory,
+  type ComponentCondition,
   type ComponentRecord,
   type PublicComponent,
   type ResolvedBuild,
@@ -39,6 +40,21 @@ export interface ListComponentsOptions {
   includeInactive?: boolean;
   /** Hide anything with zero stock from the configurator. */
   inStockOnly?: boolean;
+  /** Restrict to particular conditions, e.g. everything not sold as new. */
+  conditions?: ComponentCondition[];
+  /**
+   * Match on a boolean flag inside `specs`.
+   *
+   * Used by the storefront collection pages to slice a category more finely
+   * than the category itself allows: NAS-rated drives out of all storage,
+   * single-board accessories out of all mini-PC rows. It is a DISPLAY filter
+   * only. No compatibility rule may read `specs`, and this does not change
+   * that; it decides which rows a page lists, never whether parts fit.
+   *
+   * A row missing the key does not match either value, so the flag has to be
+   * set explicitly on every row that should be filterable.
+   */
+  specFlag?: { key: string; value: boolean };
   limit?: number;
 }
 
@@ -51,6 +67,14 @@ function filterSample(options: ListComponentsOptions): ComponentRecord[] {
     rows = rows.filter((r) => set.has(r.category));
   }
   if (options.inStockOnly) rows = rows.filter((r) => r.stock_quantity > 0);
+  if (options.conditions?.length) {
+    const set = new Set<string>(options.conditions);
+    rows = rows.filter((r) => set.has(r.condition));
+  }
+  if (options.specFlag) {
+    const { key, value } = options.specFlag;
+    rows = rows.filter((r) => r.specs[key] === value);
+  }
   if (options.search) {
     const q = options.search.toLowerCase();
     rows = rows.filter((r) =>
@@ -72,6 +96,15 @@ export async function listComponents(
   if (options.category) query = query.eq('category', options.category);
   if (options.categories?.length) query = query.in('category', options.categories);
   if (options.inStockOnly) query = query.gt('stock_quantity', 0);
+  if (options.conditions?.length) query = query.in('condition', options.conditions);
+  if (options.specFlag) {
+    // PostgREST compares a jsonb field extracted with ->> as text, so the
+    // boolean has to be sent as the string Postgres renders it as.
+    query = query.eq(
+      `specs->>${options.specFlag.key}`,
+      options.specFlag.value ? 'true' : 'false',
+    );
+  }
   if (options.search) {
     const q = options.search.replace(/[%,]/g, ' ');
     query = query.or(`brand.ilike.%${q}%,model.ilike.%${q}%,sku.ilike.%${q}%`);

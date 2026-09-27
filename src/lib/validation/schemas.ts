@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { COMPONENT_CATEGORIES } from '@/lib/catalog/types';
+import { COMPONENT_CATEGORIES, COMPONENT_CONDITIONS } from '@/lib/catalog/types';
 import { TICKET_CATEGORIES, TICKET_PRIORITIES } from '@/types/domain';
 import { PROVINCE_TAXES } from '@/lib/pricing/tax';
 
@@ -139,8 +139,25 @@ export const adminTicketUpdateSchema = z.object({
   internal_notes: z.string().trim().max(6000).nullable().optional(),
 });
 
-/** Admin component editor. Money arrives as cents and is validated as such. */
-export const adminComponentSchema = z.object({
+/**
+ * Notes are mandatory on anything not sold as new.
+ *
+ * This mirrors the check constraint in migration 0004 rather than trusting it.
+ * Validating here as well means the admin gets a field-level error against the
+ * right input, instead of a raw Postgres constraint violation.
+ */
+const CONDITION_NOTES_MESSAGE =
+  'Say what was done to this unit and what warranty it carries. A buyer paying less is entitled to know why.';
+
+/**
+ * Admin component editor. Money arrives as cents and is validated as such.
+ *
+ * Kept as a PLAIN object schema with no refinement attached, because Zod
+ * refuses `.partial()` on a schema that carries one, and the PATCH route needs
+ * a partial version of this for partial updates. The condition rule is applied
+ * by the exported schemas below instead.
+ */
+export const adminComponentFields = z.object({
   id: z.string().trim().min(2).max(120).regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers and hyphens.'),
   sku: z.string().trim().min(2).max(60),
   category: z.enum(COMPONENT_CATEGORIES),
@@ -153,8 +170,41 @@ export const adminComponentSchema = z.object({
   low_stock_threshold: z.number().int().min(0).max(1000),
   active: z.boolean().default(true),
   data_confidence: z.enum(['sample', 'verified']).default('sample'),
+  condition: z.enum(COMPONENT_CONDITIONS).default('new'),
+  condition_notes: z.string().trim().max(600).nullable().optional(),
   image_url: z.url().max(500).nullable().optional().or(z.literal('')),
 });
+
+/** Creating a component: every field present, condition rule enforced. */
+export const adminComponentSchema = adminComponentFields.superRefine((value, ctx) => {
+  if (value.condition !== 'new' && (value.condition_notes ?? '').trim().length < 10) {
+    ctx.addIssue({ code: 'custom', path: ['condition_notes'], message: CONDITION_NOTES_MESSAGE });
+  }
+});
+
+/**
+ * Editing a component: every field optional, and the id is not editable.
+ *
+ * The condition rule can only be applied when the patch actually MOVES the
+ * condition away from new. A patch that touches neither field says nothing
+ * about condition and must not be rejected, and a patch that changes only the
+ * notes cannot be judged here because the stored condition is not in the
+ * payload. The database check constraint from migration 0004 remains the
+ * backstop for both of those cases, which is the correct place for a rule
+ * about the row as a whole.
+ */
+export const adminComponentEditSchema = adminComponentFields
+  .partial()
+  .omit({ id: true })
+  .superRefine((value, ctx) => {
+    if (
+      value.condition !== undefined &&
+      value.condition !== 'new' &&
+      (value.condition_notes ?? '').trim().length < 10
+    ) {
+      ctx.addIssue({ code: 'custom', path: ['condition_notes'], message: CONDITION_NOTES_MESSAGE });
+    }
+  });
 
 export const inventoryAdjustSchema = z.object({
   component_id: z.string().min(1).max(120),

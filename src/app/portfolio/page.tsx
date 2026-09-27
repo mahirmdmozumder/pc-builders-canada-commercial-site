@@ -71,7 +71,7 @@ export default async function PortfolioPage() {
                 ) : null}
 
                 <div className="p-6">
-                  <p className="text-xs tracking-wide text-maple-400 uppercase">{build.purpose}</p>
+                  <p className="text-xs tracking-wide text-gold-400 uppercase">{build.purpose}</p>
                   <h2 className="mt-2 text-xl font-semibold text-white">{build.title}</h2>
                   <p className="mt-3 text-sm leading-relaxed text-ink-300">{build.summary}</p>
 

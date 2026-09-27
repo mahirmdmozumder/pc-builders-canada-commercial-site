@@ -52,7 +52,7 @@ export default async function OrdersPage() {
                 <td className="px-5 py-3.5">
                   <Link
                     href={`/account/orders/${order.id}`}
-                    className="font-medium text-white hover:text-maple-400"
+                    className="font-medium text-white hover:text-gold-400"
                   >
                     {order.order_number}
                   </Link>

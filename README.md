@@ -205,14 +205,15 @@ npm run dev
 | `npm run build` | Production build |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest (93 tests) |
+| `npm test` | Vitest (120 tests) |
 | `npm run db:seed:generate` | Regenerates `supabase/seed/seed.sql` from the TypeScript catalogue |
 
 ### Connecting Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Run `supabase/migrations/0001_initial_schema.sql`, then `0002_order_functions.sql`, in the SQL
-   editor (or `supabase db push` with the CLI).
+2. Run the migrations in `supabase/migrations/` in numerical order in the SQL editor (or
+   `supabase db push` with the CLI). Run `0004` as two separate statements — it says why in a
+   comment at the top.
 3. Run `supabase/seed/seed.sql` to load the sample catalogue.
 4. Copy the project URL and anon key into `.env.local`, plus the service-role key.
 5. Register through the site, then promote yourself:

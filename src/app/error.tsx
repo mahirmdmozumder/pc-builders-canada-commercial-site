@@ -24,7 +24,7 @@ export default function Error({
 
   return (
     <PageShell className="py-24 text-center">
-      <p className="text-xs font-semibold tracking-[0.2em] text-maple-400 uppercase">Error</p>
+      <p className="text-xs font-semibold tracking-[0.2em] text-gold-400 uppercase">Error</p>
       <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">
         Something went wrong on our end
       </h1>
@@ -39,7 +39,7 @@ export default function Error({
         <button
           type="button"
           onClick={reset}
-          className="inline-flex items-center justify-center rounded-md bg-maple-600 px-6 py-3 text-base font-medium text-white hover:bg-maple-500"
+          className="inline-flex items-center justify-center rounded-md bg-gold-500 px-6 py-3 text-base font-medium text-ink-950 hover:bg-gold-400"
         >
           Try again
         </button>

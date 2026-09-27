@@ -146,7 +146,7 @@ export default function ServicesPage() {
               <ul className="mt-4 space-y-2">
                 {service.includes.map((item) => (
                   <li key={item} className="flex gap-3 text-sm text-ink-200">
-                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-maple-500" aria-hidden />
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-gold-500" aria-hidden />
                     {item}
                   </li>
                 ))}

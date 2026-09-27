@@ -227,7 +227,7 @@ export function InventoryTable({ components }: { components: ComponentRecord[] }
                           onChange={(e) =>
                             setDrafts((current) => ({ ...current, [component.id]: e.target.value }))
                           }
-                          className="tnum w-20 rounded-md border border-ink-600 bg-ink-900 px-2 py-1.5 text-right text-sm text-ink-100 focus:border-maple-500 focus:outline-none"
+                          className="tnum w-20 rounded-md border border-ink-600 bg-ink-900 px-2 py-1.5 text-right text-sm text-ink-100 focus:border-gold-500 focus:outline-none"
                         />
                         <button
                           type="button"

@@ -21,7 +21,7 @@ const BUTTON_BASE =
   'inline-flex items-center justify-center gap-2 font-medium rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-maple-600 text-white hover:bg-maple-500 active:bg-maple-700',
+  primary: 'bg-gold-500 text-ink-950 hover:bg-gold-400 active:bg-gold-600',
   secondary:
     'bg-ink-700 text-ink-100 hover:bg-ink-600 border border-ink-600 active:bg-ink-700',
   ghost: 'text-ink-200 hover:text-white hover:bg-ink-800',
@@ -101,7 +101,7 @@ const TONE_STYLES: Record<Tone, string> = {
   warn: 'bg-warn-500/15 text-warn-400 border-warn-500/40',
   danger: 'bg-danger-500/15 text-danger-400 border-danger-500/40',
   info: 'bg-info-500/15 text-info-400 border-info-500/40',
-  accent: 'bg-maple-600/15 text-maple-400 border-maple-600/40',
+  accent: 'bg-gold-600/15 text-gold-400 border-gold-600/40',
 };
 
 export function Badge({
@@ -129,7 +129,7 @@ export function Dot({ tone = 'neutral' }: { tone?: Tone }) {
     warn: 'bg-warn-400',
     danger: 'bg-danger-500',
     info: 'bg-info-500',
-    accent: 'bg-maple-500',
+    accent: 'bg-gold-500',
   };
   return <span className={cn('inline-block size-2 rounded-full', colour[tone])} aria-hidden />;
 }
@@ -183,7 +183,7 @@ export function PageHeader({
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
             {eyebrow ? (
-              <p className="text-xs font-semibold tracking-[0.18em] text-maple-400 uppercase">
+              <p className="text-xs font-semibold tracking-[0.18em] text-gold-400 uppercase">
                 {eyebrow}
               </p>
             ) : null}
@@ -215,7 +215,7 @@ export function SectionHeading({
   return (
     <div className={cn('max-w-2xl', className)}>
       {eyebrow ? (
-        <p className="text-xs font-semibold tracking-[0.18em] text-maple-400 uppercase">{eyebrow}</p>
+        <p className="text-xs font-semibold tracking-[0.18em] text-gold-400 uppercase">{eyebrow}</p>
       ) : null}
       <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{title}</h2>
       {description ? <p className="mt-3 text-ink-300">{description}</p> : null}
@@ -246,7 +246,7 @@ export function EmptyState({
 // ---------------------------------------------------------------------------
 
 export const inputClass =
-  'w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2.5 text-sm text-ink-100 placeholder:text-ink-400 focus:border-maple-500 focus:outline-none';
+  'w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2.5 text-sm text-ink-100 placeholder:text-ink-400 focus:border-gold-500 focus:outline-none';
 
 export function Field({
   label,
@@ -268,7 +268,7 @@ export function Field({
       <label htmlFor={htmlFor} className="block text-sm font-medium text-ink-100">
         {label}
         {required ? (
-          <span className="ml-1 text-maple-400" aria-hidden>
+          <span className="ml-1 text-gold-400" aria-hidden>
             *
           </span>
         ) : null}

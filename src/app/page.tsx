@@ -6,6 +6,7 @@ import { BUILD_PRESETS } from '@/lib/catalog/presets';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { formatMoney } from '@/lib/utils';
 import { OrganizationJsonLd } from '@/components/seo/structured-data';
+import { ParticleField } from '@/components/visual/particle-field';
 
 export const metadata: Metadata = {
   title: 'Custom Gaming & Workstation PCs Built in Canada',
@@ -27,6 +28,7 @@ export default async function HomePage() {
       <OrganizationJsonLd />
       <Hero fromCents={cheapest} />
       <Pillars />
+      <BeyondTheDesktop />
       <FeaturedBuilds featured={featured} />
       <Process />
       <Services />
@@ -39,18 +41,31 @@ export default async function HomePage() {
 function Hero({ fromCents }: { fromCents: number }) {
   return (
     <section className="relative overflow-hidden border-b border-ink-700">
-      {/* One static gradient, no animation: it frames the copy without costing a repaint. */}
+      {/*
+        Three layers, cheapest first:
+          1. Two static gradient washes. No repaint cost at all.
+          2. A faint circuit grid, drawn as a CSS gradient rather than an image
+             so it adds nothing to the page weight.
+          3. The particle canvas, which is the only animated thing on the page
+             and stops itself once the hero scrolls away.
+      */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(224,49,49,0.10),transparent_55%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(124,58,237,0.16),transparent_58%),radial-gradient(ellipse_at_bottom_left,rgba(212,160,60,0.09),transparent_55%)]"
       />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.045] [background-image:linear-gradient(to_right,var(--color-gold-400)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-gold-400)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]"
+      />
+      <ParticleField />
       <PageShell className="relative py-20 sm:py-28">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold tracking-[0.2em] text-maple-400 uppercase">
+          <p className="text-xs font-semibold tracking-[0.2em] text-gold-400 uppercase">
             PC Builders Canada
           </p>
           <h1 className="mt-4 text-4xl leading-[1.08] font-semibold tracking-tight text-white sm:text-6xl">
-            Custom PCs built for gaming, work and performance.
+            Custom PCs built for gaming, work and{' '}
+            <span className="gold-text">performance</span>.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-300">
             Pick your parts and the configurator checks them against each other as you go: socket,
@@ -128,12 +143,83 @@ function Pillars() {
             <Link
               key={pillar.href}
               href={pillar.href}
-              className="group flex flex-col rounded-lg border border-ink-700 bg-ink-900 p-6 transition-colors hover:border-maple-600/50"
+              className="group flex flex-col rounded-lg border border-ink-700 bg-ink-900 p-6 transition-colors hover:border-gold-600/50"
             >
               <h2 className="text-base font-semibold text-white">{pillar.title}</h2>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-ink-300">{pillar.body}</p>
-              <span className="mt-5 text-sm font-medium text-maple-400 group-hover:text-maple-300">
+              <span className="mt-5 text-sm font-medium text-gold-400 group-hover:text-gold-300">
                 {pillar.cta} &rarr;
+              </span>
+            </Link>
+          ))}
+        </div>
+      </PageShell>
+    </section>
+  );
+}
+
+/**
+ * The categories that are not a tower.
+ *
+ * Kept as its own section rather than folded into PILLARS above, because these
+ * are whole units bought off a list, not builds that go through the
+ * configurator. Presenting them next to "Build your PC" would imply the
+ * compatibility engine has something to say about them, and it does not.
+ */
+const BEYOND = [
+  {
+    href: '/networking',
+    title: 'Networking & server',
+    body: 'Smart and PoE switches for segmenting a network, powering access points and cameras, or getting a NAS past a gigabit bottleneck.',
+    cta: 'See switches',
+  },
+  {
+    href: '/nas',
+    title: 'NAS & network storage',
+    body: 'Enclosures and NAS-rated drives, supplied bare or built out with a redundant array, shares and backup schedules configured.',
+    cta: 'See NAS builds',
+  },
+  {
+    href: '/mini-pcs',
+    title: 'Mini PCs & Raspberry Pi',
+    body: 'Small always-on machines. Barebones x86 mini PCs, and Pi boards with the cooling, power and NVMe storage that make them reliable.',
+    cta: 'See mini PCs',
+  },
+  {
+    href: '/refurbished',
+    title: 'Refurbished & open box',
+    body: 'Tested hardware at a lower price, with every listing stating what was checked, what was replaced and what warranty applies.',
+    cta: 'See refurbished',
+  },
+];
+
+function BeyondTheDesktop() {
+  return (
+    <section className="border-b border-ink-700">
+      <PageShell className="py-16 sm:py-24">
+        <SectionHeading
+          eyebrow="Beyond the desktop"
+          title="Networking, storage and small machines"
+          description="Not everything worth building is a tower. These are sold as finished units, with the setup work available as a service."
+        />
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {BEYOND.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group relative flex flex-col overflow-hidden rounded-lg border border-ink-700 bg-ink-850 p-6 transition-colors hover:border-gold-600/50"
+            >
+              {/* Gold wash on hover. Opacity only, so it composites on the GPU. */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,160,60,0.10),transparent_70%)] opacity-0 transition-opacity group-hover:opacity-100"
+              />
+              <h3 className="relative text-base font-semibold text-white">{item.title}</h3>
+              <p className="relative mt-3 flex-1 text-sm leading-relaxed text-ink-300">
+                {item.body}
+              </p>
+              <span className="relative mt-5 text-sm font-medium text-gold-400 group-hover:text-gold-300">
+                {item.cta} &rarr;
               </span>
             </Link>
           ))}
@@ -153,7 +239,7 @@ function FeaturedBuilds({ featured }: { featured: Awaited<ReturnType<typeof summ
             title="Configurations to build from"
             description="Each one is a real parts list priced from the current catalogue. Load it in the configurator and change anything you like."
           />
-          <Link href="/build" className="text-sm font-medium text-maple-400 hover:text-maple-300">
+          <Link href="/build" className="text-sm font-medium text-gold-400 hover:text-gold-300">
             Start from scratch &rarr;
           </Link>
         </div>
@@ -208,7 +294,7 @@ function Process() {
         <ol className="mt-10 grid gap-px overflow-hidden rounded-lg border border-ink-700 bg-ink-700 sm:grid-cols-2 lg:grid-cols-5">
           {PROCESS.map((item) => (
             <li key={item.step} className="bg-ink-900 p-6">
-              <span className="tnum font-mono text-xs text-maple-400">{item.step}</span>
+              <span className="tnum font-mono text-xs text-gold-400">{item.step}</span>
               <h3 className="mt-3 text-sm font-semibold text-white">{item.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-300">{item.body}</p>
             </li>
@@ -248,7 +334,7 @@ function Services() {
           <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-ink-700 bg-ink-700 sm:grid-cols-2">
             {SERVICE_ITEMS.map((item) => (
               <li key={item} className="flex items-center gap-3 bg-ink-900 px-5 py-4 text-sm text-ink-100">
-                <span className="size-1.5 rounded-full bg-maple-500" aria-hidden />
+                <span className="size-1.5 rounded-full bg-gold-500" aria-hidden />
                 {item}
               </li>
             ))}

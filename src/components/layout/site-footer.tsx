@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { PageShell } from '@/components/ui';
 
@@ -9,6 +10,15 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
       { href: '/gaming-pcs', label: 'Gaming PCs' },
       { href: '/workstations', label: 'Workstation PCs' },
       { href: '/quote', label: 'Request a quote' },
+    ],
+  },
+  {
+    heading: 'Shop',
+    links: [
+      { href: '/networking', label: 'Networking & server' },
+      { href: '/nas', label: 'NAS & storage' },
+      { href: '/mini-pcs', label: 'Mini PCs & Pi' },
+      { href: '/refurbished', label: 'Refurbished' },
     ],
   },
   {
@@ -45,14 +55,16 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-ink-700 bg-ink-950">
       <PageShell className="py-12">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(4,1fr)]">
-          <div className="max-w-xs">
-            <p className="text-sm leading-tight font-semibold text-white">
-              PC Builders
-              <span className="block text-[0.65rem] tracking-[0.2em] text-ink-400 uppercase">
-                Canada
-              </span>
-            </p>
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[1.3fr_repeat(5,0.85fr)]">
+          <div className="max-w-xs sm:col-span-2 md:col-span-3 lg:col-span-1">
+            <Image
+              src="/logo-lockup.png"
+              alt="PC Builders Canada"
+              width={1044}
+              height={462}
+              sizes="220px"
+              className="h-auto w-[220px] max-w-full"
+            />
             <p className="mt-4 text-sm leading-relaxed text-ink-400">
               Custom gaming and workstation PCs, built to order and tested before they ship.
               Upgrades, diagnostics and Windows setup for machines you already own.

@@ -110,7 +110,7 @@ export function SavedBuildList({ builds }: { builds: SavedBuild[] }) {
               <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
                 <Link
                   href={`/build?build=${build.id}`}
-                  className="font-medium text-maple-400 hover:text-maple-300"
+                  className="font-medium text-gold-400 hover:text-gold-300"
                 >
                   Open
                 </Link>

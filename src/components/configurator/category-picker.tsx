@@ -72,7 +72,7 @@ export function CategoryPicker({
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as typeof sort)}
-              className="rounded-md border border-ink-600 bg-ink-900 px-2 py-1.5 text-xs text-ink-100 focus:border-maple-500 focus:outline-none"
+              className="rounded-md border border-ink-600 bg-ink-900 px-2 py-1.5 text-xs text-ink-100 focus:border-gold-500 focus:outline-none"
             >
               <option value="price-asc">Price: low to high</option>
               <option value="price-desc">Price: high to low</option>
@@ -83,7 +83,7 @@ export function CategoryPicker({
               type="checkbox"
               checked={hideIncompatible}
               onChange={(e) => setHideIncompatible(e.target.checked)}
-              className="size-4 rounded border-ink-600 bg-ink-900 accent-maple-500"
+              className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
             />
             Hide parts that do not fit
           </label>
@@ -180,7 +180,7 @@ export function CategoryPicker({
                         'rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40',
                         selected
                           ? 'border border-ok-600/40 bg-ok-600/15 text-ok-400'
-                          : 'bg-maple-600 text-white hover:bg-maple-500',
+                          : 'bg-gold-500 text-ink-950 hover:bg-gold-400',
                       )}
                     >
                       {selected ? 'Selected' : 'Select'}
@@ -263,7 +263,7 @@ export function SelectedRow({
           <p className="text-sm font-medium text-white">{CATEGORY_LABELS[category]}</p>
           <p className="text-sm text-ink-400">Not selected</p>
         </div>
-        <span className="text-sm font-medium text-maple-400">Choose</span>
+        <span className="text-sm font-medium text-gold-400">Choose</span>
       </button>
     );
   }
@@ -300,7 +300,7 @@ export function SelectedRow({
               <select
                 value={quantity}
                 onChange={(e) => onQuantity(Number(e.target.value))}
-                className="rounded border border-ink-600 bg-ink-900 px-1.5 py-1 text-xs text-ink-100 focus:border-maple-500 focus:outline-none"
+                className="rounded border border-ink-600 bg-ink-900 px-1.5 py-1 text-xs text-ink-100 focus:border-gold-500 focus:outline-none"
               >
                 {[1, 2, 3, 4].map((n) => (
                   <option key={n} value={n}>
@@ -313,7 +313,7 @@ export function SelectedRow({
           <button
             type="button"
             onClick={onOpen}
-            className="rounded px-2 py-1 text-xs font-medium text-maple-400 hover:text-maple-300"
+            className="rounded px-2 py-1 text-xs font-medium text-gold-400 hover:text-gold-300"
           >
             Change
           </button>

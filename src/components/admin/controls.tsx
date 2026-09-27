@@ -233,7 +233,7 @@ export function TicketControls({ ticket }: { ticket: SupportTicket }) {
               type="checkbox"
               checked={internal}
               onChange={(e) => setInternal(e.target.checked)}
-              className="size-4 rounded border-ink-600 bg-ink-900 accent-maple-500"
+              className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
             />
             Internal note (not visible to the customer)
           </label>

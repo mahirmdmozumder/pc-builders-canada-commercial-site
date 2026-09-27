@@ -101,6 +101,10 @@ This turns on accounts, saved builds, quotes, support tickets and the admin.
    - `supabase/migrations/0001_initial_schema.sql`
    - `supabase/migrations/0002_order_functions.sql`
    - `supabase/migrations/0003_fix_admin_bootstrap.sql`
+   - `supabase/migrations/0004_whole_unit_categories_and_condition.sql`
+     — run its two PARTS separately, one after the other. Postgres will not
+     accept a new enum value and a use of that value in the same transaction,
+     and the SQL editor runs everything you paste as one.
    - `supabase/seed/seed.sql`
 3. In **Project Settings → API**, copy the project URL, the `anon` key and the
    `service_role` key.

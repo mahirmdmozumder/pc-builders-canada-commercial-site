@@ -63,7 +63,7 @@ export default async function AdminQuotesPage() {
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/quotes/${quote.id}`}
-                        className="font-medium text-white hover:text-maple-400"
+                        className="font-medium text-white hover:text-gold-400"
                       >
                         {quote.reference}
                       </Link>

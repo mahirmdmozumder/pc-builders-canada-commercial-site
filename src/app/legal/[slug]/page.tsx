@@ -60,7 +60,7 @@ export default async function PolicyPage({ params }: { params: Promise<{ slug: s
                       {section.bullets.map((bullet) => (
                         <li key={bullet} className="flex gap-3 text-ink-300">
                           <span
-                            className="mt-2 size-1.5 shrink-0 rounded-full bg-maple-500"
+                            className="mt-2 size-1.5 shrink-0 rounded-full bg-gold-500"
                             aria-hidden
                           />
                           <span className="leading-relaxed">{bullet}</span>

@@ -36,6 +36,14 @@ type ComponentSeed = Partial<ComponentRecord> &
 const NOW = '2026-09-18T00:00:00.000Z';
 const CHECKED = '2026-09-18';
 
+/**
+ * The networking, NAS and mini-PC rows were added later, so they carry their
+ * own check date. Mixing the two under one constant would have back-dated
+ * seventeen prices that were never checked on the earlier date.
+ */
+const UNITS_ADDED = '2026-09-27T00:00:00.000Z';
+const CHECKED_UNITS = '2026-09-27';
+
 function component(seed: ComponentSeed): ComponentRecord {
   return {
     slug: seed.id,
@@ -49,6 +57,12 @@ function component(seed: ComponentSeed): ComponentRecord {
     image_url: null,
     active: true,
     data_confidence: 'verified',
+    // Everything seeded here is new stock. Refurbished and open-box units are
+    // entered through /admin/components, where the condition notes are
+    // mandatory, because those notes describe a specific physical unit and
+    // cannot honestly be seeded from a template.
+    condition: 'new',
+    condition_notes: null,
     socket: null,
     supported_sockets: null,
     chipset: null,
@@ -814,6 +828,473 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
       unverified:
         'Price is a placeholder. OEM licence cost depends on your Microsoft reseller account, not retail.',
     },
+  }),
+
+  // ===========================================================================
+  // WHOLE UNITS - networking, NAS and mini PCs
+  // ===========================================================================
+  // Prices and specifications checked against Canadian retail on 2026-09-27.
+  // Sources: Canada Computers (switches, NAS enclosures, NAS drives) and
+  // PiShop.ca (Raspberry Pi, the official Canadian distributor).
+  //
+  // These rows carry NONE of the tower-build fields. That is deliberate, not an
+  // omission: a switch has no socket and a NAS enclosure has no radiator
+  // clearance, so those columns stay null and the compatibility engine never
+  // sees these categories at all. Their details live in `specs`, which no
+  // compatibility rule is permitted to read.
+  //
+  // Where a retailer listing contradicted itself or omitted a figure, the row is
+  // marked `data_confidence: 'sample'` and `specs.unverified` names the exact
+  // field. The storefront prints that caveat. Two listings did contradict
+  // themselves, and guessing would have been the easier and worse choice.
+  //
+  // Where a price was seen on promotion, `price_cents` holds the REGULAR price
+  // and `specs.sale_price_observed` records the promotion. A storefront that
+  // bakes in somebody else's expiring sale ends up selling below cost.
+
+  // -------------------------------------------------------------------------
+  // Networking and server
+  // -------------------------------------------------------------------------
+  component({
+    id: 'net-tplink-tl-sg108e',
+    sku: 'NET-TPL-SG108E',
+    category: 'networking',
+    brand: 'TP-Link',
+    model: 'TL-SG108E 8-Port Gigabit Easy Smart Switch',
+    description:
+      'Eight gigabit ports with VLAN, QoS and IGMP snooping in a fanless metal case. The usual starting point when a flat home network needs segmenting without moving to a full managed stack.',
+    price_cents: 3999,
+    specs: {
+      ports: '8 x 1GbE RJ45',
+      management: 'Web-managed (Easy Smart)',
+      vlan: 'Port-based, tag-based and MTU VLAN',
+      qos: 'Yes, with IGMP snooping',
+      jumbo_frame: '15K',
+      cooling: 'Fanless',
+      mounting: 'Desktop or wall',
+      price_checked: CHECKED_UNITS,
+      sale_price_observed: '$34.99 on 2026-09-27',
+      source: 'Canada Computers',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'net-tplink-tl-sg108pe',
+    sku: 'NET-TPL-SG108PE',
+    category: 'networking',
+    brand: 'TP-Link',
+    model: 'TL-SG108PE 8-Port Gigabit PoE+ Easy Smart Switch',
+    description:
+      'The same eight gigabit ports as the SG108E, with four of them supplying PoE+ across a 64 W budget. Enough to run a pair of access points and a couple of cameras without separate power bricks.',
+    price_cents: 8999,
+    specs: {
+      ports: '8 x 1GbE RJ45',
+      poe_ports: '4 x PoE+ (802.3af/at)',
+      poe_budget_watts: 64,
+      management: 'Web-managed (Easy Smart)',
+      vlan: 'Port-based, tag-based and MTU VLAN',
+      price_checked: CHECKED_UNITS,
+      source: 'Canada Computers',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'net-ubiquiti-usw-flex-2-5g-5',
+    sku: 'NET-UBI-FLEX25G5',
+    category: 'networking',
+    brand: 'Ubiquiti',
+    model: 'UniFi USW-Flex-2.5G-5',
+    description:
+      'Five 2.5GbE ports, managed through UniFi. The sensible upgrade once a NAS and a desktop both have 2.5G and a gigabit switch has become the bottleneck between them.',
+    price_cents: 7999,
+    specs: {
+      ports: '5 x 2.5GbE RJ45',
+      switching: 'Layer 2, IGMP snooping, port mirroring, spanning tree',
+      management: 'UniFi Network application',
+      form_factor: 'Desktop',
+      price_checked: CHECKED_UNITS,
+      source: 'Canada Computers',
+      availability_note:
+        'Was sold out online at the retailer on the check date; confirm supply before promising a ship date.',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'net-ubiquiti-usw-flex-2-5g-8-poe',
+    sku: 'NET-UBI-FLEX25G8P',
+    category: 'networking',
+    brand: 'Ubiquiti',
+    model: 'UniFi USW-Flex-2.5G-8-PoE',
+    description:
+      'Eight-port PoE switch with a 10 GbE RJ45/SFP+ combination uplink, in a desktop shell meant for deployment outside a wiring closet. That uplink is the reason to pick it over a cheaper eight-port unit.',
+    price_cents: 28500,
+    data_confidence: 'sample',
+    specs: {
+      ports: '8 ports, all PoE+ capable',
+      uplink: '1 x 10GbE RJ45 / SFP+ combination',
+      management: 'UniFi Network application',
+      dimensions_mm: '99.6 x 163.7 x 31.7',
+      price_checked: CHECKED_UNITS,
+      source: 'Canada Computers',
+      unverified:
+        'Port speed and total PoE budget. The retailer listing described the access ports as 10/100/1000 while naming the model 2.5G, and gave no PoE wattage at all. Confirm both against Ubiquiti documentation before publishing this row.',
+      availability_note: 'Sold out online and in store at the retailer on the check date.',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  // -------------------------------------------------------------------------
+  // NAS enclosures
+  // -------------------------------------------------------------------------
+  component({
+    id: 'nas-synology-ds224-plus',
+    sku: 'NAS-SYN-DS224P',
+    category: 'nas',
+    brand: 'Synology',
+    model: 'DiskStation DS224+ (2-bay, diskless)',
+    description:
+      'Two-bay DiskStation running DSM. Diskless, so pair it with a couple of NAS-rated drives in a mirror. The common first NAS for household backups, Time Machine targets and a media library.',
+    price_cents: 44999,
+    data_confidence: 'sample',
+    specs: {
+      bays: 2,
+      drive_support: 'SATA HDD or SSD, 3.5 inch or 2.5 inch',
+      memory: '2 GB DDR4',
+      network: '2 x 1GbE RJ45',
+      usb: '2 x USB 3.2 Gen 1',
+      power_draw_watts: 15,
+      supplied: 'Diskless - drives sold separately',
+      price_checked: CHECKED_UNITS,
+      source: 'Canada Computers',
+      unverified:
+        'Exact CPU model and maximum raw capacity. The retailer listing said only "Intel Celeron 2 GHz" and described the bays as SAS, which is wrong for this unit. Confirm against the Synology datasheet before publishing this row.',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'nas-synology-ds423-plus',
+    sku: 'NAS-SYN-DS423P',
+    category: 'nas',
+    brand: 'Synology',
+    model: 'DiskStation DS423+ (4-bay, diskless)',
+    description:
+      'Four-bay DiskStation with two M.2 NVMe slots for read and write cache. Four bays is the point where you can run a single-drive-redundant array and still grow it, which two bays never really allows.',
+    price_cents: 74999,
+    data_confidence: 'sample',
+    specs: {
+      bays: 4,
+      drive_support: 'SATA HDD or SSD, 3.5 inch or 2.5 inch',
+      cache_slots: '2 x M.2 2280 NVMe',
+      memory: '2 GB DDR4',
+      network: '2 x 1GbE RJ45',
+      usb: '2 x USB 3.2 Gen 1',
+      max_raw_capacity: 'Up to 72 TB per the retailer listing',
+      dimensions_mm: '166 x 199 x 223',
+      supplied: 'Diskless - drives sold separately',
+      price_checked: CHECKED_UNITS,
+      source: 'Canada Computers',
+      unverified:
+        'Exact CPU model, and the 72 TB maximum capacity figure. Both came from retailer copy rather than the Synology datasheet.',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  // -------------------------------------------------------------------------
+  // NAS-rated drives
+  // -------------------------------------------------------------------------
+  // Category 'storage', not 'nas': these are drives, and somebody filtering for
+  // storage should see them. `specs.nas_rated` is what puts them on the NAS page
+  // alongside the enclosures.
+  component({
+    id: 'hdd-wd-red-plus-8tb',
+    sku: 'HDD-WD-RED8TB',
+    category: 'storage',
+    brand: 'Western Digital',
+    model: 'WD Red Plus 8TB NAS HDD (WD80EFPX)',
+    description:
+      'Eight terabytes of CMR NAS storage rated for 180 TB a year and continuous operation. CMR rather than SMR is the point: shingled drives behave badly during a RAID rebuild, which is exactly when you need them not to.',
+    price_cents: 50999,
+    storage_interface: 'sata',
+    storage_capacity_gb: 8000,
+    specs: {
+      rpm: 5640,
+      cache_mb: 256,
+      recording: 'CMR',
+      form_factor: '3.5 inch',
+      workload_rating: '180 TB per year',
+      warranty: '3-year limited',
+      nas_rated: true,
+      price_checked: CHECKED_UNITS,
+      source: 'Canada Computers',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'hdd-seagate-ironwolf-4tb',
+    sku: 'HDD-SEA-IW4TB',
+    category: 'storage',
+    brand: 'Seagate',
+    model: 'IronWolf 4TB NAS HDD (ST4000VN006)',
+    description:
+      'Four terabytes rated for 24/7 NAS duty, with three years of Rescue data recovery included. A reasonable capacity per dollar for a first two-bay mirror.',
+    price_cents: 27999,
+    storage_interface: 'sata',
+    storage_capacity_gb: 4000,
+    specs: {
+      rpm: 5400,
+      cache_mb: 256,
+      form_factor: '3.5 inch',
+      duty: 'Rated for 24x7 operation',
+      included: '3 years Rescue Data Recovery Services',
+      warranty: '3-year limited',
+      nas_rated: true,
+      price_checked: CHECKED_UNITS,
+      sale_price_observed: '$264.99 on 2026-09-27',
+      source: 'Canada Computers',
+      availability_note: 'Sold out online at the retailer on the check date; limited store stock.',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  // -------------------------------------------------------------------------
+  // Mini PCs and single-board computers
+  // -------------------------------------------------------------------------
+  component({
+    id: 'mini-rpi5-4gb',
+    sku: 'MINI-RPI5-4GB',
+    category: 'mini-pc',
+    brand: 'Raspberry Pi',
+    model: 'Raspberry Pi 5 / 4GB',
+    description:
+      'The 4 GB Pi 5. Enough for Pi-hole, Home Assistant, a print server or a light Docker host. It needs a power supply, storage and cooling, none of which are in the box.',
+    price_cents: 15395,
+    specs: {
+      soc: 'Broadcom BCM2712, quad-core Cortex-A76 at 2.4 GHz',
+      memory: '4 GB LPDDR4X-4267',
+      gpu: 'VideoCore VII',
+      network: 'Gigabit Ethernet (PoE+ with HAT), Wi-Fi 802.11ac, Bluetooth 5.0',
+      usb: '2 x USB 3.0, 2 x USB 2.0',
+      display: 'Dual 4Kp60 micro HDMI',
+      expansion: 'PCIe 2.0 x1, 40-pin GPIO, microSD',
+      power_input: '5V/5A USB-C Power Delivery',
+      supplied: 'Board only',
+      sbc_accessory: false,
+      price_checked: CHECKED_UNITS,
+      source: 'PiShop.ca',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'mini-rpi5-8gb',
+    sku: 'MINI-RPI5-8GB',
+    category: 'mini-pc',
+    brand: 'Raspberry Pi',
+    model: 'Raspberry Pi 5 / 8GB',
+    description:
+      'The 8 GB Pi 5, and the version to pick if it will run several containers at once or double as a small desktop. Roughly three times the CPU throughput of a Pi 4.',
+    price_cents: 24495,
+    specs: {
+      soc: 'Broadcom BCM2712, quad-core Cortex-A76 at 2.4 GHz',
+      memory: '8 GB LPDDR4X-4267',
+      gpu: 'VideoCore VII, OpenGL ES 3.1 and Vulkan 1.2',
+      network: 'Gigabit Ethernet (PoE+ with HAT), Wi-Fi 802.11ac, Bluetooth 5.0',
+      usb: '2 x USB 3.0 (5 Gbps), 2 x USB 2.0',
+      display: 'Dual 4Kp60 micro HDMI with HDR',
+      expansion: 'PCIe 2.0 x1, 40-pin GPIO, microSD, real-time clock',
+      power_input: '5V/5A USB-C Power Delivery',
+      supplied: 'Board only',
+      sbc_accessory: false,
+      price_checked: CHECKED_UNITS,
+      source: 'PiShop.ca',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'mini-rpi5-16gb',
+    sku: 'MINI-RPI5-16GB',
+    category: 'mini-pc',
+    brand: 'Raspberry Pi',
+    model: 'Raspberry Pi 5 / 16GB',
+    description:
+      'The 16 GB Pi 5, for a workload that actually needs the memory rather than the cores: a larger container stack, a self-hosted database, or compiling on the board itself.',
+    price_cents: 42695,
+    specs: {
+      soc: 'Broadcom BCM2712, quad-core Cortex-A76 at 2.4 GHz',
+      memory: '16 GB LPDDR4X-4267',
+      gpu: 'VideoCore VII, OpenGL ES 3.1 and Vulkan 1.2',
+      network: 'Gigabit Ethernet (PoE+ with HAT), Wi-Fi 802.11ac, Bluetooth 5.0',
+      usb: '2 x USB 3.0 (5 Gbps), 2 x USB 2.0',
+      display: 'Dual 4Kp60 micro HDMI with HDR',
+      expansion: 'PCIe 2.0 x1, 2 x 4-lane MIPI, 40-pin GPIO, microSD, real-time clock',
+      power_input: '5V/5A USB-C Power Delivery',
+      supplied: 'Board only',
+      sbc_accessory: false,
+      price_checked: CHECKED_UNITS,
+      source: 'PiShop.ca',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'mini-rpi5-desktop-kit',
+    sku: 'MINI-RPI5-KIT8',
+    category: 'mini-pc',
+    brand: 'Raspberry Pi',
+    model: 'Raspberry Pi 5 Desktop Kit (8GB)',
+    description:
+      'A complete Pi 5 desktop in one box: board, case, official keyboard and mouse, 27 W supply, both HDMI cables, a preloaded microSD card and the beginner guide. Connect a monitor and it runs.',
+    price_cents: 28000,
+    data_confidence: 'sample',
+    specs: {
+      includes:
+        'Raspberry Pi 5 (8 GB), case, keyboard and mouse, 27 W USB-C PD supply, 2 x micro HDMI to HDMI 1 m, 16 GB microSD with Raspberry Pi OS, printed beginner guide',
+      memory: '8 GB LPDDR4X-4267',
+      sbc_accessory: false,
+      price_checked: CHECKED_UNITS,
+      source: 'PiShop.ca',
+      unverified:
+        'The bundled microSD card is listed as carrying the 32-bit OS image. Confirm which image actually ships before advising a customer who wants 64-bit.',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'mini-gigabyte-brix-n150',
+    sku: 'MINI-GB-BRIXN150',
+    category: 'mini-pc',
+    brand: 'GIGABYTE',
+    model: 'BRIX Intel N150 Barebones',
+    description:
+      'A barebones x86 mini PC with Wi-Fi and Bluetooth already fitted. Barebones means no memory, no drive and no operating system, so budget for all three; the payoff is choosing them yourself.',
+    price_cents: 23900,
+    data_confidence: 'sample',
+    specs: {
+      cpu: 'Intel N150',
+      wireless: 'Wi-Fi and Bluetooth included',
+      supplied: 'Barebones - no memory, storage or operating system',
+      sbc_accessory: false,
+      price_checked: CHECKED_UNITS,
+      source: 'Canada Computers',
+      unverified:
+        'Memory and storage slot counts, supported capacities and port layout were not stated in the retailer listing. Confirm from the GIGABYTE spec sheet before advising on an upgrade.',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'mini-gigabyte-brix-n250',
+    sku: 'MINI-GB-BRIXN250',
+    category: 'mini-pc',
+    brand: 'GIGABYTE',
+    model: 'BRIX Intel N250 Barebones',
+    description:
+      'The N250 barebones BRIX, a step up from the N150 on the same build-it-yourself terms. A quiet always-on box for a media front end, a small server or a point-of-sale terminal.',
+    price_cents: 29900,
+    data_confidence: 'sample',
+    specs: {
+      cpu: 'Intel N250',
+      wireless: 'Wi-Fi and Bluetooth included',
+      supplied: 'Barebones - no memory, storage or operating system',
+      sbc_accessory: false,
+      price_checked: CHECKED_UNITS,
+      sale_price_observed: '$199.00 on 2026-09-27',
+      source: 'Canada Computers',
+      unverified:
+        'Memory and storage slot counts, supported capacities and port layout were not stated in the retailer listing.',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  // -------------------------------------------------------------------------
+  // Single-board accessories
+  // -------------------------------------------------------------------------
+  // Tagged `sbc_accessory` so the mini-PC page lists them beneath the boards
+  // rather than mixed in among them.
+  component({
+    id: 'mini-rpi-active-cooler',
+    sku: 'MINI-RPI-COOLER',
+    category: 'mini-pc',
+    brand: 'Raspberry Pi',
+    model: 'Active Cooler for Raspberry Pi 5',
+    description:
+      'Clip-on aluminium heatsink with a temperature-controlled blower. A Pi 5 under sustained load will throttle without active cooling, so treat this as part of the board rather than an extra.',
+    price_cents: 700,
+    specs: {
+      fits: 'Raspberry Pi 5',
+      mounting: 'Clip-on, uses the board mounting points',
+      control: 'Temperature-controlled fan',
+      sbc_accessory: true,
+      price_checked: CHECKED_UNITS,
+      source: 'PiShop.ca',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'mini-rpi-27w-psu',
+    sku: 'MINI-RPI-PSU27',
+    category: 'mini-pc',
+    brand: 'Raspberry Pi',
+    model: '27W USB-C Power Delivery Supply',
+    description:
+      'The official 27 W supply. A Pi 5 raises its own USB port budget from roughly 600 mA to 1.6 A only when it detects a PD supply of this class, so a generic charger quietly costs you peripheral power.',
+    price_cents: 1695,
+    specs: {
+      output: '5.1V/5A, 9V/3A, 12V/2.25A, 15V/1.8A',
+      connector: 'USB-C Power Delivery',
+      note: 'Unlocks the higher USB port current budget on Raspberry Pi 5',
+      sbc_accessory: true,
+      price_checked: CHECKED_UNITS,
+      source: 'PiShop.ca',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
+  }),
+
+  component({
+    id: 'mini-rpi-m2-hat',
+    sku: 'MINI-RPI-M2HAT',
+    category: 'mini-pc',
+    brand: 'Raspberry Pi',
+    model: 'M.2 HAT+ for Raspberry Pi 5',
+    description:
+      'Brings the Pi 5 PCIe lane out to an M.2 slot, so an NVMe drive can replace the microSD card as the boot device. Around 500 MB/s, and a far longer service life than a card under constant writes.',
+    price_cents: 1695,
+    specs: {
+      interface: 'Single-lane PCIe 2.0',
+      supports: 'M key M.2 devices, 2230 and 2242 form factors',
+      throughput: 'Up to 500 MB/s',
+      power_delivery: 'Up to 3 A to the attached device',
+      includes: '16 mm stacking header, threaded spacers, ribbon cable',
+      compatibility: 'Fits with the Raspberry Pi Active Cooler in place',
+      sbc_accessory: true,
+      price_checked: CHECKED_UNITS,
+      source: 'PiShop.ca',
+    },
+    created_at: UNITS_ADDED,
+    updated_at: UNITS_ADDED,
   }),
 ];
 

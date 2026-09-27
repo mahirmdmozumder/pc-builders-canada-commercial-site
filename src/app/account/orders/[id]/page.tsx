@@ -59,7 +59,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   <span
                     className={cn(
                       'h-1 w-full rounded-full',
-                      done ? 'bg-maple-500' : 'bg-ink-700',
+                      done ? 'bg-gold-500' : 'bg-ink-700',
                     )}
                     aria-hidden
                   />
@@ -93,7 +93,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
               {item.configuration?.length ? (
                 <details className="mt-3">
-                  <summary className="cursor-pointer text-xs text-maple-400">
+                  <summary className="cursor-pointer text-xs text-gold-400">
                     {item.configuration.length} parts as built
                   </summary>
                   <ul className="mt-2 space-y-1 text-xs text-ink-300">
@@ -163,7 +163,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       <p className="text-xs text-ink-500">
         Something wrong with this order?{' '}
-        <Link href="/account/support" className="text-maple-400 hover:text-maple-300">
+        <Link href="/account/support" className="text-gold-400 hover:text-gold-300">
           Open a support ticket
         </Link>{' '}
         and quote {order.order_number}.

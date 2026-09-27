@@ -7,7 +7,10 @@ import { formatMoney, slugify } from '@/lib/utils';
 import {
   CATEGORY_LABELS,
   COMPONENT_CATEGORIES,
+  COMPONENT_CONDITIONS,
+  CONDITION_LABELS,
   type ComponentCategory,
+  type ComponentCondition,
   type ComponentRecord,
 } from '@/lib/catalog/types';
 
@@ -122,7 +125,7 @@ export function ComponentManager({ components }: { components: ComponentRecord[]
               type="checkbox"
               checked={showInactive}
               onChange={(e) => setShowInactive(e.target.checked)}
-              className="size-4 rounded border-ink-600 bg-ink-900 accent-maple-500"
+              className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
             />
             Show deactivated
           </label>
@@ -197,7 +200,7 @@ export function ComponentManager({ components }: { components: ComponentRecord[]
                       <button
                         type="button"
                         onClick={() => setEditing(editing === component.id ? null : component.id)}
-                        className="text-sm text-maple-400 hover:text-maple-300"
+                        className="text-sm text-gold-400 hover:text-gold-300"
                       >
                         {editing === component.id ? 'Close' : 'Edit'}
                       </button>
@@ -239,7 +242,76 @@ interface FormValues {
   low_stock_threshold: number;
   active: boolean;
   data_confidence: 'sample' | 'verified';
+  condition: ComponentCondition;
+  condition_notes: string | null;
   image_url: string | null;
+}
+
+/**
+ * Condition, and the note that has to accompany anything not sold as new.
+ *
+ * The note is required by the API schema and by a database check constraint.
+ * Making it required in the form too means the admin finds out here, with the
+ * cursor in the right field, rather than via a rejected request.
+ *
+ * Shared by the create form and the edit panel so the two cannot drift apart
+ * and start enforcing different things.
+ */
+function ConditionFields({
+  idPrefix,
+  condition,
+  onConditionChange,
+  defaultNotes,
+}: {
+  idPrefix: string;
+  condition: ComponentCondition;
+  onConditionChange: (value: ComponentCondition) => void;
+  defaultNotes?: string;
+}) {
+  const needsNotes = condition !== 'new';
+  return (
+    <div className="grid gap-4 sm:grid-cols-[minmax(0,14rem)_1fr]">
+      <Field label="Condition" htmlFor={`${idPrefix}-condition`}>
+        <Select
+          id={`${idPrefix}-condition`}
+          value={condition}
+          onChange={(e) => onConditionChange(e.target.value as ComponentCondition)}
+        >
+          {COMPONENT_CONDITIONS.map((value) => (
+            <option key={value} value={value}>
+              {CONDITION_LABELS[value]}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <Field
+        label="Condition notes"
+        htmlFor={`${idPrefix}-condition-notes`}
+        required={needsNotes}
+        hint={
+          needsNotes
+            ? 'What was tested, what was replaced, any cosmetic marks, and the warranty offered. Printed on the listing word for word.'
+            : 'Only needed when the unit is not new.'
+        }
+      >
+        <Textarea
+          id={`${idPrefix}-condition-notes`}
+          name="condition_notes"
+          rows={3}
+          minLength={needsNotes ? 10 : undefined}
+          required={needsNotes}
+          disabled={!needsNotes}
+          defaultValue={defaultNotes ?? ''}
+          placeholder={
+            needsNotes
+              ? 'Customer return, unopened accessories. Tested 4 hours under load, no faults. 90-day warranty.'
+              : ''
+          }
+          className={needsNotes ? undefined : 'opacity-50'}
+        />
+      </Field>
+    </div>
+  );
 }
 
 function ComponentForm({
@@ -252,6 +324,7 @@ function ComponentForm({
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [category, setCategory] = useState<ComponentCategory>('cpu');
+  const [condition, setCondition] = useState<ComponentCondition>('new');
 
   const suggestedId = slugify(`${category}-${brand}-${model}`).slice(0, 110);
 
@@ -274,6 +347,9 @@ function ComponentForm({
           low_stock_threshold: Number(form.get('threshold') ?? 3),
           active: true,
           data_confidence: form.get('verified') ? 'verified' : 'sample',
+          condition,
+          condition_notes:
+            condition === 'new' ? null : String(form.get('condition_notes') ?? '').trim() || null,
           image_url: String(form.get('image_url') ?? '') || null,
         });
       }}
@@ -328,6 +404,12 @@ function ComponentForm({
         </Field>
       </div>
 
+      <ConditionFields
+        idPrefix="new"
+        condition={condition}
+        onConditionChange={setCondition}
+      />
+
       <Field label="Image URL" htmlFor="new-image">
         <Input id="new-image" name="image_url" type="url" placeholder="https://" />
       </Field>
@@ -336,7 +418,7 @@ function ComponentForm({
         <input
           type="checkbox"
           name="verified"
-          className="size-4 rounded border-ink-600 bg-ink-900 accent-maple-500"
+          className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
         />
         I have checked these specifications against the manufacturer spec sheet
       </label>
@@ -362,6 +444,7 @@ function EditPanel({
   onClose: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const [condition, setCondition] = useState<ComponentCondition>(component.condition);
 
   return (
     <Card className="p-5">
@@ -394,6 +477,9 @@ function EditPanel({
             low_stock_threshold: Number(form.get('threshold')),
             active: form.get('active') === 'on',
             data_confidence: form.get('verified') === 'on' ? 'verified' : 'sample',
+            condition,
+            condition_notes:
+              condition === 'new' ? null : String(form.get('condition_notes') ?? '').trim() || null,
             image_url: String(form.get('image_url') ?? '') || null,
           });
         }}
@@ -446,6 +532,13 @@ function EditPanel({
           </Field>
         </div>
 
+        <ConditionFields
+          idPrefix="edit"
+          condition={condition}
+          onConditionChange={setCondition}
+          defaultNotes={component.condition_notes ?? ''}
+        />
+
         <Field label="Image URL" htmlFor="edit-image">
           <Input id="edit-image" name="image_url" type="url" defaultValue={component.image_url ?? ''} />
         </Field>
@@ -456,7 +549,7 @@ function EditPanel({
               type="checkbox"
               name="active"
               defaultChecked={component.active}
-              className="size-4 rounded border-ink-600 bg-ink-900 accent-maple-500"
+              className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
             />
             Active in the configurator
           </label>
@@ -465,7 +558,7 @@ function EditPanel({
               type="checkbox"
               name="verified"
               defaultChecked={component.data_confidence === 'verified'}
-              className="size-4 rounded border-ink-600 bg-ink-900 accent-maple-500"
+              className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
             />
             Specifications verified
           </label>

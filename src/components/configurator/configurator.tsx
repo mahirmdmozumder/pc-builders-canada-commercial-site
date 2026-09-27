@@ -17,7 +17,7 @@ import { useHydrated } from '@/lib/hooks/use-hydrated';
 import { cn, formatMoney } from '@/lib/utils';
 import {
   CATEGORY_LABELS,
-  CATEGORY_ORDER,
+  CONFIGURATOR_CATEGORIES,
   REQUIRED_CATEGORIES,
   displayName,
   type ComponentCategory,
@@ -275,7 +275,7 @@ function ConfiguratorInner({ catalogue, initialItems, initialName, sampleData }:
           </div>
 
           <ul className="divide-y divide-ink-700">
-            {CATEGORY_ORDER.map((category) => {
+            {CONFIGURATOR_CATEGORIES.map((category) => {
               const selectedItems = items.filter((i) => i.category === category);
               const isOpen = openCategory === category;
               const required = REQUIRED_CATEGORIES.includes(category);
@@ -316,7 +316,7 @@ function ConfiguratorInner({ catalogue, initialItems, initialName, sampleData }:
                       <button
                         type="button"
                         onClick={() => setOpenCategory(category)}
-                        className="text-xs font-medium text-maple-400 hover:text-maple-300"
+                        className="text-xs font-medium text-gold-400 hover:text-gold-300"
                       >
                         + Add another {CATEGORY_LABELS[category].toLowerCase()}
                       </button>

@@ -40,7 +40,7 @@ export default async function AccountPage() {
         <CardHeader
           title="Recent orders"
           action={
-            <Link href="/account/orders" className="text-sm text-maple-400 hover:text-maple-300">
+            <Link href="/account/orders" className="text-sm text-gold-400 hover:text-gold-300">
               All orders
             </Link>
           }
@@ -82,7 +82,7 @@ export default async function AccountPage() {
         <CardHeader
           title="Saved builds"
           action={
-            <Link href="/account/builds" className="text-sm text-maple-400 hover:text-maple-300">
+            <Link href="/account/builds" className="text-sm text-gold-400 hover:text-gold-300">
               All builds
             </Link>
           }

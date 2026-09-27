@@ -121,7 +121,7 @@ function CheckoutViewInner({ paymentsConfigured, testMode }: CheckoutViewProps) 
             </p>
             <Link
               href="/quote"
-              className="mt-3 inline-block font-medium text-maple-400 hover:text-maple-300"
+              className="mt-3 inline-block font-medium text-gold-400 hover:text-gold-300"
             >
               Request a quote instead &rarr;
             </Link>

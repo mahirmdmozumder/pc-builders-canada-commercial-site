@@ -78,7 +78,7 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ id
                     message.is_internal
                       ? 'rounded-md border border-warn-500/40 bg-warn-500/5 p-4'
                       : message.author_role === 'admin'
-                        ? 'rounded-md border border-maple-600/40 bg-maple-600/5 p-4'
+                        ? 'rounded-md border border-gold-600/40 bg-gold-600/5 p-4'
                         : 'rounded-md border border-ink-700 bg-ink-900 p-4'
                   }
                 >

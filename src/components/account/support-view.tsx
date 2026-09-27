@@ -155,7 +155,7 @@ export function SupportView({
                 <button
                   type="button"
                   onClick={() => setActiveTicket(isActive ? null : ticket.id)}
-                  className="text-sm text-maple-400 hover:text-maple-300"
+                  className="text-sm text-gold-400 hover:text-gold-300"
                   aria-expanded={isActive}
                 >
                   {isActive ? 'Hide' : `Open (${thread.length + 1})`}
@@ -218,7 +218,7 @@ function Message({
   return (
     <div className={mine ? '' : 'rounded-md border border-ink-700 bg-ink-900 p-3'}>
       <p className="text-xs text-ink-400">
-        <span className={mine ? 'text-ink-300' : 'font-medium text-maple-400'}>{author}</span> ·{' '}
+        <span className={mine ? 'text-ink-300' : 'font-medium text-gold-400'}>{author}</span> ·{' '}
         {formatDateTime(at)}
       </p>
       <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap text-ink-200">{body}</p>

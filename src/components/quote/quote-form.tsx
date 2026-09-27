@@ -136,7 +136,7 @@ function QuoteFormInner({ catalogue }: { catalogue: PublicComponent[] }) {
   if (state.status === 'done') {
     return (
       <Card className="mx-auto max-w-2xl p-8 text-center">
-        <p className="text-xs tracking-[0.18em] text-maple-400 uppercase">Request received</p>
+        <p className="text-xs tracking-[0.18em] text-gold-400 uppercase">Request received</p>
         <h2 className="mt-3 text-2xl font-semibold text-white">
           Your reference is {state.reference}
         </h2>
@@ -151,7 +151,7 @@ function QuoteFormInner({ catalogue }: { catalogue: PublicComponent[] }) {
           </p>
         ) : null}
         <div className="mt-8">
-          <Link href="/build" className="text-sm text-maple-400 hover:text-maple-300">
+          <Link href="/build" className="text-sm text-gold-400 hover:text-gold-300">
             Back to the configurator
           </Link>
         </div>
@@ -252,7 +252,7 @@ function QuoteFormInner({ catalogue }: { catalogue: PublicComponent[] }) {
             </p>
             <Link
               href="/build"
-              className="mt-3 inline-block text-sm font-medium text-maple-400 hover:text-maple-300"
+              className="mt-3 inline-block text-sm font-medium text-gold-400 hover:text-gold-300"
             >
               Open the configurator &rarr;
             </Link>
@@ -264,7 +264,7 @@ function QuoteFormInner({ catalogue }: { catalogue: PublicComponent[] }) {
                 type="checkbox"
                 checked={attachBuild}
                 onChange={(e) => setAttachBuild(e.target.checked)}
-                className="size-4 rounded border-ink-600 bg-ink-900 accent-maple-500"
+                className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
               />
               Attach this configuration
             </label>

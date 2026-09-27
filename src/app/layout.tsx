@@ -43,11 +43,20 @@ export const metadata: Metadata = {
     description:
       'Configure a custom PC with live compatibility and power checks, or book upgrades, diagnostics and Windows setup.',
     url: env.siteUrl,
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'PC Builders Canada',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'PC Builders Canada',
     description: 'Custom gaming and workstation PCs, built to order and tested before they ship.',
+    images: ['/og-image.png'],
   },
   robots: { index: true, follow: true },
 };

@@ -62,6 +62,34 @@ export function specChips(component: PublicComponent): string[] {
     case 'os':
       if (typeof s.edition === 'string') chips.push(s.edition);
       break;
+
+    // Whole units. These have no typed compatibility fields at all, so their
+    // chips come from `specs`. That is safe here because chips are display
+    // only; the rule that no COMPATIBILITY logic may read `specs` is unaffected.
+    case 'networking':
+      if (typeof s.ports === 'string') chips.push(s.ports);
+      if (typeof s.poe_budget_watts === 'number') chips.push(`${s.poe_budget_watts} W PoE`);
+      if (typeof s.uplink === 'string') chips.push('10G uplink');
+      if (typeof s.management === 'string') chips.push(s.management);
+      break;
+    case 'nas':
+      if (typeof s.bays === 'number') chips.push(`${s.bays} bays`);
+      if (typeof s.memory === 'string') chips.push(s.memory);
+      if (typeof s.network === 'string') chips.push(s.network);
+      if (typeof s.cache_slots === 'string') chips.push('NVMe cache');
+      break;
+    case 'mini-pc':
+      if (typeof s.memory === 'string') chips.push(s.memory);
+      if (typeof s.cpu === 'string') chips.push(s.cpu);
+      // A full SoC string is a sentence ("Broadcom BCM2712, quad-core Cortex-A76
+      // at 2.4 GHz"), which is too long for a chip. Take the part before the
+      // first comma, which is the part number. Derived rather than hardcoded so
+      // it stays correct for a board that is not a Raspberry Pi.
+      if (typeof s.soc === 'string') chips.push(s.soc.split(',')[0].trim());
+      if (typeof s.interface === 'string') chips.push(s.interface);
+      if (typeof s.output === 'string') chips.push('USB-C PD');
+      break;
+
     default:
       break;
   }

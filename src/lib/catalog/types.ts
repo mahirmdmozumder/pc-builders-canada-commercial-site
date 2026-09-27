@@ -20,6 +20,13 @@ export const COMPONENT_CATEGORIES = [
   'case',
   'os',
   'accessory',
+  // Whole-unit categories. These are things sold complete rather than parts
+  // assembled into a tower, so the compatibility engine has nothing to say
+  // about them and the configurator does not list them. They are catalogue
+  // and storefront categories only.
+  'networking',
+  'nas',
+  'mini-pc',
 ] as const;
 
 export type ComponentCategory = (typeof COMPONENT_CATEGORIES)[number];
@@ -47,10 +54,20 @@ export const CATEGORY_LABELS: Record<ComponentCategory, string> = {
   case: 'Case',
   os: 'Operating System',
   accessory: 'Accessories',
+  networking: 'Networking & Server',
+  nas: 'NAS & Storage Enclosure',
+  'mini-pc': 'Mini PC & Single-Board',
 };
 
-/** Display order in the configurator — mirrors real build order. */
-export const CATEGORY_ORDER: ComponentCategory[] = [
+/**
+ * Categories the configurator walks, in real build order.
+ *
+ * Deliberately NOT every value of COMPONENT_CATEGORIES. A switch, a NAS
+ * enclosure and a Raspberry Pi are complete units; dropping them into a tower
+ * build would ask the compatibility engine to compare a socket against a
+ * rack-mount switch. They are sold from their own storefront pages instead.
+ */
+export const CONFIGURATOR_CATEGORIES: ComponentCategory[] = [
   'cpu',
   'motherboard',
   'cooler',
@@ -62,6 +79,23 @@ export const CATEGORY_ORDER: ComponentCategory[] = [
   'os',
   'accessory',
 ];
+
+/**
+ * Condition of the physical item being sold.
+ *
+ * Refurbished stock has to be labelled wherever a price is shown. A buyer
+ * comparing two numbers is entitled to know that the cheaper one has been
+ * opened, and `condition_notes` carries the specifics (what was replaced, what
+ * cosmetic marks it has, what warranty applies) rather than a vague grade.
+ */
+export const COMPONENT_CONDITIONS = ['new', 'refurbished', 'open-box'] as const;
+export type ComponentCondition = (typeof COMPONENT_CONDITIONS)[number];
+
+export const CONDITION_LABELS: Record<ComponentCondition, string> = {
+  new: 'New',
+  refurbished: 'Refurbished',
+  'open-box': 'Open box',
+};
 
 export type FormFactor = 'e-atx' | 'atx' | 'micro-atx' | 'mini-itx';
 export type MemoryType = 'ddr4' | 'ddr5';
@@ -97,6 +131,15 @@ export interface ComponentRecord {
   image_url: string | null;
   active: boolean;
   data_confidence: DataConfidence;
+
+  /** New unless stated. Surfaced next to the price, never buried. */
+  condition: ComponentCondition;
+  /**
+   * What was done to a refurbished unit, in plain words. Required in practice
+   * for anything that is not `new`; the storefront prints it verbatim rather
+   * than translating a grade letter nobody agrees on.
+   */
+  condition_notes: string | null;
 
   // --- CPU / cooler / motherboard socket matching ---
   socket: string | null;
@@ -196,6 +239,19 @@ export function isLowStock(
   return component.stock_quantity > 0 && component.stock_quantity <= component.low_stock_threshold;
 }
 
+/**
+ * Full product name for carts, orders and quotes.
+ *
+ * Most models are named without the brand ("Ryzen 5 7600X"), so the two are
+ * joined. Some are not: Raspberry Pi calls its board the "Raspberry Pi 5", and
+ * naively joining produced "Raspberry Pi Raspberry Pi 5" on cart lines and
+ * order records. Where the model already opens with the brand, the brand is
+ * left off rather than repeated.
+ */
 export function displayName(component: Pick<ComponentRecord, 'brand' | 'model'>): string {
-  return `${component.brand} ${component.model}`.trim();
+  const brand = component.brand.trim();
+  const model = component.model.trim();
+  if (!brand) return model;
+  if (model.toLowerCase().startsWith(brand.toLowerCase())) return model;
+  return `${brand} ${model}`.trim();
 }

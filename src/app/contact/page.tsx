@@ -37,7 +37,7 @@ export default function ContactPage() {
                   </p>
                   <Link
                     href="/quote"
-                    className="mt-1.5 inline-block font-medium text-maple-400 hover:text-maple-300"
+                    className="mt-1.5 inline-block font-medium text-gold-400 hover:text-gold-300"
                   >
                     Request a quote &rarr;
                   </Link>
@@ -50,7 +50,7 @@ export default function ContactPage() {
                   </p>
                   <Link
                     href="/account/support"
-                    className="mt-1.5 inline-block font-medium text-maple-400 hover:text-maple-300"
+                    className="mt-1.5 inline-block font-medium text-gold-400 hover:text-gold-300"
                   >
                     Open a ticket &rarr;
                   </Link>

@@ -1,7 +1,7 @@
 import { getAdminOrNull } from '@/lib/auth/session';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/env';
-import { adminComponentSchema } from '@/lib/validation/schemas';
+import { adminComponentEditSchema } from '@/lib/validation/schemas';
 import { logActivity, describeChange } from '@/lib/admin/activity';
 import type { ComponentRecord } from '@/lib/catalog/types';
 import { handle, notFound, ok, serviceUnavailable, zodErrorResponse } from '@/lib/api/respond';
@@ -15,8 +15,6 @@ import { handle, notFound, ok, serviceUnavailable, zodErrorResponse } from '@/li
  * configurator and stay intact in the record.
  */
 
-const editableSchema = adminComponentSchema.partial().omit({ id: true });
-
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   return handle('PATCH /api/admin/components/[id]', async () => {
     if (!isSupabaseConfigured) return serviceUnavailable('Admin needs a database connection.');
@@ -25,7 +23,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!admin) return notFound();
 
     const { id } = await params;
-    const parsed = editableSchema.safeParse(await request.json());
+    const parsed = adminComponentEditSchema.safeParse(await request.json());
     if (!parsed.success) return zodErrorResponse(parsed.error);
 
     const supabase = await getSupabaseServerClient();
@@ -69,6 +67,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if (parsed.data.data_confidence !== before.data_confidence) {
         changes.push(describeChange('spec confidence', before.data_confidence, parsed.data.data_confidence));
       }
+    }
+    // Condition changes are logged because they change what is being claimed
+    // about the goods, which is exactly the kind of edit worth an audit trail.
+    if (parsed.data.condition !== undefined) {
+      patch.condition = parsed.data.condition;
+      if (parsed.data.condition !== before.condition) {
+        changes.push(describeChange('condition', before.condition, parsed.data.condition));
+      }
+    }
+    if (parsed.data.condition_notes !== undefined) {
+      patch.condition_notes = parsed.data.condition_notes || null;
     }
 
     if (Object.keys(patch).length === 0) return ok({ updated: false });

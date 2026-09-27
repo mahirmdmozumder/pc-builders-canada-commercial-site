@@ -47,7 +47,7 @@ function NotConfiguredNotice() {
         does not need an account still works: the configurator, saved drafts in your browser, and
         quote requests.
       </p>
-      <Link href="/build" className="mt-3 inline-block font-medium text-maple-400">
+      <Link href="/build" className="mt-3 inline-block font-medium text-gold-400">
         Back to the configurator &rarr;
       </Link>
     </Alert>
@@ -98,7 +98,7 @@ export function LoginForm() {
       footer={
         <>
           No account?{' '}
-          <Link href="/register" className="text-maple-400 hover:text-maple-300">
+          <Link href="/register" className="text-gold-400 hover:text-gold-300">
             Create one
           </Link>
         </>
@@ -199,7 +199,7 @@ export function RegisterForm() {
       footer={
         <>
           Already have one?{' '}
-          <Link href="/login" className="text-maple-400 hover:text-maple-300">
+          <Link href="/login" className="text-gold-400 hover:text-gold-300">
             Sign in
           </Link>
         </>
@@ -286,7 +286,7 @@ export function ResetRequestForm() {
       title="Reset your password"
       description="Enter your email and we will send a reset link."
       footer={
-        <Link href="/login" className="text-maple-400 hover:text-maple-300">
+        <Link href="/login" className="text-gold-400 hover:text-gold-300">
           Back to sign in
         </Link>
       }

@@ -45,7 +45,7 @@ export default async function CheckoutSuccessPage({
       <ClearCartOnMount />
       <div className="mx-auto max-w-2xl">
         <Card className="p-8 text-center">
-          <p className="text-xs tracking-[0.18em] text-maple-400 uppercase">Order received</p>
+          <p className="text-xs tracking-[0.18em] text-gold-400 uppercase">Order received</p>
 
           {order ? (
             <>
@@ -99,7 +99,7 @@ export default async function CheckoutSuccessPage({
 
           <p className="mt-6 text-xs text-ink-500">
             Questions about this order?{' '}
-            <Link href="/contact" className="text-maple-400 hover:text-maple-300">
+            <Link href="/contact" className="text-gold-400 hover:text-gold-300">
               Get in touch
             </Link>
             .
