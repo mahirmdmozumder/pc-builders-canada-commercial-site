@@ -15,7 +15,13 @@ thing switched on.
 2. In the SQL editor, run in order:
    - `supabase/migrations/0001_initial_schema.sql`
    - `supabase/migrations/0002_order_functions.sql`
-   - `supabase/seed/seed.sql` (optional: loads the sample catalogue)
+   - `supabase/migrations/0003_fix_admin_bootstrap.sql`
+   - `supabase/seed/seed.sql` (optional: loads the catalogue)
+
+   If you set a project up before 0003 existed, run it now. Without it the
+   promote-to-admin statement in step 5 fails with "Only an administrator may
+   change a user role", because the guard could not tell the SQL editor apart
+   from a customer trying to promote themselves.
 3. From **Project Settings → API**, copy:
    - Project URL
    - `anon` public key

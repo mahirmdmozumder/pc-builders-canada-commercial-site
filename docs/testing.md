@@ -100,6 +100,7 @@ This turns on accounts, saved builds, quotes, support tickets and the admin.
 2. Open the SQL editor and run, in order, pasting the contents of each file:
    - `supabase/migrations/0001_initial_schema.sql`
    - `supabase/migrations/0002_order_functions.sql`
+   - `supabase/migrations/0003_fix_admin_bootstrap.sql`
    - `supabase/seed/seed.sql`
 3. In **Project Settings → API**, copy the project URL, the `anon` key and the
    `service_role` key.

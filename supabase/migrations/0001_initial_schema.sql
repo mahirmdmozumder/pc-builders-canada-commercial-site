@@ -483,12 +483,23 @@ create policy "profiles: update own"
 -- Note: role escalation is prevented by not granting customers UPDATE on the
 -- role column path — a customer updating their own row cannot change `role`
 -- because this trigger rejects it.
+-- Blocks a customer from promoting themselves while still allowing the first
+-- administrator to be created.
+--
+-- The condition on auth.uid() is what makes both true. A client request always
+-- carries a user, so it must already be an admin to change a role. A statement
+-- with no authenticated user is the SQL editor, a migration, or a service-role
+-- connection, all of which are privileged already; the RLS policy below means
+-- an anonymous caller can never reach this trigger at all. See migration 0003
+-- for the full reasoning.
 create or replace function prevent_role_escalation()
 returns trigger
 language plpgsql
 as $$
 begin
-  if new.role is distinct from old.role and not is_admin() then
+  if new.role is distinct from old.role
+     and auth.uid() is not null
+     and not is_admin() then
     raise exception 'Only an administrator may change a user role';
   end if;
   return new;
