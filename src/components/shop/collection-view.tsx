@@ -1,6 +1,6 @@
 import { ButtonLink, EmptyState, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { ProductCard } from '@/components/shop/product-card';
-import { getCatalogSource, listComponents } from '@/lib/catalog/repository';
+import { listComponents, listComponentsWithSource } from '@/lib/catalog/repository';
 import type { CollectionGroup, ShopCollection } from '@/lib/catalog/collections';
 
 /**
@@ -11,12 +11,16 @@ import type { CollectionGroup, ShopCollection } from '@/lib/catalog/collections'
  * separate files purely for their URLs and metadata.
  */
 export async function CollectionView({ collection }: { collection: ShopCollection }) {
-  const [primary, secondary] = await Promise.all([
-    listComponents(collection.primary.query),
+  const [primaryResult, secondary] = await Promise.all([
+    listComponentsWithSource(collection.primary.query),
     collection.secondary ? listComponents(collection.secondary.query) : Promise.resolve([]),
   ]);
 
-  const sampleData = getCatalogSource() === 'sample';
+  const primary = primaryResult.components;
+  // Taken from the query that actually ran, not from whether Supabase is
+  // configured. A configured deployment whose query fails falls back to the
+  // sample catalogue, and that has to be disclosed too.
+  const sampleData = primaryResult.source === 'sample';
 
   return (
     <>
@@ -37,9 +41,9 @@ export async function CollectionView({ collection }: { collection: ShopCollectio
       <PageShell className="py-12 sm:py-16">
         {sampleData ? (
           <p className="mb-8 rounded-md border border-ink-600 bg-ink-850 px-4 py-3 text-sm text-ink-300">
-            This deployment has no database connected, so the list below comes from the in-repo
-            sample catalogue. Prices were checked against Canadian retail on the date shown per
-            item; stock counts are placeholders, not real availability.
+            The list below comes from the in-repo sample catalogue rather than live inventory.
+            Prices were checked against Canadian retail on the date shown per item; stock counts
+            are placeholders, not real availability.
           </p>
         ) : null}
 

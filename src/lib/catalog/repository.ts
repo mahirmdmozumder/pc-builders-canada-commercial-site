@@ -28,8 +28,22 @@ import type { SavedBuildItem } from '@/types/domain';
 
 export type CatalogSource = 'database' | 'sample';
 
+/**
+ * Where the catalogue is EXPECTED to come from.
+ *
+ * This answers a configuration question, not a data question. It is right for
+ * the admin settings panel, which is reporting on configuration, and wrong for
+ * a storefront banner, which is making a claim about the rows on the page.
+ * Use listComponentsWithSource() for that. See the note on it.
+ */
 export function getCatalogSource(): CatalogSource {
   return isSupabaseConfigured ? 'database' : 'sample';
+}
+
+export interface CatalogResult {
+  components: PublicComponent[];
+  /** Where these particular rows actually came from. */
+  source: CatalogSource;
 }
 
 export interface ListComponentsOptions {
@@ -85,11 +99,26 @@ function filterSample(options: ListComponentsOptions): ComponentRecord[] {
   return options.limit ? rows.slice(0, options.limit) : rows;
 }
 
-export async function listComponents(
+/**
+ * Catalogue read that reports where its rows came from.
+ *
+ * The distinction matters. A configured deployment whose query FAILS falls back
+ * to the sample catalogue, and the page then shows sample rows while
+ * getCatalogSource() still says 'database' — so the banner telling the visitor
+ * these are sample figures never appears. That is exactly the situation the
+ * banner exists for, and it happened: a schema migration had not been applied,
+ * every category query errored, and the storefront presented in-repo sample
+ * data as live inventory.
+ *
+ * So the source travels with the rows rather than being inferred separately.
+ */
+export async function listComponentsWithSource(
   options: ListComponentsOptions = {},
-): Promise<PublicComponent[]> {
+): Promise<CatalogResult> {
   const supabase = getSupabasePublicClient();
-  if (!supabase) return filterSample(options).map(stripCost);
+  if (!supabase) {
+    return { components: filterSample(options).map(stripCost), source: 'sample' };
+  }
 
   // The view is already filtered to active rows.
   let query = supabase.from('components_public').select('*');
@@ -114,12 +143,20 @@ export async function listComponents(
 
   const { data, error } = await query;
   if (error || !data) {
-    // A database outage should not take the site down; fall back and let the
-    // caller surface the sample-data banner.
+    // A database outage should not take the site down. Falling back keeps the
+    // site usable; reporting 'sample' keeps it honest about what it is showing.
     console.error('[catalog] component query failed, using sample catalogue', error?.message);
-    return filterSample(options).map(stripCost);
+    return { components: filterSample(options).map(stripCost), source: 'sample' };
   }
-  return data as unknown as PublicComponent[];
+  return { components: data as unknown as PublicComponent[], source: 'database' };
+}
+
+/** Rows only, for callers that do not display a provenance banner. */
+export async function listComponents(
+  options: ListComponentsOptions = {},
+): Promise<PublicComponent[]> {
+  const { components } = await listComponentsWithSource(options);
+  return components;
 }
 
 /**

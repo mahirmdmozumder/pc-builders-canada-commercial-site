@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ButtonLink, Card, EmptyState, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { ProductCard } from '@/components/shop/product-card';
-import { getCatalogSource, listComponents } from '@/lib/catalog/repository';
+import { listComponentsWithSource } from '@/lib/catalog/repository';
 import { CATEGORY_LABELS, type ComponentCategory } from '@/lib/catalog/types';
 
 export const metadata: Metadata = {
@@ -32,8 +32,10 @@ export const revalidate = 600;
  * where the condition note is a required field.
  */
 export default async function RefurbishedPage() {
-  const listings = await listComponents({ conditions: ['refurbished', 'open-box'] });
-  const sampleData = getCatalogSource() === 'sample';
+  const { components: listings, source } = await listComponentsWithSource({
+    conditions: ['refurbished', 'open-box'],
+  });
+  const sampleData = source === 'sample';
 
   // Group by category so a visitor scanning for one kind of part can find it.
   const grouped = new Map<ComponentCategory, typeof listings>();

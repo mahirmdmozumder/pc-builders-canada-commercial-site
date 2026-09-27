@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { PageHeader, PageShell } from '@/components/ui';
 import { Configurator } from '@/components/configurator/configurator';
-import { listComponents, getCatalogSource } from '@/lib/catalog/repository';
+import { listComponentsWithSource } from '@/lib/catalog/repository';
 import { getPreset } from '@/lib/catalog/presets';
 import { getSessionUser } from '@/lib/auth/session';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
@@ -22,8 +22,8 @@ export default async function BuildPage({
   const { preset: presetSlug, build: buildId } = await searchParams;
   const preset = presetSlug ? getPreset(presetSlug) : undefined;
 
-  const catalogue = await listComponents();
-  const sampleData = getCatalogSource() === 'sample';
+  const { components: catalogue, source } = await listComponentsWithSource();
+  const sampleData = source === 'sample';
 
   // Loading a saved build goes through the session client, so RLS decides
   // whether this user may see it. An id belonging to someone else returns
