@@ -212,8 +212,8 @@ npm run dev
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. Run the migrations in `supabase/migrations/` in numerical order in the SQL editor (or
-   `supabase db push` with the CLI). Run `0004` as two separate statements — it says why in a
-   comment at the top.
+   `supabase db push` with the CLI). Each file runs as one statement; run the seed in step 3 as a
+   separate query afterwards, for the reason given at the top of `0004`.
 3. Run `supabase/seed/seed.sql` to load the sample catalogue.
 4. Copy the project URL and anon key into `.env.local`, plus the service-role key.
 5. Register through the site, then promote yourself:

@@ -17,9 +17,6 @@ thing switched on.
    - `supabase/migrations/0002_order_functions.sql`
    - `supabase/migrations/0003_fix_admin_bootstrap.sql`
    - `supabase/migrations/0004_whole_unit_categories_and_condition.sql`
-     — run its two PARTS separately, one after the other. Postgres will not
-     accept a new enum value and a use of that value in the same transaction,
-     and the SQL editor runs everything you paste as one.
    - `supabase/seed/seed.sql` (optional: loads the catalogue)
 
    If you set a project up before 0003 existed, run it now. Without it the
@@ -28,9 +25,18 @@ thing switched on.
    from a customer trying to promote themselves.
 
    0004 adds the networking, NAS and mini-PC categories and the `condition`
-   column that refurbished and open-box listings need. Without it those
-   storefront pages load but list nothing, and saving a refurbished unit in the
-   admin fails.
+   column that refurbished and open-box listings need. Run the whole file in one
+   go; it is safe in a single transaction.
+
+   The seed has to be a SEPARATE query, run after 0004 has finished. Postgres
+   will not let a new enum value be used in the same transaction that added it,
+   and the seed inserts rows with `category = 'networking'`. Nothing inside 0004
+   itself uses those values, so only that boundary matters.
+
+   Until both have run, the networking, NAS and mini-PC pages load but serve the
+   in-repo sample catalogue, say so in a banner, and disable their Add to cart
+   buttons — those rows have ids the database does not have, so an order could
+   not be fulfilled.
 3. From **Project Settings → API**, copy:
    - Project URL
    - `anon` public key

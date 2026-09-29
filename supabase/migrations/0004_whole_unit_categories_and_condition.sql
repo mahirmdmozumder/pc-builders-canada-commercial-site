@@ -21,20 +21,27 @@
 -- ---------------------------------------------------------------------------
 -- Running this
 -- ---------------------------------------------------------------------------
--- `alter type ... add value` cannot run in the same transaction that later
--- USES the new value, and older Postgres refuses it inside a transaction
--- altogether. The Supabase SQL editor wraps a multi-statement run in one
--- transaction, so:
+-- Run this WHOLE FILE as one statement in the Supabase SQL editor. It is safe
+-- in a single transaction.
 --
---   Run PART 1 on its own and let it finish.
---   Then run PART 2.
+-- The rule that makes people split a migration like this is that Postgres will
+-- not let a new enum value be USED in the transaction that added it. Nothing
+-- below uses the new category values: the condition column, the constraint,
+-- the indexes and the view all work on other columns entirely.
 --
--- Nothing in PART 1 depends on PART 2, and re-running either is harmless.
--- ===========================================================================
+-- What does use them is the SEED FILE, which inserts rows with
+-- category = 'networking' and so on. So the order is:
+--
+--   1. Run this file.
+--   2. Run supabase/seed/seed.sql as a SEPARATE query, after this one has
+--      finished. Splitting those two is the part that actually matters.
+--
+-- Re-running either is harmless.
+-- ---------------------------------------------------------------------------
 
 
 -- ===========================================================================
--- PART 1 - new enum values (run alone)
+-- 1. New category values
 -- ===========================================================================
 
 alter type component_category add value if not exists 'networking';
@@ -43,7 +50,7 @@ alter type component_category add value if not exists 'mini-pc';
 
 
 -- ===========================================================================
--- PART 2 - condition column, and the public view rebuilt to expose it
+-- 2. Condition column, and the public view rebuilt to expose it
 -- ===========================================================================
 
 do $$
