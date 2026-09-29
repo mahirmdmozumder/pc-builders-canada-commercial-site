@@ -38,28 +38,27 @@ export function OrganizationJsonLd() {
   );
 }
 
-export function ServiceJsonLd() {
+/**
+ * Service structured data, built from the services that are actually published.
+ *
+ * It used to carry a hardcoded list of eight. That drifted the moment services
+ * moved into the CMS, and structured data that does not match the visible page
+ * is worse than none: search engines penalise the mismatch, and it was
+ * advertising a narrower business than the one on the page.
+ */
+export function ServiceJsonLd({ services }: { services: { name: string }[] }) {
   const data = {
     '@context': 'https://schema.org',
     '@type': 'Service',
-    serviceType: 'Custom PC building and computer repair',
+    serviceType: 'Custom PC building, computer repair, networking and IT support',
     provider: { '@type': 'Organization', name: 'PC Builders Canada', url: env.siteUrl },
     areaServed: { '@type': 'Country', name: 'Canada' },
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
-      name: 'PC services',
-      itemListElement: [
-        'Custom PC building',
-        'PC upgrades',
-        'Hardware diagnostics',
-        'Windows installation',
-        'Driver and software setup',
-        'Performance optimisation',
-        'Thermal testing',
-        'Hardware troubleshooting',
-      ].map((name) => ({
+      name: 'PC and IT services',
+      itemListElement: services.map((service) => ({
         '@type': 'Offer',
-        itemOffered: { '@type': 'Service', name },
+        itemOffered: { '@type': 'Service', name: service.name },
       })),
     },
   };

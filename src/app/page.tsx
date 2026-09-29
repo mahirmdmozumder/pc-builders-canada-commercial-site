@@ -97,7 +97,7 @@ function Hero({ fromCents }: { fromCents: number | null }) {
             PC Builders Canada
           </p>
           <h1 className="mt-4 text-4xl leading-[1.08] font-semibold tracking-tight text-white sm:text-6xl">
-            Custom PCs, repairs and{' '}
+            Custom Gaming PCs, repairs and{' '}
             <span className="gold-text">on-site IT support</span>.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-300">
@@ -106,13 +106,31 @@ function Hero({ fromCents }: { fromCents: number | null }) {
             hardware on its own, or have us come to you and set it up.
           </p>
 
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <ButtonLink href="/build" size="lg">
+          {/*
+            Three destinations, one primary.
+            Only "Build your PC" stays gold: three gold buttons would mean no
+            primary button at all, and the eye would have to choose between
+            three equal options instead of being pointed at one.
+
+            On a phone the primary takes the full width and the other two sit
+            side by side beneath it — two rows rather than three. The hero
+            already carries a headline, a paragraph and the figures below, and
+            a third stacked full-width button would push those under the fold.
+            `sm:contents` dissolves the wrapper at desktop so all three become
+            direct flex children and sit in one row.
+          */}
+          <div className="mt-9 space-y-3 sm:flex sm:gap-3 sm:space-y-0">
+            <ButtonLink href="/build" size="lg" className="w-full justify-center sm:w-auto">
               Build your PC
             </ButtonLink>
-            <ButtonLink href="/quote" variant="secondary" size="lg">
-              Get a quote
-            </ButtonLink>
+            <div className="grid grid-cols-2 gap-3 sm:contents">
+              <ButtonLink href="/shop" variant="secondary" size="lg" className="justify-center">
+                Shop
+              </ButtonLink>
+              <ButtonLink href="/quote" variant="secondary" size="lg" className="justify-center">
+                Get a quote
+              </ButtonLink>
+            </div>
           </div>
 
           <dl className="mt-14 grid max-w-2xl grid-cols-2 gap-x-8 gap-y-6 border-t border-ink-700 pt-8 sm:grid-cols-3">

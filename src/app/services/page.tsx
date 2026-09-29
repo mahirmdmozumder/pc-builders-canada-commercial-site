@@ -4,9 +4,9 @@ import { ServiceJsonLd } from '@/components/seo/structured-data';
 import { listPublishedServices } from '@/lib/cms/repository';
 
 export const metadata: Metadata = {
-  title: 'PC Services: Upgrades, Diagnostics & Windows Setup',
+  title: 'PC Repair, Networking, NAS & On-Site IT Services',
   description:
-    'PC upgrades, hardware diagnostics, Windows installation, driver setup, thermal testing and troubleshooting for machines you already own.',
+    'PC repair and diagnostics, upgrades, Windows setup, home and office networking, NAS and storage, small servers and Raspberry Pi builds. On-site IT support across the Greater Toronto Area.',
   alternates: { canonical: '/services' },
 };
 
@@ -26,11 +26,11 @@ export default async function ServicesPage() {
 
   return (
     <>
-      <ServiceJsonLd />
+      <ServiceJsonLd services={services} />
       <PageHeader
         eyebrow="Services"
-        title="Work on machines you already own"
-        description="Upgrades, diagnostics, a clean Windows setup and honest advice about when a repair is worth it and when it is not."
+        title="PC, network and IT services"
+        description="Repairs and upgrades, networking and Wi-Fi, NAS and storage, small servers and always-on machines. On our bench or at your home or office, with honest advice about when a repair is worth it and when it is not."
         actions={
           <>
             <ButtonLink href="/contact">Book a service</ButtonLink>
@@ -42,6 +42,35 @@ export default async function ServicesPage() {
       />
 
       <PageShell className="py-12 sm:py-16">
+        {/*
+          An index, not decoration. With thirteen services the breadth of the
+          work is the thing a visitor most needs to see, and it is exactly what
+          gets lost when they have to scroll through cards one at a time to
+          discover that networking and NAS are on the list at all.
+
+          Built from the same rows as the cards below, so a service added in
+          the admin appears here too.
+        */}
+        {services.length > 4 ? (
+          <nav aria-label="Services on this page" className="mb-10">
+            <p className="text-xs font-semibold tracking-[0.18em] text-gold-400 uppercase gold-rule">
+              What we do
+            </p>
+            <ul className="mt-5 flex flex-wrap gap-2">
+              {services.map((service) => (
+                <li key={service.id}>
+                  <a
+                    href={`#${service.slug}`}
+                    className="inline-block rounded-md border border-ink-700 bg-ink-850 px-3 py-1.5 text-sm text-ink-200 transition-colors hover:border-gold-600/50 hover:text-white"
+                  >
+                    {service.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ) : null}
+
         <div className="grid gap-5 lg:grid-cols-2">
           {services.map((service) => (
             <Card key={service.id} id={service.slug} className="scroll-mt-24 p-6">
