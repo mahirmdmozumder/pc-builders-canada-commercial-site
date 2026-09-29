@@ -205,7 +205,7 @@ npm run dev
 | `npm run build` | Production build |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest (120 tests) |
+| `npm test` | Vitest (161 tests) |
 | `npm run db:seed:generate` | Regenerates `supabase/seed/seed.sql` from the TypeScript catalogue |
 
 ### Connecting Supabase

@@ -3,6 +3,7 @@ import { checkCompatibility } from '@/lib/compatibility/engine';
 import { priceBuild } from '@/lib/pricing/pricing';
 import { displayName, type ComponentCategory } from '@/lib/catalog/types';
 import type { BuildPreset } from '@/lib/catalog/presets';
+import type { BuildPresetRecord } from '@/lib/cms/types';
 import type { PresetSummary } from '@/components/build/preset-card';
 
 const KEY_CATEGORIES: ComponentCategory[] = ['cpu', 'gpu', 'ram', 'storage'];
@@ -12,7 +13,16 @@ const KEY_CATEGORIES: ComponentCategory[] = ['cpu', 'gpu', 'ram', 'storage'];
  * engines the configurator uses. Preset prices are therefore never stale and
  * never separately maintained.
  */
-export async function summarisePreset(preset: BuildPreset): Promise<PresetSummary> {
+/**
+ * Accepts either the in-repo preset or a database row.
+ *
+ * They are structurally the same for this purpose: a name, a slug, some
+ * copy, and a list of catalogue ids. Widening the parameter here meant the
+ * public pages could move to the database without a second summariser.
+ */
+export async function summarisePreset(
+  preset: BuildPreset | BuildPresetRecord,
+): Promise<PresetSummary> {
   const { build } = await resolveBuild(preset.items);
   const report = checkCompatibility(build);
   const price = priceBuild(build);
@@ -34,6 +44,8 @@ export async function summarisePreset(preset: BuildPreset): Promise<PresetSummar
   };
 }
 
-export async function summarisePresets(presets: BuildPreset[]): Promise<PresetSummary[]> {
+export async function summarisePresets(
+  presets: (BuildPreset | BuildPresetRecord)[],
+): Promise<PresetSummary[]> {
   return Promise.all(presets.map(summarisePreset));
 }

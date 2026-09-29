@@ -1,3 +1,4 @@
+import type { ContentStatus } from '@/lib/cms/types';
 import type { ComponentCategory } from '@/lib/catalog/types';
 
 export type UserRole = 'customer' | 'admin';
@@ -274,7 +275,10 @@ export type ActivityAction =
   | 'quote.note_added'
   | 'ticket.status_changed'
   | 'ticket.replied'
-  | 'portfolio.updated';
+  | 'portfolio.updated'
+  | 'content.created'
+  | 'content.updated'
+  | 'content.archived';
 
 export interface ActivityLogEntry {
   id: string;
@@ -305,7 +309,18 @@ export interface PortfolioBuild {
   image_urls: string[];
   /** Populated only when the operator has actually measured it. */
   verified_performance_notes: string | null;
+  /** Derived from `status` by a trigger in 0006. Write `status`, not this. */
   published: boolean;
+  status: ContentStatus;
+  short_description: string | null;
+  featured: boolean;
+  sort_order: number;
+  /** e.g. "Home office", "Video editing studio". Free text, no customer names. */
+  customer_type: string | null;
+  completed_on: string | null;
+  hero_image_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
   created_at: string;
   updated_at: string;
 }

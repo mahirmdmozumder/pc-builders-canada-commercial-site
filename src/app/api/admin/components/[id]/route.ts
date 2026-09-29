@@ -35,55 +35,42 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       .maybeSingle();
 
     if (!existing) return notFound('That component could not be found.');
-    const before = existing as ComponentRecord;
 
-    const patch: Partial<ComponentRecord> = {};
+    // Everything the schema validated is written through, rather than a
+    // hand-maintained list of fields. The previous version copied ~10 columns
+    // by name, which meant every new CMS field was silently dropped on save
+    // until somebody remembered to add it here.
+    const { active: legacyActive, ...incoming } = parsed.data;
+    const patch: Record<string, unknown> = { ...incoming };
+
+    // `active` is derived from `status` by a trigger. An older client sending
+    // only `active` still works; it is translated rather than written.
+    if (patch.status === undefined && legacyActive !== undefined) {
+      patch.status = legacyActive ? 'published' : 'archived';
+    }
+    if (patch.image_url === '') patch.image_url = null;
+
     const changes: string[] = [];
-
-    if (parsed.data.price_cents !== undefined && parsed.data.price_cents !== before.price_cents) {
-      patch.price_cents = parsed.data.price_cents;
-      changes.push(describeChange('price', before.price_cents, parsed.data.price_cents));
-    }
-    if (parsed.data.cost_cents !== undefined) patch.cost_cents = parsed.data.cost_cents ?? null;
-    if (
-      parsed.data.stock_quantity !== undefined &&
-      parsed.data.stock_quantity !== before.stock_quantity
-    ) {
-      patch.stock_quantity = parsed.data.stock_quantity;
-      changes.push(describeChange('stock', before.stock_quantity, parsed.data.stock_quantity));
-    }
-    if (parsed.data.low_stock_threshold !== undefined) {
-      patch.low_stock_threshold = parsed.data.low_stock_threshold;
-    }
-    if (parsed.data.brand !== undefined) patch.brand = parsed.data.brand;
-    if (parsed.data.model !== undefined) patch.model = parsed.data.model;
-    if (parsed.data.description !== undefined) patch.description = parsed.data.description;
-    if (parsed.data.image_url !== undefined) patch.image_url = parsed.data.image_url || null;
-    if (parsed.data.active !== undefined && parsed.data.active !== before.active) {
-      patch.active = parsed.data.active;
-      changes.push(describeChange('active', before.active, parsed.data.active));
-    }
-    if (parsed.data.data_confidence !== undefined) {
-      patch.data_confidence = parsed.data.data_confidence;
-      if (parsed.data.data_confidence !== before.data_confidence) {
-        changes.push(describeChange('spec confidence', before.data_confidence, parsed.data.data_confidence));
+    const before = existing as ComponentRecord;
+    const watched: (keyof ComponentRecord)[] = [
+      'price_cents',
+      'stock_quantity',
+      'status',
+      'condition',
+      'data_confidence',
+      'featured',
+    ];
+    for (const key of watched) {
+      if (patch[key] !== undefined && patch[key] !== before[key]) {
+        changes.push(describeChange(String(key), before[key], patch[key]));
       }
-    }
-    // Condition changes are logged because they change what is being claimed
-    // about the goods, which is exactly the kind of edit worth an audit trail.
-    if (parsed.data.condition !== undefined) {
-      patch.condition = parsed.data.condition;
-      if (parsed.data.condition !== before.condition) {
-        changes.push(describeChange('condition', before.condition, parsed.data.condition));
-      }
-    }
-    if (parsed.data.condition_notes !== undefined) {
-      patch.condition_notes = parsed.data.condition_notes || null;
     }
 
     if (Object.keys(patch).length === 0) return ok({ updated: false });
 
-    const { error } = await supabase!.from('components').update(patch).eq('id', id);
+    // The patch is assembled dynamically, so the row type cannot be inferred
+    // from it. Every key came from the validated schema.
+    const { error } = await supabase!.from('components').update(patch as never).eq('id', id);
     if (error) return notFound('Could not update that component.');
 
     await logActivity({

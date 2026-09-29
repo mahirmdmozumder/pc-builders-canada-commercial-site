@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ButtonLink, Card, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { ServiceJsonLd } from '@/components/seo/structured-data';
+import { listPublishedServices } from '@/lib/cms/repository';
 
 export const metadata: Metadata = {
   title: 'PC Services: Upgrades, Diagnostics & Windows Setup',
@@ -9,116 +10,20 @@ export const metadata: Metadata = {
   alternates: { canonical: '/services' },
 };
 
-interface Service {
-  id: string;
-  title: string;
-  summary: string;
-  includes: string[];
-  note?: string;
-}
+export const dynamic = 'force-static';
+export const revalidate = 60;
 
-const SERVICES: Service[] = [
-  {
-    id: 'custom-builds',
-    title: 'Custom PC building',
-    summary:
-      'A machine assembled from a parts list we have checked together, cabled properly and tested before it leaves.',
-    includes: [
-      'Parts list review against your workload and budget',
-      'Assembly with cable routing that does not block airflow',
-      'BIOS configuration and memory profile verification',
-      'Thermal and stability testing under sustained load',
-      'Operating system, drivers and updates if requested',
-    ],
-  },
-  {
-    id: 'upgrades',
-    title: 'PC upgrades',
-    summary:
-      'Adding or replacing parts in a machine you already own, after checking what the existing system can actually take.',
-    includes: [
-      'Compatibility check against your current motherboard, case and power supply',
-      'Graphics card, memory, storage and cooling upgrades',
-      'Migration of your existing installation to a new drive where practical',
-      'Post-upgrade testing so the machine leaves in a known-good state',
-    ],
-    note: 'We will tell you when an upgrade is not worth it. A platform at the end of its upgrade path is better replaced than fed.',
-  },
-  {
-    id: 'diagnostics',
-    title: 'Hardware diagnostics',
-    summary:
-      'Finding the actual cause of instability, rather than replacing parts until the symptom moves.',
-    includes: [
-      'Memory testing and storage health checks',
-      'Thermal behaviour under load, including throttling analysis',
-      'Power delivery and connection inspection',
-      'Component isolation testing where a fault is not obvious',
-      'A written summary of what was found and what we recommend',
-    ],
-  },
-  {
-    id: 'windows',
-    title: 'Windows installation',
-    summary: 'A clean installation, configured and updated, with your data preserved.',
-    includes: [
-      'Clean install of Windows 11 with current updates',
-      'Partition and drive configuration',
-      'Data migration from the previous installation where recoverable',
-      'Recovery media for your specific configuration on request',
-    ],
-    note: 'We need a valid licence for the edition being installed, or you can add one to the order.',
-  },
-  {
-    id: 'drivers',
-    title: 'Driver and software setup',
-    summary: 'The right drivers from the right source, and the software you actually use, configured.',
-    includes: [
-      'Chipset, graphics, network and storage drivers from vendor sources',
-      'Firmware and BIOS updates where they address a real issue',
-      'Application installation and configuration',
-      'Removal of preinstalled software you did not ask for',
-    ],
-  },
-  {
-    id: 'optimisation',
-    title: 'Performance optimisation',
-    summary:
-      'Measuring what the machine does now, changing the thing that is actually limiting it, then measuring again.',
-    includes: [
-      'Baseline measurement before any change',
-      'Memory profile (XMP/EXPO) verification and correction',
-      'Fan curve tuning for the noise level you want',
-      'Storage configuration and boot time work',
-      'Before-and-after figures so the change is visible',
-    ],
-    note: 'Results depend entirely on what was wrong to begin with. We do not promise a percentage in advance.',
-  },
-  {
-    id: 'thermal',
-    title: 'Thermal testing',
-    summary: 'Sustained load testing to find out what the machine holds, not what it peaks at.',
-    includes: [
-      'Extended load testing with temperature and clock logging',
-      'Thermal paste and cooler mounting inspection',
-      'Case airflow assessment and fan configuration',
-      'Recommendations ordered by what would actually help most',
-    ],
-  },
-  {
-    id: 'troubleshooting',
-    title: 'Hardware troubleshooting',
-    summary: 'Machines that will not boot, crash under load, or have started behaving differently.',
-    includes: [
-      'No-boot and no-display diagnosis',
-      'Crash, freeze and blue screen investigation',
-      'Peripheral and connectivity faults',
-      'Post-repair verification before the machine goes back',
-    ],
-  },
-];
+/**
+ * Services, from the database.
+ *
+ * The content moved out of this file and into the `services` table so it can
+ * be edited without a deployment. The in-repo copy in src/content/services.ts
+ * is still the seed and the fallback, so a clone with no database configured
+ * renders exactly what it always did.
+ */
+export default async function ServicesPage() {
+  const { rows: services } = await listPublishedServices();
 
-export default function ServicesPage() {
   return (
     <>
       <ServiceJsonLd />
@@ -138,10 +43,13 @@ export default function ServicesPage() {
 
       <PageShell className="py-12 sm:py-16">
         <div className="grid gap-5 lg:grid-cols-2">
-          {SERVICES.map((service) => (
-            <Card key={service.id} id={service.id} className="scroll-mt-24 p-6">
-              <h2 className="text-lg font-semibold text-white">{service.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-ink-300">{service.summary}</p>
+          {services.map((service) => (
+            <Card key={service.id} id={service.slug} className="scroll-mt-24 p-6">
+              <h2 className="text-lg font-semibold text-white">{service.name}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-ink-300">{service.short_description}</p>
+              {service.price_text ? (
+                <p className="mt-2 text-sm font-medium text-gold-400">{service.price_text}</p>
+              ) : null}
 
               <ul className="mt-4 space-y-2">
                 {service.includes.map((item) => (

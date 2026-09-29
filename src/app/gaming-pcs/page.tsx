@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ButtonLink, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { PresetCard } from '@/components/build/preset-card';
-import { presetsFor } from '@/lib/catalog/presets';
+import { listPublishedPresets } from '@/lib/cms/repository';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 
 export const metadata: Metadata = {
@@ -34,7 +34,8 @@ const CONSIDERATIONS = [
 ];
 
 export default async function GamingPcsPage() {
-  const summaries = await summarisePresets(presetsFor('gaming'));
+  const { rows: presets } = await listPublishedPresets('gaming');
+  const summaries = await summarisePresets(presets);
 
   return (
     <>

@@ -42,22 +42,26 @@ export async function POST(request: Request) {
 
     if (clash) return conflict('A component with that id or SKU already exists.');
 
+    // Compatibility columns are written straight through from the validated
+    // body. They are real columns because the engine compares them, so they
+    // must never be folded into `specs` where no rule can see them.
+    const { active: _legacyActive, id: _id, sku: _sku, ...rest } = input;
+    void _legacyActive;
+    void _id;
+    void _sku;
+
     const { error } = await supabase!.from('components').insert({
+      ...rest,
       id: input.id,
       slug: input.id,
       sku: input.sku,
-      category: input.category,
-      brand: input.brand,
-      model: input.model,
-      description: input.description,
-      price_cents: input.price_cents,
+      description: input.description ?? '',
       cost_cents: input.cost_cents ?? null,
-      stock_quantity: input.stock_quantity,
-      low_stock_threshold: input.low_stock_threshold,
-      active: input.active,
-      data_confidence: input.data_confidence,
       image_url: input.image_url || null,
-      specs: {},
+      gallery_urls: input.gallery_urls ?? [],
+      // `active` is derived from `status` by a trigger, so only status is set.
+      status: input.status ?? (input.active === false ? 'archived' : 'draft'),
+      specs: input.specs ?? {},
     });
 
     if (error) {

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { PageHeader, PageShell } from '@/components/ui';
 import { Configurator } from '@/components/configurator/configurator';
 import { isOrderable, listComponentsWithSource } from '@/lib/catalog/repository';
-import { getPreset } from '@/lib/catalog/presets';
+import { getPublishedPreset } from '@/lib/cms/repository';
 import { getSessionUser } from '@/lib/auth/session';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { SavedBuild } from '@/types/domain';
@@ -20,7 +20,7 @@ export default async function BuildPage({
   searchParams: Promise<{ preset?: string; build?: string }>;
 }) {
   const { preset: presetSlug, build: buildId } = await searchParams;
-  const preset = presetSlug ? getPreset(presetSlug) : undefined;
+  const preset = presetSlug ? await getPublishedPreset(presetSlug) : null;
 
   const { components: catalogue, source } = await listComponentsWithSource();
   const sampleData = source === 'sample';

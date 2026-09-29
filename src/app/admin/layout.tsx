@@ -9,16 +9,47 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-const NAV = [
-  { href: '/admin', label: 'Dashboard' },
-  { href: '/admin/orders', label: 'Orders' },
-  { href: '/admin/quotes', label: 'Quotes' },
-  { href: '/admin/components', label: 'Components' },
-  { href: '/admin/inventory', label: 'Inventory' },
-  { href: '/admin/customers', label: 'Customers' },
-  { href: '/admin/builds', label: 'Builds' },
-  { href: '/admin/support', label: 'Support' },
-  { href: '/admin/settings', label: 'Settings' },
+/**
+ * Admin navigation, in two groups.
+ *
+ * Operations is the day-to-day work that arrives from customers: orders,
+ * quotes, tickets, stock. Content is what the public site shows. They are
+ * separated because they are different jobs done at different times, and
+ * because mixing "how many do I have" with "what does the page say" is how
+ * stock counts end up being edited on two screens.
+ */
+const NAV_GROUPS: { heading: string | null; items: { href: string; label: string }[] }[] = [
+  {
+    heading: null,
+    items: [{ href: '/admin', label: 'Dashboard' }],
+  },
+  {
+    heading: 'Operations',
+    items: [
+      { href: '/admin/orders', label: 'Orders' },
+      { href: '/admin/quotes', label: 'Quotes' },
+      { href: '/admin/inventory', label: 'Inventory' },
+      { href: '/admin/customers', label: 'Customers' },
+      { href: '/admin/builds', label: 'Saved builds' },
+      { href: '/admin/support', label: 'Support' },
+    ],
+  },
+  {
+    heading: 'Content',
+    items: [
+      { href: '/admin/content/products', label: 'Products' },
+      { href: '/admin/content/refurbished', label: 'Refurbished' },
+      { href: '/admin/content/builds', label: 'PC builds' },
+      { href: '/admin/content/portfolio', label: 'Portfolio' },
+      { href: '/admin/content/services', label: 'Services' },
+      { href: '/admin/content/promotions', label: 'Promotions' },
+      { href: '/admin/content/categories', label: 'Categories' },
+    ],
+  },
+  {
+    heading: null,
+    items: [{ href: '/admin/settings', label: 'Settings' }],
+  },
 ];
 
 export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
@@ -57,18 +88,29 @@ export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
       <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
         <div className="grid gap-6 lg:grid-cols-[180px_minmax(0,1fr)]">
           <nav aria-label="Admin" className="lg:sticky lg:top-6 lg:self-start">
-            <ul className="thin-scroll flex gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
-              {NAV.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="block rounded-md px-3 py-2 text-sm whitespace-nowrap text-ink-300 transition-colors hover:bg-ink-800 hover:text-white"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
+            <div className="thin-scroll flex gap-4 overflow-x-auto pb-2 lg:flex-col lg:gap-5 lg:overflow-visible lg:pb-0">
+              {NAV_GROUPS.map((group, index) => (
+                <div key={group.heading ?? `group-${index}`}>
+                  {group.heading ? (
+                    <p className="mb-1 hidden px-3 text-[0.65rem] font-semibold tracking-[0.16em] text-ink-500 uppercase lg:block">
+                      {group.heading}
+                    </p>
+                  ) : null}
+                  <ul className="flex gap-1 lg:flex-col">
+                    {group.items.map((item) => (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          className="block rounded-md px-3 py-2 text-sm whitespace-nowrap text-ink-300 transition-colors hover:bg-ink-800 hover:text-white"
+                        >
+                          {item.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           </nav>
 
           <main className="min-w-0">{children}</main>

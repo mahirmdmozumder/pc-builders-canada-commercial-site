@@ -1,3 +1,5 @@
+import type { ContentStatus } from '@/lib/cms/types';
+
 /**
  * Canonical component model.
  *
@@ -139,7 +141,22 @@ export interface ComponentRecord {
   low_stock_threshold: number;
 
   image_url: string | null;
+  /** Additional images, in display order. Primary image is `image_url`. */
+  gallery_urls: string[];
+  /**
+   * Derived from `status` by a trigger in migration 0006. Read-only in
+   * practice: write `status` and this follows. Kept because the dashboard,
+   * the inventory table and low_stock_components still read it.
+   */
   active: boolean;
+  status: ContentStatus;
+  featured: boolean;
+  sort_order: number;
+  /** One line for cards and listings; `description` is the full text. */
+  short_description: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  archived_at: string | null;
   data_confidence: DataConfidence;
 
   /** New unless stated. Surfaced next to the price, never buried. */

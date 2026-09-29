@@ -2,7 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { ButtonLink, Card, PageShell, SectionHeading } from '@/components/ui';
 import { PresetCard } from '@/components/build/preset-card';
-import { BUILD_PRESETS } from '@/lib/catalog/presets';
+import { listLivePromotions, listPublishedPresets } from '@/lib/cms/repository';
+import { PromotionStrip } from '@/components/home/promotions';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { formatMoney } from '@/lib/utils';
 import { OrganizationJsonLd } from '@/components/seo/structured-data';
@@ -19,15 +20,22 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const featured = await summarisePresets(
-    BUILD_PRESETS.filter((p) => ['gaming-1440p', 'gaming-4k', 'creator-workstation'].includes(p.slug)),
-  );
+  // Featured presets are chosen in the admin now, not hardcoded here. If none
+  // are marked featured, the first few published ones stand in, so the section
+  // never renders empty just because nobody has ticked a box yet.
+  const [{ rows: presets }, promotions] = await Promise.all([
+    listPublishedPresets(),
+    listLivePromotions('home-hero'),
+  ]);
+  const picked = presets.filter((p) => p.featured);
+  const featured = await summarisePresets((picked.length > 0 ? picked : presets).slice(0, 3));
   const cheapest = Math.min(...featured.map((f) => f.subtotalCents));
 
   return (
     <>
       <OrganizationJsonLd />
       <Hero fromCents={cheapest} />
+      <PromotionStrip promotions={promotions} />
       <Pillars />
       <BeyondTheDesktop />
       <FeaturedBuilds featured={featured} />

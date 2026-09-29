@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ButtonLink, Card, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { PresetCard } from '@/components/build/preset-card';
-import { presetsFor } from '@/lib/catalog/presets';
+import { listPublishedPresets } from '@/lib/cms/repository';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 
 export const metadata: Metadata = {
@@ -34,7 +34,8 @@ const WORKLOADS = [
 ];
 
 export default async function WorkstationsPage() {
-  const summaries = await summarisePresets(presetsFor('workstation'));
+  const { rows: presets } = await listPublishedPresets('workstation');
+  const summaries = await summarisePresets(presets);
 
   return (
     <>

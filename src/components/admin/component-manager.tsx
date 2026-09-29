@@ -2,8 +2,18 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Badge, Button, Card, Field, Input, Select, TableWrap, Textarea } from '@/components/ui';
-import { formatMoney, slugify } from '@/lib/utils';
+import Link from 'next/link';
+import {
+  Badge,
+  Button,
+  Card,
+  Field,
+  Input,
+  Select,
+  TableWrap,
+  Textarea,
+} from '@/components/ui';
+import { formatMoney, slugify, cn } from '@/lib/utils';
 import {
   CATEGORY_LABELS,
   COMPONENT_CATEGORIES,
@@ -13,591 +23,771 @@ import {
   type ComponentCondition,
   type ComponentRecord,
 } from '@/lib/catalog/types';
+import type { ContentStatus } from '@/lib/cms/types';
+import {
+  ConfirmButton,
+  DisplayControls,
+  NoticeBar,
+  SeoFields,
+  StatusBadge,
+  StatusSelect,
+  type Notice,
+} from '@/components/admin/content-controls';
+import { GalleryUpload, ImageUpload } from '@/components/admin/image-upload';
+import {
+  ProvenanceEditor,
+  SpecsEditor,
+  TypedFieldsEditor,
+  type SpecBag,
+} from '@/components/admin/spec-editor';
+import { TYPED_FIELDS } from '@/lib/cms/spec-fields';
 
 /**
- * Component catalogue management.
+ * Product catalogue management.
  *
- * Deactivation rather than deletion: these rows are referenced by historical
- * orders and saved builds, and rewriting them would rewrite what a customer
- * bought. Deactivated parts vanish from the configurator and stay in the
- * record.
+ * Extends the original screen rather than replacing it: the same deactivation
+ * model, the same cost-price handling, the same activity logging. What is new
+ * is everything the storefront needs that used to require a database edit —
+ * images, specifications, publication state, ordering and SEO.
+ *
+ * STOCK IS NOT EDITED HERE. It is shown, because deciding whether to publish
+ * something you have none of is a reasonable thing to want to know, but the
+ * number is read-only and links to /admin/inventory. Two screens that both
+ * write stock is how stock counts end up wrong.
  */
+
+const PAGE_SIZE = 25;
+
+type StatusFilter = 'all' | ContentStatus;
+type StockFilter = 'all' | 'in-stock' | 'low' | 'out';
+type SortKey = 'updated' | 'name' | 'price-asc' | 'price-desc' | 'stock' | 'order';
+
 export function ComponentManager({ components }: { components: ComponentRecord[] }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<ComponentCategory | 'all'>('all');
-  const [showInactive, setShowInactive] = useState(true);
+  const [status, setStatus] = useState<StatusFilter>('all');
+  const [stock, setStock] = useState<StockFilter>('all');
+  const [sort, setSort] = useState<SortKey>('updated');
+  const [page, setPage] = useState(0);
+
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null);
+  const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState(false);
 
-  const rows = useMemo(() => {
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return components.filter((component) => {
-      if (category !== 'all' && component.category !== category) return false;
-      if (!showInactive && !component.active) return false;
-      if (!q) return true;
-      return `${component.brand} ${component.model} ${component.sku} ${component.id}`
-        .toLowerCase()
-        .includes(q);
-    });
-  }, [components, query, category, showInactive]);
-
-  async function submit(url: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown) {
-    setBusy(true);
-    setMessage(null);
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: body ? { 'Content-Type': 'application/json' } : undefined,
-        body: body ? JSON.stringify(body) : undefined,
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setMessage({ tone: 'danger', text: data.error ?? 'That did not work.' });
+    let rows = components.filter((c) => {
+      if (category !== 'all' && c.category !== category) return false;
+      if (status !== 'all' && c.status !== status) return false;
+      if (stock === 'in-stock' && c.stock_quantity <= 0) return false;
+      if (stock === 'out' && c.stock_quantity > 0) return false;
+      if (stock === 'low' && !(c.stock_quantity > 0 && c.stock_quantity <= c.low_stock_threshold))
         return false;
+      if (!q) return true;
+      return `${c.brand} ${c.model} ${c.sku} ${c.id}`.toLowerCase().includes(q);
+    });
+
+    rows = [...rows].sort((a, b) => {
+      switch (sort) {
+        case 'name':
+          return `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`);
+        case 'price-asc':
+          return a.price_cents - b.price_cents;
+        case 'price-desc':
+          return b.price_cents - a.price_cents;
+        case 'stock':
+          return a.stock_quantity - b.stock_quantity;
+        case 'order':
+          return a.sort_order - b.sort_order || a.brand.localeCompare(b.brand);
+        default:
+          return (b.updated_at ?? '').localeCompare(a.updated_at ?? '');
       }
-      setMessage({ tone: 'ok', text: 'Saved.' });
+    });
+    return rows;
+  }, [components, query, category, status, stock, sort]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const visible = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  const editingRecord = editing ? components.find((c) => c.id === editing) : null;
+
+  async function send(url: string, method: string, body: unknown, successText: string) {
+    setBusy(true);
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'That did not save.');
+      setNotice({ tone: 'ok', text: successText });
+      setCreating(false);
+      setEditing(null);
       router.refresh();
       return true;
-    } catch {
-      setMessage({ tone: 'danger', text: 'Could not reach the server.' });
+    } catch (err) {
+      setNotice({ tone: 'danger', text: err instanceof Error ? err.message : 'Something failed.' });
       return false;
     } finally {
       setBusy(false);
     }
   }
 
+  /**
+   * Duplicating reuses the create endpoint rather than adding a route.
+   *
+   * The copy comes back as a DRAFT with " (copy)" on the model and a fresh id,
+   * so it can never be mistaken for the original or appear on the site before
+   * somebody has looked at it.
+   */
+  async function duplicate(source: ComponentRecord) {
+    const suffix = Date.now().toString(36).slice(-4);
+    const payload = {
+      ...stripForWrite(source),
+      id: `${source.id}-copy-${suffix}`.slice(0, 120),
+      sku: `${source.sku}-C${suffix}`.slice(0, 60),
+      model: `${source.model} (copy)`.slice(0, 160),
+      status: 'draft' as const,
+      featured: false,
+    };
+    await send('/api/admin/components', 'POST', payload, `Duplicated ${source.brand} ${source.model} as a draft.`);
+  }
+
+  async function setStatusFor(component: ComponentRecord, next: ContentStatus) {
+    await send(
+      `/api/admin/components/${component.id}`,
+      'PATCH',
+      { status: next },
+      `${component.brand} ${component.model} is now ${next}.`,
+    );
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <NoticeBar notice={notice} onDismiss={() => setNotice(null)} />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-white">Components</h1>
-        <Button onClick={() => setCreating((v) => !v)} variant={creating ? 'secondary' : 'primary'}>
-          {creating ? 'Cancel' : 'Add component'}
+        <div>
+          <h1 className="text-xl font-semibold text-white">Products</h1>
+          <p className="mt-1 text-sm text-ink-400">
+            {filtered.length} of {components.length} shown. Stock is managed in{' '}
+            <Link href="/admin/inventory" className="text-gold-400 hover:text-gold-300">
+              Inventory
+            </Link>
+            .
+          </p>
+        </div>
+        <Button onClick={() => { setCreating((v) => !v); setEditing(null); }}>
+          {creating ? 'Cancel' : 'Add product'}
         </Button>
       </div>
 
-      {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
-
       {creating ? (
-        <Card className="p-5">
-          <h2 className="text-lg font-semibold text-white">New component</h2>
-          <p className="mt-1 text-sm text-ink-400">
-            Created as unverified sample data unless you mark the specifications as checked. The
-            public site labels unverified rows.
-          </p>
-          <ComponentForm
-            busy={busy}
-            onSubmit={async (values) => {
-              const okResult = await submit('/api/admin/components', 'POST', values);
-              if (okResult) setCreating(false);
-            }}
-          />
-        </Card>
+        <ComponentForm
+          busy={busy}
+          onCancel={() => setCreating(false)}
+          onSubmit={(values) =>
+            send('/api/admin/components', 'POST', values, `Created ${values.brand} ${values.model}.`)
+          }
+        />
       ) : null}
 
-      <Card className="p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search brand, model, SKU"
-            aria-label="Search components"
-            className="sm:max-w-xs"
-          />
-          <Select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as ComponentCategory | 'all')}
-            aria-label="Filter by category"
-            className="sm:max-w-[200px]"
-          >
-            <option value="all">All categories</option>
-            {COMPONENT_CATEGORIES.map((value) => (
-              <option key={value} value={value}>
-                {CATEGORY_LABELS[value]}
-              </option>
-            ))}
-          </Select>
-          <label className="flex items-center gap-2 text-sm text-ink-300">
-            <input
-              type="checkbox"
-              checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
-              className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
-            />
-            Show deactivated
-          </label>
-          <span className="tnum ml-auto text-sm text-ink-400">{rows.length} shown</span>
-        </div>
-      </Card>
+      {editingRecord ? (
+        <ComponentForm
+          key={editingRecord.id}
+          record={editingRecord}
+          busy={busy}
+          onCancel={() => setEditing(null)}
+          onSubmit={(values) =>
+            send(
+              `/api/admin/components/${editingRecord.id}`,
+              'PATCH',
+              values,
+              `Saved ${values.brand} ${values.model}.`,
+            )
+          }
+        />
+      ) : null}
 
       <Card className="overflow-hidden">
+        <div className="grid gap-3 border-b border-ink-700 px-4 py-3 sm:grid-cols-2 lg:grid-cols-5">
+          <Input
+            aria-label="Search products"
+            placeholder="Search name, SKU or id"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setPage(0); }}
+          />
+          <Select
+            aria-label="Filter by category"
+            value={category}
+            onChange={(e) => { setCategory(e.target.value as ComponentCategory | 'all'); setPage(0); }}
+          >
+            <option value="all">All categories</option>
+            {COMPONENT_CATEGORIES.map((c) => (
+              <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+            ))}
+          </Select>
+          <Select
+            aria-label="Filter by status"
+            value={status}
+            onChange={(e) => { setStatus(e.target.value as StatusFilter); setPage(0); }}
+          >
+            <option value="all">Any status</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+            <option value="archived">Archived</option>
+          </Select>
+          <Select
+            aria-label="Filter by stock"
+            value={stock}
+            onChange={(e) => { setStock(e.target.value as StockFilter); setPage(0); }}
+          >
+            <option value="all">Any stock</option>
+            <option value="in-stock">In stock</option>
+            <option value="low">Low stock</option>
+            <option value="out">Out of stock</option>
+          </Select>
+          <Select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+            <option value="updated">Recently updated</option>
+            <option value="name">Name A–Z</option>
+            <option value="price-asc">Price, low to high</option>
+            <option value="price-desc">Price, high to low</option>
+            <option value="stock">Stock, low to high</option>
+            <option value="order">Display order</option>
+          </Select>
+        </div>
+
         <TableWrap>
-          <table className="w-full text-sm">
-            <caption className="sr-only">Component catalogue</caption>
-            <thead>
-              <tr className="border-b border-ink-700 text-left text-xs tracking-wide text-ink-400 uppercase">
-                <th scope="col" className="px-4 py-3 font-medium">Component</th>
-                <th scope="col" className="px-4 py-3 font-medium">Category</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Cost</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Price</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Margin</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Stock</th>
-                <th scope="col" className="px-4 py-3 font-medium">State</th>
-                <th scope="col" className="px-4 py-3" />
+          <table className="w-full min-w-[60rem] text-sm">
+            <thead className="border-b border-ink-700 text-left text-xs tracking-wide text-ink-400 uppercase">
+              <tr>
+                <th className="px-4 py-3 font-medium">Product</th>
+                <th className="px-4 py-3 font-medium">Category</th>
+                <th className="px-4 py-3 text-right font-medium">Price</th>
+                <th className="px-4 py-3 text-right font-medium">Stock</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Updated</th>
+                <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-700">
-              {rows.map((component) => {
-                const margin =
-                  component.cost_cents !== null && component.price_cents > 0
-                    ? ((component.price_cents - component.cost_cents) / component.price_cents) * 100
-                    : null;
-                return (
-                  <tr key={component.id} className={component.active ? '' : 'opacity-60'}>
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-white">
-                        {component.brand} {component.model}
-                      </p>
-                      <p className="font-mono text-xs text-ink-500">{component.sku}</p>
-                    </td>
-                    <td className="px-4 py-3 text-ink-300">{CATEGORY_LABELS[component.category]}</td>
-                    <td className="tnum px-4 py-3 text-right text-ink-300">
-                      {component.cost_cents !== null ? formatMoney(component.cost_cents) : '—'}
-                    </td>
-                    <td className="tnum px-4 py-3 text-right text-ink-100">
-                      {formatMoney(component.price_cents)}
-                    </td>
-                    <td className="tnum px-4 py-3 text-right text-ink-300">
-                      {margin !== null ? `${margin.toFixed(0)}%` : '—'}
-                    </td>
-                    <td className="tnum px-4 py-3 text-right">
-                      <span
-                        className={
-                          component.stock_quantity <= component.low_stock_threshold
-                            ? 'text-warn-400'
-                            : 'text-ink-200'
-                        }
-                      >
-                        {component.stock_quantity}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1.5">
-                        {component.active ? (
-                          <Badge tone="ok">Active</Badge>
-                        ) : (
-                          <Badge tone="neutral">Off</Badge>
-                        )}
-                        {component.data_confidence === 'sample' ? (
-                          <Badge tone="info">Unverified</Badge>
+              {visible.map((component) => (
+                <tr key={component.id} className={component.status === 'published' ? '' : 'opacity-70'}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="size-9 shrink-0 overflow-hidden rounded border border-ink-700 bg-ink-900">
+                        {component.image_url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={component.image_url} alt="" className="size-full object-cover" />
                         ) : null}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-white">
+                          {component.brand} {component.model}
+                          {component.featured ? (
+                            <span className="ml-2 text-xs text-gold-400">★</span>
+                          ) : null}
+                        </p>
+                        <p className="truncate font-mono text-xs text-ink-500">{component.sku}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-ink-300">{CATEGORY_LABELS[component.category]}</td>
+                  <td className="tnum px-4 py-3 text-right text-ink-100">
+                    {formatMoney(component.price_cents)}
+                  </td>
+                  <td className="tnum px-4 py-3 text-right">
+                    <StockCell component={component} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <StatusBadge status={component.status} />
+                      {component.condition !== 'new' ? (
+                        <Badge tone="warn">{CONDITION_LABELS[component.condition]}</Badge>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-ink-400">
+                    {component.updated_at ? new Date(component.updated_at).toLocaleDateString('en-CA') : '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs">
                       <button
                         type="button"
-                        onClick={() => setEditing(editing === component.id ? null : component.id)}
-                        className="text-sm text-gold-400 hover:text-gold-300"
+                        onClick={() => { setEditing(component.id); setCreating(false); }}
+                        className="text-gold-400 hover:text-gold-300"
                       >
-                        {editing === component.id ? 'Close' : 'Edit'}
+                        Edit
                       </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => duplicate(component)}
+                        className="text-ink-400 hover:text-white disabled:opacity-40"
+                      >
+                        Duplicate
+                      </button>
+                      {component.status === 'published' ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setStatusFor(component, 'draft')}
+                          className="text-ink-400 hover:text-white disabled:opacity-40"
+                        >
+                          Unpublish
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setStatusFor(component, 'published')}
+                          className="text-ok-400 hover:text-ok-500 disabled:opacity-40"
+                        >
+                          Publish
+                        </button>
+                      )}
+                      {component.status !== 'archived' ? (
+                        <ConfirmButton
+                          disabled={busy}
+                          confirmLabel="Archive"
+                          onConfirm={() => setStatusFor(component, 'archived')}
+                        >
+                          Archive
+                        </ConfirmButton>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {visible.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-ink-400">
+                    Nothing matches those filters.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </TableWrap>
+
+        {pageCount > 1 ? (
+          <div className="flex items-center justify-between border-t border-ink-700 px-4 py-3 text-sm">
+            <span className="text-ink-400">
+              Page {safePage + 1} of {pageCount}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={safePage === 0}
+                onClick={() => setPage(safePage - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={safePage >= pageCount - 1}
+                onClick={() => setPage(safePage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Card>
-
-      {editing ? (
-        <EditPanel
-          component={components.find((c) => c.id === editing)!}
-          busy={busy}
-          onSave={(values) => submit(`/api/admin/components/${editing}`, 'PATCH', values)}
-          onDeactivate={async () => {
-            const okResult = await submit(`/api/admin/components/${editing}`, 'DELETE');
-            if (okResult) setEditing(null);
-          }}
-          onClose={() => setEditing(null)}
-        />
-      ) : null}
     </div>
   );
 }
 
-interface FormValues {
-  id: string;
-  sku: string;
-  category: ComponentCategory;
-  brand: string;
-  model: string;
-  description: string;
-  price_cents: number;
-  cost_cents: number | null;
-  stock_quantity: number;
-  low_stock_threshold: number;
-  active: boolean;
-  data_confidence: 'sample' | 'verified';
-  condition: ComponentCondition;
-  condition_notes: string | null;
-  image_url: string | null;
+function StockCell({ component }: { component: ComponentRecord }) {
+  if (component.stock_quantity <= 0) {
+    return <span className="text-danger-400">0</span>;
+  }
+  if (component.stock_quantity <= component.low_stock_threshold) {
+    return <span className="text-warn-400">{component.stock_quantity}</span>;
+  }
+  return <span className="text-ink-200">{component.stock_quantity}</span>;
 }
 
-/**
- * Condition, and the note that has to accompany anything not sold as new.
- *
- * The note is required by the API schema and by a database check constraint.
- * Making it required in the form too means the admin finds out here, with the
- * cursor in the right field, rather than via a rejected request.
- *
- * Shared by the create form and the edit panel so the two cannot drift apart
- * and start enforcing different things.
- */
-function ConditionFields({
-  idPrefix,
-  condition,
-  onConditionChange,
-  defaultNotes,
-}: {
-  idPrefix: string;
-  condition: ComponentCondition;
-  onConditionChange: (value: ComponentCondition) => void;
-  defaultNotes?: string;
-}) {
-  const needsNotes = condition !== 'new';
-  return (
-    <div className="grid gap-4 sm:grid-cols-[minmax(0,14rem)_1fr]">
-      <Field label="Condition" htmlFor={`${idPrefix}-condition`}>
-        <Select
-          id={`${idPrefix}-condition`}
-          value={condition}
-          onChange={(e) => onConditionChange(e.target.value as ComponentCondition)}
-        >
-          {COMPONENT_CONDITIONS.map((value) => (
-            <option key={value} value={value}>
-              {CONDITION_LABELS[value]}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <Field
-        label="Condition notes"
-        htmlFor={`${idPrefix}-condition-notes`}
-        required={needsNotes}
-        hint={
-          needsNotes
-            ? 'What was tested, what was replaced, any cosmetic marks, and the warranty offered. Printed on the listing word for word.'
-            : 'Only needed when the unit is not new.'
-        }
-      >
-        <Textarea
-          id={`${idPrefix}-condition-notes`}
-          name="condition_notes"
-          rows={3}
-          minLength={needsNotes ? 10 : undefined}
-          required={needsNotes}
-          disabled={!needsNotes}
-          defaultValue={defaultNotes ?? ''}
-          placeholder={
-            needsNotes
-              ? 'Customer return, unopened accessories. Tested 4 hours under load, no faults. 90-day warranty.'
-              : ''
-          }
-          className={needsNotes ? undefined : 'opacity-50'}
-        />
-      </Field>
-    </div>
-  );
+// ---------------------------------------------------------------------------
+// Form
+// ---------------------------------------------------------------------------
+
+type FormValues = Record<string, unknown> & { brand: string; model: string };
+
+/** Everything a create call accepts, taken off an existing record. */
+function stripForWrite(record: ComponentRecord): Record<string, unknown> {
+  const typed: Record<string, unknown> = {};
+  for (const field of TYPED_FIELDS[record.category] ?? []) {
+    typed[field.column] = (record as unknown as Record<string, unknown>)[field.column];
+  }
+  return {
+    category: record.category,
+    brand: record.brand,
+    model: record.model,
+    description: record.description,
+    short_description: record.short_description,
+    price_cents: record.price_cents,
+    cost_cents: record.cost_cents,
+    stock_quantity: 0,
+    low_stock_threshold: record.low_stock_threshold,
+    data_confidence: record.data_confidence,
+    condition: record.condition,
+    condition_notes: record.condition_notes,
+    image_url: record.image_url,
+    gallery_urls: record.gallery_urls ?? [],
+    sort_order: record.sort_order,
+    seo_title: record.seo_title,
+    seo_description: record.seo_description,
+    specs: record.specs ?? {},
+    ...typed,
+  };
 }
 
 function ComponentForm({
+  record,
   busy,
   onSubmit,
+  onCancel,
 }: {
+  record?: ComponentRecord;
   busy: boolean;
   onSubmit: (values: FormValues) => void;
+  onCancel: () => void;
 }) {
-  const [brand, setBrand] = useState('');
-  const [model, setModel] = useState('');
-  const [category, setCategory] = useState<ComponentCategory>('cpu');
-  const [condition, setCondition] = useState<ComponentCondition>('new');
+  const isEdit = Boolean(record);
+
+  const [category, setCategory] = useState<ComponentCategory>(record?.category ?? 'cpu');
+  const [brand, setBrand] = useState(record?.brand ?? '');
+  const [model, setModel] = useState(record?.model ?? '');
+  const [sku, setSku] = useState(record?.sku ?? '');
+  const [id, setId] = useState(record?.id ?? '');
+  const [shortDescription, setShortDescription] = useState(record?.short_description ?? '');
+  const [description, setDescription] = useState(record?.description ?? '');
+  const [price, setPrice] = useState((record ? record.price_cents / 100 : 0).toFixed(2));
+  const [cost, setCost] = useState(
+    record?.cost_cents != null ? (record.cost_cents / 100).toFixed(2) : '',
+  );
+  const [threshold, setThreshold] = useState(record?.low_stock_threshold ?? 3);
+  const [status, setStatus] = useState<ContentStatus>(record?.status ?? 'draft');
+  const [featured, setFeatured] = useState(record?.featured ?? false);
+  const [sortOrder, setSortOrder] = useState(record?.sort_order ?? 0);
+  const [imageUrl, setImageUrl] = useState<string | null>(record?.image_url ?? null);
+  const [gallery, setGallery] = useState<string[]>(record?.gallery_urls ?? []);
+  const [condition, setCondition] = useState<ComponentCondition>(record?.condition ?? 'new');
+  const [conditionNotes, setConditionNotes] = useState(record?.condition_notes ?? '');
+  const [seoTitle, setSeoTitle] = useState(record?.seo_title ?? '');
+  const [seoDescription, setSeoDescription] = useState(record?.seo_description ?? '');
+
+  const [specs, setSpecs] = useState<SpecBag>((record?.specs as SpecBag) ?? {});
+  const [typedValues, setTypedValues] = useState<Record<string, unknown>>(() => {
+    const initial: Record<string, unknown> = {};
+    for (const field of TYPED_FIELDS[record?.category ?? 'cpu'] ?? []) {
+      initial[field.column] = record
+        ? (record as unknown as Record<string, unknown>)[field.column]
+        : null;
+    }
+    return initial;
+  });
+
+  const verified = (record?.data_confidence ?? 'sample') === 'verified';
+  const [isVerified, setIsVerified] = useState(verified);
+  const [unverifiedNote, setUnverifiedNote] = useState(String(specs.unverified ?? ''));
+  const [priceChecked, setPriceChecked] = useState(
+    String(specs.price_checked ?? new Date().toISOString().slice(0, 10)),
+  );
 
   const suggestedId = slugify(`${category}-${brand}-${model}`).slice(0, 110);
+  const suggestedSku = `${category.toUpperCase().slice(0, 4)}-${slugify(brand).toUpperCase().slice(0, 6)}-${slugify(model).toUpperCase().slice(0, 8)}`;
 
-  return (
-    <form
-      className="mt-5 space-y-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        onSubmit({
-          id: String(form.get('id') || suggestedId),
-          sku: String(form.get('sku')),
-          category,
-          brand,
-          model,
-          description: String(form.get('description') ?? ''),
-          price_cents: Math.round(Number(form.get('price')) * 100),
-          cost_cents: form.get('cost') ? Math.round(Number(form.get('cost')) * 100) : null,
-          stock_quantity: Number(form.get('stock') ?? 0),
-          low_stock_threshold: Number(form.get('threshold') ?? 3),
-          active: true,
-          data_confidence: form.get('verified') ? 'verified' : 'sample',
-          condition,
-          condition_notes:
-            condition === 'new' ? null : String(form.get('condition_notes') ?? '').trim() || null,
-          image_url: String(form.get('image_url') ?? '') || null,
-        });
-      }}
-    >
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Category" htmlFor="new-category" required>
-          <Select
-            id="new-category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value as ComponentCategory)}
-          >
-            {COMPONENT_CATEGORIES.map((value) => (
-              <option key={value} value={value}>
-                {CATEGORY_LABELS[value]}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Brand" htmlFor="new-brand" required>
-          <Input id="new-brand" value={brand} onChange={(e) => setBrand(e.target.value)} required />
-        </Field>
-        <Field label="Model" htmlFor="new-model" required>
-          <Input id="new-model" value={model} onChange={(e) => setModel(e.target.value)} required />
-        </Field>
-      </div>
+  function handleCategoryChange(next: ComponentCategory) {
+    setCategory(next);
+    // Compatibility columns differ per category, so a stale socket from a
+    // previous choice must not survive the switch.
+    const fresh: Record<string, unknown> = {};
+    for (const field of TYPED_FIELDS[next] ?? []) fresh[field.column] = null;
+    setTypedValues(fresh);
+  }
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="SKU" htmlFor="new-sku" required>
-          <Input id="new-sku" name="sku" required maxLength={60} />
-        </Field>
-        <Field label="Id" htmlFor="new-id" hint={`Leave blank to use ${suggestedId || 'a generated id'}`}>
-          <Input id="new-id" name="id" placeholder={suggestedId} />
-        </Field>
-      </div>
+  function submit(event: React.FormEvent) {
+    event.preventDefault();
 
-      <Field label="Description" htmlFor="new-description">
-        <Textarea id="new-description" name="description" rows={3} />
-      </Field>
+    const nextSpecs: SpecBag = { ...specs };
+    delete nextSpecs.unverified;
+    if (!isVerified && unverifiedNote.trim()) nextSpecs.unverified = unverifiedNote.trim();
+    if (priceChecked) nextSpecs.price_checked = priceChecked;
 
-      <div className="grid gap-4 sm:grid-cols-4">
-        <Field label="Price (CAD)" htmlFor="new-price" required>
-          <Input id="new-price" name="price" type="number" min="0" step="0.01" required />
-        </Field>
-        <Field label="Cost (CAD)" htmlFor="new-cost">
-          <Input id="new-cost" name="cost" type="number" min="0" step="0.01" />
-        </Field>
-        <Field label="Stock" htmlFor="new-stock" required>
-          <Input id="new-stock" name="stock" type="number" min="0" defaultValue={0} required />
-        </Field>
-        <Field label="Low stock at" htmlFor="new-threshold">
-          <Input id="new-threshold" name="threshold" type="number" min="0" defaultValue={3} />
-        </Field>
-      </div>
+    const values: FormValues = {
+      category,
+      brand: brand.trim(),
+      model: model.trim(),
+      description: description.trim(),
+      short_description: shortDescription.trim() || null,
+      price_cents: Math.round(Number(price) * 100),
+      cost_cents: cost ? Math.round(Number(cost) * 100) : null,
+      low_stock_threshold: Number(threshold),
+      status,
+      featured,
+      sort_order: Number(sortOrder),
+      image_url: imageUrl,
+      gallery_urls: gallery,
+      condition,
+      condition_notes: condition === 'new' ? null : conditionNotes.trim() || null,
+      data_confidence: isVerified ? 'verified' : 'sample',
+      seo_title: seoTitle.trim() || null,
+      seo_description: seoDescription.trim() || null,
+      specs: nextSpecs,
+      ...typedValues,
+    };
 
-      <ConditionFields
-        idPrefix="new"
-        condition={condition}
-        onConditionChange={setCondition}
-      />
+    if (!isEdit) {
+      values.id = id.trim() || suggestedId;
+      values.sku = sku.trim() || suggestedSku;
+      values.stock_quantity = 0;
+    }
 
-      <Field label="Image URL" htmlFor="new-image">
-        <Input id="new-image" name="image_url" type="url" placeholder="https://" />
-      </Field>
-
-      <label className="flex items-center gap-2 text-sm text-ink-300">
-        <input
-          type="checkbox"
-          name="verified"
-          className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
-        />
-        I have checked these specifications against the manufacturer spec sheet
-      </label>
-
-      <Button type="submit" disabled={busy}>
-        {busy ? 'Saving...' : 'Create component'}
-      </Button>
-    </form>
-  );
-}
-
-function EditPanel({
-  component,
-  busy,
-  onSave,
-  onDeactivate,
-  onClose,
-}: {
-  component: ComponentRecord;
-  busy: boolean;
-  onSave: (values: Record<string, unknown>) => void;
-  onDeactivate: () => void;
-  onClose: () => void;
-}) {
-  const [confirming, setConfirming] = useState(false);
-  const [condition, setCondition] = useState<ComponentCondition>(component.condition);
+    onSubmit(values);
+  }
 
   return (
     <Card className="p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">
-            {component.brand} {component.model}
+            {isEdit ? `${record!.brand} ${record!.model}` : 'New product'}
           </h2>
-          <p className="font-mono text-xs text-ink-500">
-            {component.id} · {component.sku}
-          </p>
+          {isEdit ? (
+            <p className="font-mono text-xs text-ink-500">
+              {record!.id} · {record!.sku}
+            </p>
+          ) : null}
         </div>
-        <button type="button" onClick={onClose} className="text-sm text-ink-400 hover:text-white">
+        <button type="button" onClick={onCancel} className="text-sm text-ink-400 hover:text-white">
           Close
         </button>
       </div>
 
-      <form
-        className="mt-5 space-y-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const form = new FormData(event.currentTarget);
-          onSave({
-            brand: String(form.get('brand')),
-            model: String(form.get('model')),
-            description: String(form.get('description') ?? ''),
-            price_cents: Math.round(Number(form.get('price')) * 100),
-            cost_cents: form.get('cost') ? Math.round(Number(form.get('cost')) * 100) : null,
-            stock_quantity: Number(form.get('stock')),
-            low_stock_threshold: Number(form.get('threshold')),
-            active: form.get('active') === 'on',
-            data_confidence: form.get('verified') === 'on' ? 'verified' : 'sample',
-            condition,
-            condition_notes:
-              condition === 'new' ? null : String(form.get('condition_notes') ?? '').trim() || null,
-            image_url: String(form.get('image_url') ?? '') || null,
-          });
-        }}
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Brand" htmlFor="edit-brand">
-            <Input id="edit-brand" name="brand" defaultValue={component.brand} />
-          </Field>
-          <Field label="Model" htmlFor="edit-model">
-            <Input id="edit-model" name="model" defaultValue={component.model} />
-          </Field>
-        </div>
+      <form className="mt-5 space-y-7" onSubmit={submit}>
+        <section className="space-y-4">
+          <h3 className="text-xs font-semibold tracking-wide text-ink-300 uppercase">Basics</h3>
 
-        <Field label="Description" htmlFor="edit-description">
-          <Textarea id="edit-description" name="description" rows={3} defaultValue={component.description} />
-        </Field>
-
-        <div className="grid gap-4 sm:grid-cols-4">
-          <Field label="Price (CAD)" htmlFor="edit-price">
-            <Input
-              id="edit-price"
-              name="price"
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={(component.price_cents / 100).toFixed(2)}
-            />
-          </Field>
-          <Field label="Cost (CAD)" htmlFor="edit-cost">
-            <Input
-              id="edit-cost"
-              name="cost"
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={component.cost_cents !== null ? (component.cost_cents / 100).toFixed(2) : ''}
-            />
-          </Field>
-          <Field label="Stock" htmlFor="edit-stock">
-            <Input id="edit-stock" name="stock" type="number" min="0" defaultValue={component.stock_quantity} />
-          </Field>
-          <Field label="Low stock at" htmlFor="edit-threshold">
-            <Input
-              id="edit-threshold"
-              name="threshold"
-              type="number"
-              min="0"
-              defaultValue={component.low_stock_threshold}
-            />
-          </Field>
-        </div>
-
-        <ConditionFields
-          idPrefix="edit"
-          condition={condition}
-          onConditionChange={setCondition}
-          defaultNotes={component.condition_notes ?? ''}
-        />
-
-        <Field label="Image URL" htmlFor="edit-image">
-          <Input id="edit-image" name="image_url" type="url" defaultValue={component.image_url ?? ''} />
-        </Field>
-
-        <div className="flex flex-wrap gap-5">
-          <label className="flex items-center gap-2 text-sm text-ink-300">
-            <input
-              type="checkbox"
-              name="active"
-              defaultChecked={component.active}
-              className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
-            />
-            Active in the configurator
-          </label>
-          <label className="flex items-center gap-2 text-sm text-ink-300">
-            <input
-              type="checkbox"
-              name="verified"
-              defaultChecked={component.data_confidence === 'verified'}
-              className="size-4 rounded border-ink-600 bg-ink-900 accent-gold-500"
-            />
-            Specifications verified
-          </label>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 border-t border-ink-700 pt-4">
-          <Button type="submit" disabled={busy}>
-            {busy ? 'Saving...' : 'Save changes'}
-          </Button>
-
-          {component.active ? (
-            confirming ? (
-              <>
-                <Button type="button" variant="danger" onClick={onDeactivate} disabled={busy}>
-                  Confirm deactivate
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => setConfirming(false)}
-                  className="text-sm text-ink-400 hover:text-ink-200"
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirming(true)}
-                className="text-sm text-ink-400 hover:text-danger-400"
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Category" htmlFor="cf-category" required>
+              <Select
+                id="cf-category"
+                value={category}
+                disabled={isEdit}
+                onChange={(e) => handleCategoryChange(e.target.value as ComponentCategory)}
               >
-                Deactivate
-              </button>
-            )
+                {COMPONENT_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Brand" htmlFor="cf-brand" required>
+              <Input id="cf-brand" value={brand} onChange={(e) => setBrand(e.target.value)} required />
+            </Field>
+            <Field label="Model" htmlFor="cf-model" required>
+              <Input id="cf-model" value={model} onChange={(e) => setModel(e.target.value)} required />
+            </Field>
+          </div>
+
+          {!isEdit ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="SKU" htmlFor="cf-sku" hint={`Blank uses ${suggestedSku}`}>
+                <Input id="cf-sku" value={sku} placeholder={suggestedSku} onChange={(e) => setSku(e.target.value)} />
+              </Field>
+              <Field label="Id" htmlFor="cf-id" hint={`Blank uses ${suggestedId || 'a generated id'}`}>
+                <Input id="cf-id" value={id} placeholder={suggestedId} onChange={(e) => setId(e.target.value)} />
+              </Field>
+            </div>
           ) : null}
 
-          <p className="w-full text-xs text-ink-500">
-            Deactivating hides a part from the configurator. It is never deleted, because past
-            orders reference it.
-          </p>
+          <Field
+            label="Short description"
+            htmlFor="cf-short"
+            hint="One line, shown on product cards and listings."
+          >
+            <Input
+              id="cf-short"
+              value={shortDescription}
+              maxLength={400}
+              onChange={(e) => setShortDescription(e.target.value)}
+            />
+          </Field>
+
+          <Field label="Full description" htmlFor="cf-description">
+            <Textarea
+              id="cf-description"
+              rows={4}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Field>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Price (CAD)" htmlFor="cf-price" required>
+              <Input
+                id="cf-price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+              />
+            </Field>
+            <Field label="Cost (CAD)" htmlFor="cf-cost" hint="Admin only. Never sent to customers.">
+              <Input id="cf-cost" type="number" min="0" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} />
+            </Field>
+            <Field label="Low stock at" htmlFor="cf-threshold">
+              <Input
+                id="cf-threshold"
+                type="number"
+                min="0"
+                value={threshold}
+                onChange={(e) => setThreshold(Number(e.target.value) || 0)}
+              />
+            </Field>
+          </div>
+
+          {isEdit ? (
+            <p className="rounded-md border border-ink-700 bg-ink-900 px-4 py-3 text-xs text-ink-400">
+              Stock is <span className="tnum text-ink-100">{record!.stock_quantity}</span> and is
+              changed in{' '}
+              <Link href="/admin/inventory" className="text-gold-400 hover:text-gold-300">
+                Inventory
+              </Link>
+              , not here. One screen writing stock means the count stays right.
+            </p>
+          ) : (
+            <p className="rounded-md border border-ink-700 bg-ink-900 px-4 py-3 text-xs text-ink-400">
+              New products start at zero stock. Set the real count in Inventory once it is on the
+              shelf.
+            </p>
+          )}
+        </section>
+
+        <section className="space-y-4 border-t border-ink-700 pt-6">
+          <h3 className="text-xs font-semibold tracking-wide text-ink-300 uppercase">Images</h3>
+          <ImageUpload
+            value={imageUrl}
+            onChange={setImageUrl}
+            folder="components"
+            label="Primary image"
+            hint="Shown on cards and in the configurator. Without one, a category glyph is drawn instead."
+          />
+          <GalleryUpload value={gallery} onChange={setGallery} folder="components" />
+        </section>
+
+        <section className="space-y-4 border-t border-ink-700 pt-6">
+          <h3 className="text-xs font-semibold tracking-wide text-ink-300 uppercase">
+            Compatibility fields
+          </h3>
+          <TypedFieldsEditor
+            category={category}
+            values={typedValues}
+            onChange={(column, value) => setTypedValues((prev) => ({ ...prev, [column]: value }))}
+          />
+        </section>
+
+        <section className="space-y-4 border-t border-ink-700 pt-6">
+          <h3 className="text-xs font-semibold tracking-wide text-ink-300 uppercase">
+            Specifications
+          </h3>
+          <SpecsEditor category={category} specs={specs} onChange={setSpecs} />
+        </section>
+
+        <section className="space-y-4 border-t border-ink-700 pt-6">
+          <h3 className="text-xs font-semibold tracking-wide text-ink-300 uppercase">
+            Condition &amp; provenance
+          </h3>
+
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,14rem)_1fr]">
+            <Field label="Condition" htmlFor="cf-condition">
+              <Select
+                id="cf-condition"
+                value={condition}
+                onChange={(e) => setCondition(e.target.value as ComponentCondition)}
+              >
+                {COMPONENT_CONDITIONS.map((c) => (
+                  <option key={c} value={c}>{CONDITION_LABELS[c]}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field
+              label="Condition notes"
+              htmlFor="cf-condition-notes"
+              required={condition !== 'new'}
+              hint={
+                condition === 'new'
+                  ? 'Only needed when the unit is not new.'
+                  : 'What was tested, what was replaced, any marks, and the warranty. Printed word for word.'
+              }
+            >
+              <Textarea
+                id="cf-condition-notes"
+                rows={2}
+                disabled={condition === 'new'}
+                required={condition !== 'new'}
+                minLength={condition !== 'new' ? 10 : undefined}
+                value={conditionNotes}
+                className={condition === 'new' ? 'opacity-50' : undefined}
+                onChange={(e) => setConditionNotes(e.target.value)}
+              />
+            </Field>
+          </div>
+
+          <ProvenanceEditor
+            verified={isVerified}
+            unverifiedNote={unverifiedNote}
+            priceChecked={priceChecked}
+            onVerifiedChange={setIsVerified}
+            onNoteChange={setUnverifiedNote}
+            onPriceCheckedChange={setPriceChecked}
+          />
+        </section>
+
+        <section className="space-y-4 border-t border-ink-700 pt-6">
+          <h3 className="text-xs font-semibold tracking-wide text-ink-300 uppercase">Publishing</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StatusSelect id="cf-status" value={status} onChange={setStatus} />
+            <div />
+          </div>
+          <DisplayControls
+            idPrefix="cf"
+            featured={featured}
+            sortOrder={sortOrder}
+            onFeaturedChange={setFeatured}
+            onSortOrderChange={setSortOrder}
+            featuredHint="Featured products are highlighted in listings."
+          />
+          <SeoFields
+            idPrefix="cf"
+            title={seoTitle}
+            description={seoDescription}
+            onTitleChange={setSeoTitle}
+            onDescriptionChange={setSeoDescription}
+          />
+        </section>
+
+        <div className="flex flex-wrap items-center gap-3 border-t border-ink-700 pt-5">
+          <Button type="submit" disabled={busy}>
+            {busy ? 'Saving…' : isEdit ? 'Save changes' : 'Create product'}
+          </Button>
+          <button type="button" onClick={onCancel} className="text-sm text-ink-400 hover:text-ink-200">
+            Cancel
+          </button>
+          <span className={cn('text-xs', status === 'published' ? 'text-ok-400' : 'text-ink-400')}>
+            {status === 'published'
+              ? 'Saving publishes this to the site immediately.'
+              : 'Saved as a draft — nothing public changes.'}
+          </span>
         </div>
       </form>
     </Card>

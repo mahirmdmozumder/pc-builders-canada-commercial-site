@@ -55,7 +55,15 @@ function component(seed: ComponentSeed): ComponentRecord {
     stock_quantity: 5,
     low_stock_threshold: 3,
     image_url: null,
+    gallery_urls: [],
     active: true,
+    status: 'published',
+    featured: false,
+    sort_order: 0,
+    short_description: null,
+    seo_title: null,
+    seo_description: null,
+    archived_at: null,
     data_confidence: 'verified',
     // Everything seeded here is new stock. Refurbished and open-box units are
     // entered through /admin/components, where the condition notes are

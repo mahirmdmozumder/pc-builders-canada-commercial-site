@@ -1,5 +1,12 @@
 import type { ComponentRecord } from '@/lib/catalog/types';
 import type {
+  BuildPresetRecord,
+  CategoryMeta,
+  PromotionRecord,
+  PublicPromotion,
+  ServiceRecord,
+} from '@/lib/cms/types';
+import type {
   ActivityLogEntry,
   Order,
   OrderItem,
@@ -80,6 +87,10 @@ export interface Database {
       activity_log: Table<ActivityLogEntry>;
       portfolio_builds: Table<PortfolioBuild>;
       contact_messages: Table<ContactMessage>;
+      component_categories: Table<CategoryMeta>;
+      services: Table<ServiceRecord>;
+      build_presets: Table<BuildPresetRecord>;
+      promotions: Table<PromotionRecord>;
     };
     Views: {
       /**
@@ -89,6 +100,11 @@ export interface Database {
       components_public: {
         Relationships: [];
         Row: Simplify<Omit<ComponentRecord, 'cost_cents'>>;
+      };
+      /** Promotions already filtered by publish state AND schedule window. */
+      promotions_public: {
+        Relationships: [];
+        Row: Simplify<PublicPromotion>;
       };
       low_stock_components: {
         Relationships: [];

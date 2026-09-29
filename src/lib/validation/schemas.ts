@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { COMPONENT_CATEGORIES, COMPONENT_CONDITIONS } from '@/lib/catalog/types';
+import {
+  CONTENT_STATUSES,
+  PRESET_AUDIENCES,
+  PROMOTION_PLACEMENTS,
+} from '@/lib/cms/types';
 import { TICKET_CATEGORIES, TICKET_PRIORITIES } from '@/types/domain';
 import { PROVINCE_TAXES } from '@/lib/pricing/tax';
 
@@ -180,9 +185,67 @@ export const adminComponentFields = z.object({
   cost_cents: z.number().int().min(0).max(100_000_00).nullable().optional(),
   stock_quantity: z.number().int().min(0).max(100_000),
   low_stock_threshold: z.number().int().min(0).max(1000),
-  active: z.boolean().default(true),
   data_confidence: z.enum(['sample', 'verified']).default('sample'),
+  /**
+   * `active` is still accepted from older callers, but `status` is what gets
+   * written. A trigger in migration 0006 derives one from the other, so
+   * sending both cannot produce an inconsistent row.
+   */
+  active: z.boolean().optional(),
+  status: z.enum(CONTENT_STATUSES).optional(),
+  featured: z.boolean().optional(),
+  sort_order: z.number().int().min(0).max(100_000).optional(),
+  short_description: z.string().trim().max(400).nullable().optional(),
+  gallery_urls: z.array(z.string().trim().max(600)).max(12).optional(),
+  seo_title: z.string().trim().max(120).nullable().optional(),
+  seo_description: z.string().trim().max(320).nullable().optional(),
   condition: z.enum(COMPONENT_CONDITIONS).default('new'),
+
+  /**
+   * Display-only extras. Free-form on purpose: a new specification must never
+   * need a migration. No compatibility rule reads this bag, which is why the
+   * typed columns below exist separately.
+   */
+  specs: z
+    .record(z.string().min(1).max(60), z.union([z.string().max(2000), z.number(), z.boolean()]))
+    .optional(),
+
+  // --- compatibility columns -------------------------------------------
+  // Real columns because the engine COMPARES them. A socket stored as free
+  // text in `specs` is a socket the engine cannot check.
+  socket: z.string().trim().max(40).nullable().optional(),
+  supported_sockets: z.array(z.string().trim().max(40)).max(40).nullable().optional(),
+  chipset: z.string().trim().max(60).nullable().optional(),
+  memory_slots: z.number().int().min(0).max(32).nullable().optional(),
+  max_memory_gb: z.number().int().min(0).max(8192).nullable().optional(),
+  m2_slots: z.number().int().min(0).max(16).nullable().optional(),
+  sata_ports: z.number().int().min(0).max(32).nullable().optional(),
+  form_factor: z.enum(['e-atx', 'atx', 'micro-atx', 'mini-itx']).nullable().optional(),
+  supported_form_factors: z
+    .array(z.enum(['e-atx', 'atx', 'micro-atx', 'mini-itx']))
+    .max(8)
+    .nullable()
+    .optional(),
+  memory_type: z.enum(['ddr4', 'ddr5']).nullable().optional(),
+  memory_capacity_gb: z.number().int().min(0).max(8192).nullable().optional(),
+  memory_modules: z.number().int().min(0).max(16).nullable().optional(),
+  memory_speed_mts: z.number().int().min(0).max(20000).nullable().optional(),
+  tdp_watts: z.number().int().min(0).max(2000).nullable().optional(),
+  recommended_psu_watts: z.number().int().min(0).max(5000).nullable().optional(),
+  psu_wattage: z.number().int().min(0).max(5000).nullable().optional(),
+  psu_efficiency: z.string().trim().max(40).nullable().optional(),
+  psu_form_factor: z.enum(['atx', 'sfx', 'sfx-l']).nullable().optional(),
+  gpu_length_mm: z.number().int().min(0).max(1000).nullable().optional(),
+  max_gpu_length_mm: z.number().int().min(0).max(1000).nullable().optional(),
+  cooler_height_mm: z.number().int().min(0).max(400).nullable().optional(),
+  max_cooler_height_mm: z.number().int().min(0).max(400).nullable().optional(),
+  radiator_support_mm: z.array(z.number().int().min(0).max(1000)).max(10).nullable().optional(),
+  radiator_size_mm: z.array(z.number().int().min(0).max(1000)).max(10).nullable().optional(),
+  cooler_type: z.enum(['air', 'aio']).nullable().optional(),
+  cooling_capacity_watts: z.number().int().min(0).max(2000).nullable().optional(),
+  storage_interface: z.enum(['nvme-m2', 'sata']).nullable().optional(),
+  storage_capacity_gb: z.number().int().min(0).max(1_000_000).nullable().optional(),
+  pcie_version: z.number().int().min(1).max(6).nullable().optional(),
   condition_notes: z.string().trim().max(600).nullable().optional(),
   image_url: z.url().max(500).nullable().optional().or(z.literal('')),
 });
@@ -228,3 +291,148 @@ export type SaveBuildInput = z.infer<typeof saveBuildSchema>;
 export type QuoteInput = z.infer<typeof quoteSchema>;
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type TicketInput = z.infer<typeof ticketSchema>;
+
+// ---------------------------------------------------------------------------
+// Content management
+// ---------------------------------------------------------------------------
+
+/**
+ * Fields shared by every editable content record.
+ *
+ * Kept as a plain object rather than a schema so each collection can spread it
+ * and still call .partial() for its PATCH route. Zod refuses .partial() on a
+ * schema carrying a refinement, which is the same trap the component schema
+ * fell into.
+ */
+const contentFields = {
+  status: z.enum(CONTENT_STATUSES).default('draft'),
+  featured: z.boolean().default(false),
+  sort_order: z.number().int().min(0).max(100_000).default(0),
+  seo_title: z.string().trim().max(120).nullable().optional(),
+  seo_description: z.string().trim().max(320).nullable().optional(),
+};
+
+const slug = z
+  .string()
+  .trim()
+  .min(2)
+  .max(120)
+  .regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers and hyphens.');
+
+/** An uploaded or pasted image URL. Empty string means "cleared". */
+const imageUrl = z.string().trim().max(600).nullable().optional();
+
+export const adminServiceFields = z.object({
+  id: slug,
+  slug,
+  name: z.string().trim().min(2).max(160),
+  short_description: z.string().trim().min(10, 'Say what the service is in a sentence.').max(400),
+  description: z.string().trim().max(6000).nullable().optional(),
+  includes: z.array(z.string().trim().min(2).max(300)).max(20).default([]),
+  note: z.string().trim().max(1000).nullable().optional(),
+  price_text: z.string().trim().max(120).nullable().optional(),
+  image_url: imageUrl,
+  icon: z.string().trim().max(60).nullable().optional(),
+  ...contentFields,
+});
+export const adminServiceSchema = adminServiceFields;
+export const adminServiceEditSchema = adminServiceFields.partial().omit({ id: true });
+
+export const adminPresetFields = z.object({
+  id: slug,
+  slug,
+  name: z.string().trim().min(2).max(160),
+  audience: z.enum(PRESET_AUDIENCES).default('gaming'),
+  tagline: z.string().trim().max(300).default(''),
+  rationale: z.string().trim().max(4000).default(''),
+  highlights: z.array(z.string().trim().min(2).max(300)).max(12).default([]),
+  items: z
+    .array(
+      z.object({
+        category: z.enum(COMPONENT_CATEGORIES),
+        component_id: z.string().trim().min(1).max(120),
+        quantity: z.number().int().min(1).max(20).default(1),
+      }),
+    )
+    .max(30)
+    .default([]),
+  hero_image_url: imageUrl,
+  gallery_urls: z.array(z.string().trim().max(600)).max(12).default([]),
+  ...contentFields,
+});
+export const adminPresetSchema = adminPresetFields;
+export const adminPresetEditSchema = adminPresetFields.partial().omit({ id: true });
+
+export const adminPortfolioFields = z.object({
+  slug,
+  title: z.string().trim().min(2).max(200),
+  purpose: z.string().trim().min(2).max(160),
+  summary: z.string().trim().min(10, 'Summarise the build in a sentence.').max(600),
+  short_description: z.string().trim().max(300).nullable().optional(),
+  body: z.string().trim().max(20_000).nullable().optional(),
+  items: z
+    .array(
+      z.object({
+        category: z.enum(COMPONENT_CATEGORIES),
+        component_id: z.string().trim().min(1).max(120),
+        quantity: z.number().int().min(1).max(20).default(1),
+      }),
+    )
+    .max(40)
+    .default([]),
+  component_notes: z.array(z.string().trim().min(2).max(300)).max(40).default([]),
+  hero_image_url: imageUrl,
+  image_urls: z.array(z.string().trim().max(600)).max(24).default([]),
+  /**
+   * Only filled in when performance was actually measured on the machine.
+   * The schema cannot enforce honesty, but the field is named so that writing
+   * something unmeasured here is a deliberate act rather than an accident.
+   */
+  verified_performance_notes: z.string().trim().max(4000).nullable().optional(),
+  customer_type: z.string().trim().max(120).nullable().optional(),
+  completed_on: z.string().trim().max(40).nullable().optional(),
+  ...contentFields,
+});
+export const adminPortfolioSchema = adminPortfolioFields;
+export const adminPortfolioEditSchema = adminPortfolioFields.partial();
+
+export const adminPromotionFields = z.object({
+  title: z.string().trim().min(2).max(200),
+  subtitle: z.string().trim().max(300).nullable().optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
+  image_url: imageUrl,
+  button_text: z.string().trim().max(60).nullable().optional(),
+  button_url: z.string().trim().max(600).nullable().optional(),
+  starts_at: z.string().trim().max(40).nullable().optional(),
+  ends_at: z.string().trim().max(40).nullable().optional(),
+  placement: z.enum(PROMOTION_PLACEMENTS).default('home-hero'),
+  status: z.enum(CONTENT_STATUSES).default('draft'),
+  sort_order: z.number().int().min(0).max(100_000).default(0),
+});
+export const adminPromotionSchema = adminPromotionFields.superRefine((value, ctx) => {
+  if (value.starts_at && value.ends_at && new Date(value.ends_at) <= new Date(value.starts_at)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['ends_at'],
+      message: 'The end date has to be after the start date.',
+    });
+  }
+  if (value.button_text && !value.button_url) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['button_url'],
+      message: 'A button with no link does nothing. Add a URL or clear the button text.',
+    });
+  }
+});
+export const adminPromotionEditSchema = adminPromotionFields.partial();
+
+export const adminCategorySchema = z.object({
+  label: z.string().trim().min(2).max(80),
+  description: z.string().trim().max(1000).nullable().optional(),
+  image_url: imageUrl,
+  sort_order: z.number().int().min(0).max(100_000).default(0),
+  active: z.boolean().default(true),
+  seo_title: z.string().trim().max(120).nullable().optional(),
+  seo_description: z.string().trim().max(320).nullable().optional(),
+});

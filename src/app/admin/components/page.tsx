@@ -1,15 +1,12 @@
-import type { Metadata } from 'next';
-import { ComponentManager } from '@/components/admin/component-manager';
-import { requireAdmin } from '@/lib/auth/session';
-import { listComponentsWithCost } from '@/lib/catalog/repository';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'Components' };
-export const dynamic = 'force-dynamic';
-
-export default async function AdminComponentsPage() {
-  // Cost price is included here and nowhere public: the admin role is
-  // verified before the query runs.
-  await requireAdmin();
-  const components = await listComponentsWithCost({ includeInactive: true });
-  return <ComponentManager components={components} />;
+/**
+ * The product screen moved under Content when the CMS was added.
+ *
+ * Kept as a redirect rather than deleted: this path is in the admin nav
+ * history, in bookmarks, and in the deployment notes. A 404 on a route that
+ * worked yesterday is a bug report waiting to happen.
+ */
+export default function AdminComponentsRedirect() {
+  redirect('/admin/content/products');
 }

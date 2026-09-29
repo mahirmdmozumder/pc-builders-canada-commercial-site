@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { ButtonLink, Card, EmptyState, PageHeader, PageShell } from '@/components/ui';
-import { getSupabasePublicClient } from '@/lib/supabase/server';
+import { listPublishedPortfolio } from '@/lib/cms/repository';
 import { formatDate } from '@/lib/utils';
-import type { PortfolioBuild } from '@/types/domain';
 
 export const metadata: Metadata = {
   title: 'Build Portfolio',
@@ -11,7 +10,8 @@ export const metadata: Metadata = {
   alternates: { canonical: '/portfolio' },
 };
 
-export const revalidate = 1800;
+// See src/app/networking/page.tsx for why this window is short.
+export const revalidate = 60;
 
 /**
  * Portfolio.
@@ -21,17 +21,10 @@ export const revalidate = 1800;
  * past work, and it does not show sample builds dressed up as delivered ones.
  */
 export default async function PortfolioPage() {
-  const supabase = getSupabasePublicClient();
-
-  let builds: PortfolioBuild[] = [];
-  if (supabase) {
-    const { data } = await supabase
-      .from('portfolio_builds')
-      .select('*')
-      .eq('published', true)
-      .order('created_at', { ascending: false });
-    builds = (data ?? []) as PortfolioBuild[];
-  }
+  // Ordering is by the admin's own display order first, then newest. The
+  // query moved into the CMS repository so the admin screen and this page
+  // cannot end up filtering on different things.
+  const builds = await listPublishedPortfolio();
 
   return (
     <>
@@ -59,10 +52,10 @@ export default async function PortfolioPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             {builds.map((build) => (
               <Card key={build.id} className="overflow-hidden">
-                {build.image_urls.length > 0 ? (
+                {build.hero_image_url || build.image_urls.length > 0 ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={build.image_urls[0]}
+                    src={build.hero_image_url ?? build.image_urls[0]}
                     alt={`${build.title} build`}
                     loading="lazy"
                     decoding="async"

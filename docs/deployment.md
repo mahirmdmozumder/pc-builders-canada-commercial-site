@@ -17,6 +17,8 @@ thing switched on.
    - `supabase/migrations/0002_order_functions.sql`
    - `supabase/migrations/0003_fix_admin_bootstrap.sql`
    - `supabase/migrations/0004_whole_unit_categories_and_condition.sql`
+   - `supabase/migrations/0005_cms_category_values.sql` — run alone, then:
+   - `supabase/migrations/0006_cms.sql`
    - `supabase/seed/seed.sql` (optional: loads the catalogue)
 
    If you set a project up before 0003 existed, run it now. Without it the
@@ -37,6 +39,19 @@ thing switched on.
    in-repo sample catalogue, say so in a banner, and disable their Add to cart
    buttons — those rows have ids the database does not have, so an order could
    not be fulfilled.
+
+   0005 and 0006 add the content management system. 0005 is three `alter type`
+   lines and has to run on its own, for the same reason as 0004: Postgres will
+   not let a new enum value be used in the transaction that added it, and 0006
+   seeds a row per category. 0006 itself runs in one go.
+
+   0006 also creates the `media` storage bucket, public to read and admin-only
+   to write. Nothing else needs setting up for image upload — Supabase Storage
+   is part of the same project.
+
+   Re-run the seed afterwards. It now loads the services and build presets that
+   used to be hardcoded, so until it runs those pages fall back to the in-repo
+   copy and look exactly as they did before.
 3. From **Project Settings → API**, copy:
    - Project URL
    - `anon` public key

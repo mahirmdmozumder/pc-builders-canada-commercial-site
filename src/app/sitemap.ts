@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { env } from '@/lib/env';
 import { POLICIES } from '@/content/policies';
-import { BUILD_PRESETS } from '@/lib/catalog/presets';
+import { listPublishedPresets } from '@/lib/cms/repository';
 import { SHOP_COLLECTIONS } from '@/lib/catalog/collections';
 
 /**
@@ -18,7 +18,7 @@ import { SHOP_COLLECTIONS } from '@/lib/catalog/collections';
  * `robots: { index: false, follow: true }` of its own; this is the matching
  * half of that decision.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = env.siteUrl.replace(/\/$/, '');
   const now = new Date();
 
@@ -45,7 +45,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  const presets: MetadataRoute.Sitemap = BUILD_PRESETS.map((preset) => ({
+  // Only published presets are listed. An unpublished one has no page to
+  // land on, and a sitemap entry for it would be a broken promise to a crawler.
+  const { rows: publishedPresets } = await listPublishedPresets();
+  const presets: MetadataRoute.Sitemap = publishedPresets.map((preset) => ({
     url: `${base}/build?preset=${preset.slug}`,
     lastModified: now,
     changeFrequency: 'weekly' as const,

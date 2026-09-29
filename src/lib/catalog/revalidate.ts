@@ -5,6 +5,9 @@ import { revalidatePath } from 'next/cache';
  *
  * `/build` is absent on purpose: it reads search params and the session, so it
  * renders per request and has no cache to invalidate.
+ *
+ * /services and /portfolio joined this list when their content moved into the
+ * database. Before that they were static files and there was nothing to clear.
  */
 const CATALOGUE_PATHS = [
   '/',
@@ -14,6 +17,8 @@ const CATALOGUE_PATHS = [
   '/nas',
   '/mini-pcs',
   '/refurbished',
+  '/services',
+  '/portfolio',
 ] as const;
 
 /**
