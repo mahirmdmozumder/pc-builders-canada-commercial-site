@@ -42,3 +42,7 @@ next-env.d.ts
 
 # keep the template, never the real values
 !.env.example
+
+# Intermediate QR bitmap written by brand/card/generate_card.py; the card PDFs
+# embed it, so the file itself is a build artefact rather than a source.
+brand/card/_qr-card.png
