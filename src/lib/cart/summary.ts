@@ -12,6 +12,12 @@ import type { SavedBuildItem } from '@/types/domain';
  * cart page and the checkout route call it, so what the customer is shown and
  * what Stripe is asked to charge come from the same calculation over the same
  * catalogue rows. The client's own price snapshot is never an input.
+ *
+ * INVARIANT: one resolved line comes back for every line sent in, in the same
+ * order. The cart page pairs the two by index to attach prices and problems to
+ * the right row, so a dropped line silently shifts every row after it. That
+ * shipped once: an unavailable part was skipped, and the cart then displayed
+ * the build's total against the part's name. A test enforces the invariant.
  */
 
 export interface ResolvedCartLine {
@@ -27,6 +33,14 @@ export interface ResolvedCartLine {
   componentId: string | null;
   includesAssembly: boolean;
   includesOsInstall: boolean;
+  /**
+   * False when the catalogue no longer has this item.
+   *
+   * An unavailable line is still RETURNED, priced at zero and excluded from
+   * the totals. It used to be dropped, which broke the invariant below and
+   * made the cart page show one line's price against another line's name.
+   */
+  available: boolean;
   /** Problems that must be resolved before this line can be purchased. */
   problems: string[];
 }
@@ -94,6 +108,7 @@ export async function resolveCart(input: ResolveCartInput): Promise<ResolvedCart
         componentId: null,
         includesAssembly: true,
         includesOsInstall: build.some((b) => b.category === 'os' && b.component.price_cents > 0),
+        available: true,
         problems: lineProblems,
       });
       problems.push(...lineProblems);
@@ -105,7 +120,24 @@ export async function resolveCart(input: ResolveCartInput): Promise<ResolvedCart
     const lineProblems: string[] = [];
 
     if (!component) {
-      lineProblems.push('A part in your cart is no longer available and has been skipped.');
+      lineProblems.push('This item is no longer available and has been left out of the total.');
+      lines.push({
+        kind: 'component',
+        // The catalogue has no row, so there is no name to show. The cart page
+        // has the name the customer saw when they added it and displays that;
+        // the id is kept here because it is what identifies the failure.
+        name: line.component_id,
+        quantity: line.quantity,
+        unitPriceCents: 0,
+        totalCents: 0,
+        parts: [],
+        configuration: null,
+        componentId: line.component_id,
+        includesAssembly: false,
+        includesOsInstall: false,
+        available: false,
+        problems: lineProblems,
+      });
       problems.push(...lineProblems);
       continue;
     }
@@ -127,6 +159,7 @@ export async function resolveCart(input: ResolveCartInput): Promise<ResolvedCart
       componentId: component.id,
       includesAssembly: false,
       includesOsInstall: false,
+      available: true,
       problems: lineProblems,
     });
     problems.push(...lineProblems);
@@ -134,7 +167,9 @@ export async function resolveCart(input: ResolveCartInput): Promise<ResolvedCart
 
   const price = priceCart({
     province: input.province,
-    lines: lines.map((line) => ({
+    // Unavailable lines are shown but never charged for. Filtering here rather
+    // than pricing them at zero keeps them out of the Stripe line items too.
+    lines: lines.filter((line) => line.available).map((line) => ({
       kind: line.kind,
       name: line.name,
       unitPriceCents: line.unitPriceCents,

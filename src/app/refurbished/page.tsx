@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ButtonLink, Card, EmptyState, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { ProductCard } from '@/components/shop/product-card';
-import { listComponentsWithSource } from '@/lib/catalog/repository';
+import { isOrderable, listComponentsWithSource } from '@/lib/catalog/repository';
 import { CATEGORY_LABELS, type ComponentCategory } from '@/lib/catalog/types';
 
 export const metadata: Metadata = {
@@ -36,6 +36,7 @@ export default async function RefurbishedPage() {
     conditions: ['refurbished', 'open-box'],
   });
   const sampleData = source === 'sample';
+  const orderable = isOrderable(source);
 
   // Group by category so a visitor scanning for one kind of part can find it.
   const grouped = new Map<ComponentCategory, typeof listings>();
@@ -111,7 +112,7 @@ export default async function RefurbishedPage() {
                   />
                   <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {items.map((item) => (
-                      <ProductCard key={item.id} component={item} />
+                      <ProductCard key={item.id} component={item} orderable={orderable} />
                     ))}
                   </div>
                 </section>

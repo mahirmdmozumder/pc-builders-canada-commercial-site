@@ -84,14 +84,73 @@ describe('cart resolution', () => {
     expect(cart.problems[0]).toContain('out of stock');
   });
 
-  it('skips a component that no longer exists and says so', async () => {
+  it('still returns a line for a component that no longer exists', async () => {
     const cart = await resolveCart({
       lines: [{ kind: 'component', component_id: 'gpu-does-not-exist', quantity: 1 }],
       province: 'ON',
     });
 
-    expect(cart.lines).toHaveLength(0);
+    expect(cart.lines).toHaveLength(1);
+    expect(cart.lines[0].available).toBe(false);
+    expect(cart.lines[0].totalCents).toBe(0);
     expect(cart.problems[0]).toContain('no longer available');
+  });
+
+  it('leaves an unavailable line out of every total', async () => {
+    const cart = await resolveCart({
+      lines: [{ kind: 'component', component_id: 'gpu-does-not-exist', quantity: 3 }],
+      province: 'ON',
+    });
+
+    expect(cart.price.subtotalCents).toBe(0);
+    expect(cart.price.totalCents).toBe(0);
+    // Nothing to ship, so no shipping is charged for an empty-valued cart.
+    expect(cart.price.shippingCents).toBe(0);
+  });
+
+  /**
+   * The cart page pairs its own lines to these by index. A dropped line shifts
+   * every row after it, and the page then shows one line's price and problems
+   * against another line's name.
+   *
+   * That is not hypothetical: an unavailable part used to be skipped, and a
+   * $153.95 Raspberry Pi was displayed at $3,059.70 because it had picked up
+   * the build line that followed it. Money was never wrong — checkout refuses
+   * while any problem is present — but the customer was shown a price that was
+   * not theirs.
+   */
+  it('returns exactly one line per line sent, in the same order', async () => {
+    const cases = [
+      [{ kind: 'component' as const, component_id: 'gpu-does-not-exist', quantity: 1 }, BUILD_LINE],
+      [BUILD_LINE, { kind: 'component' as const, component_id: 'gpu-does-not-exist', quantity: 1 }],
+      [
+        { kind: 'component' as const, component_id: 'gpu-does-not-exist', quantity: 1 },
+        { kind: 'component' as const, component_id: 'ssd-wd-black-sn850x-2tb', quantity: 1 },
+        { kind: 'component' as const, component_id: 'also-not-real', quantity: 1 },
+      ],
+    ];
+
+    for (const lines of cases) {
+      const cart = await resolveCart({ lines, province: 'ON' });
+      expect(cart.lines).toHaveLength(lines.length);
+      for (const [i, sent] of lines.entries()) {
+        expect(cart.lines[i].kind).toBe(sent.kind);
+      }
+    }
+  });
+
+  it('prices the surviving lines correctly when an unavailable one sits first', async () => {
+    const buildOnly = await resolveCart({ lines: [BUILD_LINE], province: 'ON' });
+    const withGhost = await resolveCart({
+      lines: [{ kind: 'component', component_id: 'gpu-does-not-exist', quantity: 1 }, BUILD_LINE],
+      province: 'ON',
+    });
+
+    // The ghost contributes nothing, so the build's own figures are unchanged
+    // and land on the build's row rather than the ghost's.
+    expect(withGhost.price.subtotalCents).toBe(buildOnly.price.subtotalCents);
+    expect(withGhost.lines[1].totalCents).toBe(buildOnly.lines[0].totalCents);
+    expect(withGhost.lines[0].totalCents).toBe(0);
   });
 
   it('does not charge assembly on a parts-only cart', async () => {

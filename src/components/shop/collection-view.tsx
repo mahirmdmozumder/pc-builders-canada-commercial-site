@@ -1,6 +1,6 @@
 import { ButtonLink, EmptyState, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { ProductCard } from '@/components/shop/product-card';
-import { listComponents, listComponentsWithSource } from '@/lib/catalog/repository';
+import { isOrderable, listComponents, listComponentsWithSource } from '@/lib/catalog/repository';
 import type { CollectionGroup, ShopCollection } from '@/lib/catalog/collections';
 
 /**
@@ -21,6 +21,7 @@ export async function CollectionView({ collection }: { collection: ShopCollectio
   // configured. A configured deployment whose query fails falls back to the
   // sample catalogue, and that has to be disclosed too.
   const sampleData = primaryResult.source === 'sample';
+  const orderable = isOrderable(primaryResult.source);
 
   return (
     <>
@@ -44,14 +45,17 @@ export async function CollectionView({ collection }: { collection: ShopCollectio
             The list below comes from the in-repo sample catalogue rather than live inventory.
             Prices were checked against Canadian retail on the date shown per item; stock counts
             are placeholders, not real availability.
+            {!orderable
+              ? ' These items cannot be ordered online until the catalogue is loaded into the database, so ask us and we will source them directly.'
+              : ''}
           </p>
         ) : null}
 
-        <Group group={collection.primary} components={primary} />
+        <Group group={collection.primary} components={primary} orderable={orderable} />
 
         {collection.secondary ? (
           <div className="mt-16">
-            <Group group={collection.secondary} components={secondary} />
+            <Group group={collection.secondary} components={secondary} orderable={orderable} />
           </div>
         ) : null}
       </PageShell>
@@ -80,9 +84,11 @@ export async function CollectionView({ collection }: { collection: ShopCollectio
 function Group({
   group,
   components,
+  orderable,
 }: {
   group: CollectionGroup;
   components: Awaited<ReturnType<typeof listComponents>>;
+  orderable: boolean;
 }) {
   return (
     <section>
@@ -97,7 +103,7 @@ function Group({
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {components.map((component) => (
-              <ProductCard key={component.id} component={component} />
+              <ProductCard key={component.id} component={component} orderable={orderable} />
             ))}
           </div>
         )}

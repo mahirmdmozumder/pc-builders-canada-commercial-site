@@ -40,6 +40,27 @@ export function getCatalogSource(): CatalogSource {
   return isSupabaseConfigured ? 'database' : 'sample';
 }
 
+/**
+ * Whether rows from this source can actually be ordered.
+ *
+ * A deployment with NO database configured is a demo: the sample catalogue is
+ * all there is, checkout already refuses for want of Stripe and Supabase, and
+ * letting somebody fill a cart harms nothing.
+ *
+ * A CONFIGURED deployment that fell back to the sample catalogue is a
+ * different situation. Those rows carry ids that do not exist in the database,
+ * so the cart cannot resolve them, and offering an Add to cart button leads
+ * straight to a dead end: the item lands in the cart, comes back as "no longer
+ * available", and blocks checkout for the rest of the basket.
+ *
+ * That is exactly what happened when a schema migration had not been applied
+ * and the new categories were served from the fallback. The storefront was
+ * advertising things it could not sell.
+ */
+export function isOrderable(source: CatalogSource): boolean {
+  return source === 'database' || !isSupabaseConfigured;
+}
+
 export interface CatalogResult {
   components: PublicComponent[];
   /** Where these particular rows actually came from. */

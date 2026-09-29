@@ -23,7 +23,13 @@ import { AddToCart } from '@/components/shop/add-to-cart';
  * A storefront that quietly drops any of these is making a claim the catalogue
  * does not support.
  */
-export function ProductCard({ component }: { component: PublicComponent }) {
+export function ProductCard({
+  component,
+  orderable = true,
+}: {
+  component: PublicComponent;
+  orderable?: boolean;
+}) {
   const chips = specChips(component);
   const name = displayName(component);
   const unverified = component.specs?.unverified;
@@ -92,6 +98,7 @@ export function ProductCard({ component }: { component: PublicComponent }) {
           name={name}
           priceCents={component.price_cents}
           stockQuantity={component.stock_quantity}
+          orderable={orderable}
         />
       </div>
 

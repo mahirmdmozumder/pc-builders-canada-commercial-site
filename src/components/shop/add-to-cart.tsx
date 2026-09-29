@@ -22,15 +22,29 @@ export function AddToCart({
   name,
   priceCents,
   stockQuantity,
+  orderable = true,
 }: {
   componentId: string;
   name: string;
   priceCents: number;
   stockQuantity: number;
+  /** False when this row came from the sample fallback on a live deployment. */
+  orderable?: boolean;
 }) {
   const addComponent = useCart((s) => s.addComponent);
   const hydrated = useHydrated();
   const [added, setAdded] = useState(false);
+
+  // Not orderable means the row is not in the live catalogue, so the cart
+  // could never resolve it. Better to say so than to let it be added and fail
+  // at checkout.
+  if (!orderable) {
+    return (
+      <Button variant="secondary" size="sm" disabled title="Not available to order right now">
+        Ask us
+      </Button>
+    );
+  }
 
   if (stockQuantity <= 0) {
     return (

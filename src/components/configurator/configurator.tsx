@@ -45,6 +45,8 @@ interface ConfiguratorProps {
   initialName: string;
   /** True when the catalogue is the in-repo sample set, not a live database. */
   sampleData: boolean;
+  /** False when the catalogue came from the sample fallback on a live site. */
+  orderable: boolean;
 }
 
 function readDraft(): Draft | null {
@@ -82,7 +84,13 @@ function ConfiguratorSkeleton() {
   );
 }
 
-function ConfiguratorInner({ catalogue, initialItems, initialName, sampleData }: ConfiguratorProps) {
+function ConfiguratorInner({
+  catalogue,
+  initialItems,
+  initialName,
+  sampleData,
+  orderable,
+}: ConfiguratorProps) {
   const router = useRouter();
   const { signedIn } = useClientSession();
   const addBuild = useCart((s) => s.addBuild);
@@ -374,9 +382,21 @@ function ConfiguratorInner({ catalogue, initialItems, initialName, sampleData }:
               </p>
             ) : null}
 
+            {/*
+              A build made from fallback rows cannot be ordered: those ids are
+              not in the database, so every part would come back "no longer
+              available" in the cart. Saying so here beats failing at checkout.
+            */}
+            {!orderable ? (
+              <p className="text-xs text-warn-400">
+                These parts are not in the live catalogue yet, so this build cannot be ordered
+                online. Request a quote and we will price and source it directly.
+              </p>
+            ) : null}
+
             <Button
               onClick={addToCart}
-              disabled={blocking || incomplete}
+              disabled={blocking || incomplete || !orderable}
               className="w-full"
               size="lg"
             >

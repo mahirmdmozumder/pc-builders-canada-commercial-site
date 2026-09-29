@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { PageHeader, PageShell } from '@/components/ui';
 import { Configurator } from '@/components/configurator/configurator';
-import { listComponentsWithSource } from '@/lib/catalog/repository';
+import { isOrderable, listComponentsWithSource } from '@/lib/catalog/repository';
 import { getPreset } from '@/lib/catalog/presets';
 import { getSessionUser } from '@/lib/auth/session';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
@@ -24,6 +24,7 @@ export default async function BuildPage({
 
   const { components: catalogue, source } = await listComponentsWithSource();
   const sampleData = source === 'sample';
+  const orderable = isOrderable(source);
 
   // Loading a saved build goes through the session client, so RLS decides
   // whether this user may see it. An id belonging to someone else returns
@@ -64,6 +65,7 @@ export default async function BuildPage({
           initialItems={initialItems}
           initialName={initialName}
           sampleData={sampleData}
+          orderable={orderable}
         />
       </PageShell>
     </>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, ButtonLink, Card, EmptyState, Select } from '@/components/ui';
 import { useCart, type CartLine } from '@/lib/cart/store';
-import { formatMoney } from '@/lib/utils';
+import { cn, formatMoney } from '@/lib/utils';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
 import { PROVINCE_OPTIONS } from '@/lib/pricing/tax';
 import type { ResolvedCart } from '@/lib/cart/summary';
@@ -99,9 +99,12 @@ function CartViewInner() {
         ) : null}
 
         {lines.map((line, index) => {
+          // resolveCart returns one line per line sent, in order, so pairing by
+          // index is safe. See the invariant note on resolveCart.
           const resolved = summary?.lines[index];
+          const unavailable = resolved ? !resolved.available : false;
           return (
-            <Card key={line.id} className="overflow-hidden">
+            <Card key={line.id} className={cn('overflow-hidden', unavailable && 'opacity-60')}>
               <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs tracking-wide text-ink-400 uppercase">
@@ -144,8 +147,22 @@ function CartViewInner() {
                 </div>
 
                 <div className="flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-end">
+                  {/*
+                    While the server price is still loading the row shows a
+                    placeholder, never the client's remembered snapshot. That
+                    snapshot lives in localStorage and is the one number this
+                    application deliberately does not trust; showing it here
+                    would put an unverified price in front of the customer at
+                    exactly the moment they are deciding to pay.
+                  */}
                   <p className="tnum text-lg font-semibold text-white">
-                    {formatMoney(resolved?.totalCents ?? line.snapshotPriceCents * line.quantity)}
+                    {unavailable ? (
+                      <span className="text-sm font-medium text-warn-400">Unavailable</span>
+                    ) : resolved ? (
+                      formatMoney(resolved.totalCents)
+                    ) : (
+                      <span className="text-sm font-normal text-ink-400">Pricing&hellip;</span>
+                    )}
                   </p>
                   <div className="flex items-center gap-3">
                     <label className="flex items-center gap-1.5 text-xs text-ink-400">
