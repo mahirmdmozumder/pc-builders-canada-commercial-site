@@ -44,10 +44,10 @@ export interface BusinessChannels {
 }
 
 export const CHANNELS: BusinessChannels = {
-  phone: null,
-  phoneDisplay: null,
+  phone: '+17788773823',
+  phoneDisplay: '+1 778-877-3823',
   phoneAcceptsSms: true,
-  email: null,
+  email: 'hellopcbuilderscanada@gmail.com',
   instagram: null,
   facebook: null,
   googleReviewUrl: null,
