@@ -15,7 +15,8 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
 };
 
-export const revalidate = 3600;
+// See src/app/networking/page.tsx for why this window is short.
+export const revalidate = 60;
 
 export default async function HomePage() {
   const featured = await summarisePresets(

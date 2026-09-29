@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/env';
 import { adminComponentSchema } from '@/lib/validation/schemas';
 import { logActivity } from '@/lib/admin/activity';
+import { revalidateStorefront } from '@/lib/catalog/revalidate';
 import {
   badRequest,
   conflict,
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
       metadata: { price_cents: input.price_cents, category: input.category },
     });
 
+    revalidateStorefront();
     return created({ id: input.id });
   });
 }

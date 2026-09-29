@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/env';
 import { inventoryAdjustSchema } from '@/lib/validation/schemas';
 import { logActivity } from '@/lib/admin/activity';
+import { revalidateStorefront } from '@/lib/catalog/revalidate';
 import type { ComponentRecord } from '@/lib/catalog/types';
 import { handle, notFound, ok, serviceUnavailable, zodErrorResponse } from '@/lib/api/respond';
 
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
       },
     });
 
+    revalidateStorefront();
     return ok({ stock_quantity: parsed.data.stock_quantity });
   });
 }

@@ -11,9 +11,8 @@ export const metadata: Metadata = {
   alternates: { canonical: '/refurbished' },
 };
 
-// Refurbished stock is one-of-a-kind and sells out, so this page is checked
-// more often than the new-goods collections.
-export const revalidate = 600;
+// See src/app/networking/page.tsx for why this window is short.
+export const revalidate = 60;
 
 /**
  * Refurbished and open-box listings.

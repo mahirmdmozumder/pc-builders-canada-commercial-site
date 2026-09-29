@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/env';
 import { adminComponentEditSchema } from '@/lib/validation/schemas';
 import { logActivity, describeChange } from '@/lib/admin/activity';
+import { revalidateStorefront } from '@/lib/catalog/revalidate';
 import type { ComponentRecord } from '@/lib/catalog/types';
 import { handle, notFound, ok, serviceUnavailable, zodErrorResponse } from '@/lib/api/respond';
 
@@ -94,6 +95,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       metadata: { changes },
     });
 
+    revalidateStorefront();
     return ok({ updated: true });
   });
 }
@@ -127,6 +129,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       summary: `Deactivated ${row.brand} ${row.model}`,
     });
 
+    revalidateStorefront();
     return ok({ deactivated: true });
   });
 }

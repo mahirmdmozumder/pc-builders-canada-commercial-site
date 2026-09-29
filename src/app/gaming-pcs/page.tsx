@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   alternates: { canonical: '/gaming-pcs' },
 };
 
-export const revalidate = 3600;
+// See src/app/networking/page.tsx for why this window is short.
+export const revalidate = 60;
 
 const CONSIDERATIONS = [
   {
