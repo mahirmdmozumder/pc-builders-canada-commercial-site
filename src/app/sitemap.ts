@@ -10,6 +10,13 @@ import { SHOP_COLLECTIONS } from '@/lib/catalog/collections';
  * Only pages worth indexing. Cart, checkout, account and admin are excluded
  * deliberately: they are private or session-specific, and listing them would
  * be noise for a crawler and a small information leak about the surface area.
+ *
+ * /scan is excluded too, for a different reason: it is the QR landing page
+ * from printed cards, and almost every line on it links to a page that says
+ * the same thing at greater length. Indexing it would enter it into
+ * competition with /services and the homepage for the same terms. It carries
+ * `robots: { index: false, follow: true }` of its own; this is the matching
+ * half of that decision.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = env.siteUrl.replace(/\/$/, '');
@@ -26,6 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${base}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/quote`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/refer`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
   ];
 
   // Generated from the collection definitions so a new collection cannot be

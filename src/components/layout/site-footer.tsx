@@ -37,6 +37,7 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
       { href: '/portfolio', label: 'Portfolio' },
       { href: '/contact', label: 'Contact' },
       { href: '/account/support', label: 'Support' },
+      { href: '/refer', label: 'Refer a friend' },
     ],
   },
   {

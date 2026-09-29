@@ -11,6 +11,16 @@ import { PROVINCE_TAXES } from '@/lib/pricing/tax';
  * up from the catalogue server-side and recalculated by the pricing engine.
  */
 
+/**
+ * Who sent this customer, for the referral offer.
+ *
+ * Free text on purpose. The offer asks people to name whoever referred them,
+ * and a name, a phone number or "the guy who fixed my PC in June" are all
+ * things a real person types. A strict code format would reject most of them
+ * and quietly lose the referral the offer exists to capture.
+ */
+const referralField = z.string().trim().max(120).nullable().optional();
+
 export const buildItemSchema = z.object({
   category: z.enum(COMPONENT_CATEGORIES),
   component_id: z.string().min(1).max(120),
@@ -47,6 +57,7 @@ export const quoteSchema = z
     /** May be empty when the customer is describing what they want in words. */
     items: z.array(buildItemSchema).max(30),
     customer_notes: z.string().trim().max(4000).nullable().optional(),
+    referred_by: referralField,
   })
   .superRefine((value, ctx) => {
     // A quote needs something to quote on: either a configuration or a
@@ -74,6 +85,7 @@ export const contactSchema = z.object({
   phone: z.string().trim().max(40).nullable().optional(),
   subject: z.string().trim().max(160).nullable().optional(),
   message: z.string().trim().min(10, 'Add a little more detail.').max(4000),
+  referred_by: referralField,
 });
 
 export const ticketSchema = z.object({

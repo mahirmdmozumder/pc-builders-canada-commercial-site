@@ -2,6 +2,7 @@ import { getSupabaseAdminClient, getSupabaseServerClient } from '@/lib/supabase/
 import { isSupabaseConfigured } from '@/lib/env';
 import { contactSchema } from '@/lib/validation/schemas';
 import { notifyAdmin } from '@/lib/email';
+import { withReferral } from '@/lib/referral';
 import { created, handle, serviceUnavailable, zodErrorResponse } from '@/lib/api/respond';
 
 /**
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
       email: parsed.data.email,
       phone: parsed.data.phone || null,
       subject: parsed.data.subject || null,
-      message: parsed.data.message,
+      message: withReferral(parsed.data.message, parsed.data.referred_by) ?? parsed.data.message,
     });
 
     if (error) {
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
 
     const notified = await notifyAdmin(
       `Contact form: ${parsed.data.subject || 'New message'}`,
-      `From ${parsed.data.name} <${parsed.data.email}>\n\n${parsed.data.message}`,
+      `From ${parsed.data.name} <${parsed.data.email}>\nReferred by: ${parsed.data.referred_by?.trim() || '(not stated)'}\n\n${parsed.data.message}`,
       'contact.received',
     );
 

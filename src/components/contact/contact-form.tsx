@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Alert, Button, Card, Field, Input, Textarea } from '@/components/ui';
+import { REFERRAL } from '@/content/business';
 
 export function ContactForm() {
   const [state, setState] = useState<{
@@ -25,6 +26,7 @@ export function ContactForm() {
           phone: String(form.get('phone') ?? '') || null,
           subject: String(form.get('subject') ?? '') || null,
           message: String(form.get('message') ?? ''),
+          referred_by: String(form.get('referred_by') ?? '') || null,
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -84,6 +86,16 @@ export function ContactForm() {
           <Field label="Subject" htmlFor="subject">
             <Input id="subject" name="subject" maxLength={160} />
           </Field>
+          {REFERRAL.active ? (
+            <Field
+              label="Who referred you?"
+              htmlFor="contact-referred-by"
+              hint="Their name or phone number. Worth money off for both of you, once your job is done."
+            >
+              <Input id="contact-referred-by" name="referred_by" maxLength={120} placeholder="Optional" />
+            </Field>
+          ) : null}
+
         </div>
 
         <Field

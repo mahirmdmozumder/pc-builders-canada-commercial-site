@@ -5,6 +5,7 @@ import { resolveBuild } from '@/lib/catalog/repository';
 import { priceBuild } from '@/lib/pricing/pricing';
 import { quoteSchema } from '@/lib/validation/schemas';
 import { generateReference } from '@/lib/utils';
+import { withReferral } from '@/lib/referral';
 import { notifyAdmin, quoteReceivedEmail, sendEmail } from '@/lib/email';
 import { created, handle, serviceUnavailable, zodErrorResponse } from '@/lib/api/respond';
 
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
       build_name: input.build_name || null,
       items: input.items,
       estimated_total_cents: price.totalCents,
-      customer_notes: input.customer_notes || null,
+      customer_notes: withReferral(input.customer_notes, input.referred_by),
       status: 'new',
     });
 
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
 
     await notifyAdmin(
       `New quote ${reference} from ${input.customer_name}`,
-      `${input.customer_name} <${input.customer_email}> requested a quote.\nItems: ${input.items.length}\nEstimate: $${(price.totalCents / 100).toFixed(2)}\nNotes: ${input.customer_notes ?? '(none)'}`,
+      `${input.customer_name} <${input.customer_email}> requested a quote.\nItems: ${input.items.length}\nEstimate: $${(price.totalCents / 100).toFixed(2)}\nReferred by: ${input.referred_by?.trim() || '(not stated)'}\nNotes: ${input.customer_notes ?? '(none)'}`,
       'quote.received',
     );
 

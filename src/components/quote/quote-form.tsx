@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Card, Field, Input, Select, Textarea } from '@/components/ui';
 import { formatMoney } from '@/lib/utils';
+import { REFERRAL } from '@/content/business';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
 import { PROVINCE_OPTIONS } from '@/lib/pricing/tax';
 import { priceBuild } from '@/lib/pricing/pricing';
@@ -101,6 +102,7 @@ function QuoteFormInner({ catalogue }: { catalogue: PublicComponent[] }) {
       build_name: hasBuild ? buildName || 'Custom build' : null,
       items: hasBuild ? items : [],
       customer_notes: String(form.get('customer_notes') ?? '') || null,
+      referred_by: String(form.get('referred_by') ?? '') || null,
     };
 
     try {
@@ -225,6 +227,16 @@ function QuoteFormInner({ catalogue }: { catalogue: PublicComponent[] }) {
               placeholder="Example: mostly Unreal Engine and Blender, some 1440p gaming. Budget around $3,000. I already have a monitor and peripherals."
             />
           </Field>
+
+          {REFERRAL.active ? (
+            <Field
+              label="Who referred you?"
+              htmlFor="quote-referred-by"
+              hint="Their name or phone number. Worth money off for both of you, once your job is done."
+            >
+              <Input id="quote-referred-by" name="referred_by" maxLength={120} placeholder="Optional" />
+            </Field>
+          ) : null}
 
           <div className="flex items-center justify-between border-t border-ink-700 pt-5">
             <p className="text-xs text-ink-400">
