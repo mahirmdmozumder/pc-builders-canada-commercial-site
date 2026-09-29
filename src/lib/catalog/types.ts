@@ -100,14 +100,46 @@ export const CONFIGURATOR_CATEGORIES: ComponentCategory[] = [
  * opened, and `condition_notes` carries the specifics (what was replaced, what
  * cosmetic marks it has, what warranty applies) rather than a vague grade.
  */
-export const COMPONENT_CONDITIONS = ['new', 'refurbished', 'open-box'] as const;
+export const COMPONENT_CONDITIONS = [
+  'new',
+  'open-box',
+  'tested',
+  'refurbished',
+  'used',
+] as const;
 export type ComponentCondition = (typeof COMPONENT_CONDITIONS)[number];
 
 export const CONDITION_LABELS: Record<ComponentCondition, string> = {
   new: 'New',
-  refurbished: 'Refurbished',
   'open-box': 'Open box',
+  tested: 'Tested',
+  refurbished: 'Refurbished',
+  used: 'Used',
 };
+
+/**
+ * What each condition actually claims.
+ *
+ * Shown next to the choice in the admin and used as the tooltip on the
+ * storefront badge, so the same words mean the same thing in both places.
+ *
+ * `tested` and `refurbished` are separate on purpose. Calling a working
+ * second-hand part "refurbished" when nothing was replaced overstates the work
+ * done to it, and somebody paying a refurbished price is entitled to a
+ * refurbished unit.
+ */
+export const CONDITION_DESCRIPTIONS: Record<ComponentCondition, string> = {
+  new: 'Sealed and unused.',
+  'open-box': 'Packaging opened, unit unused. A return, display piece or cancelled order.',
+  tested: 'Used, checked over and confirmed working. Nothing was replaced.',
+  refurbished: 'Used, then repaired or reconditioned. The notes say what was done.',
+  used: 'Used and sold as-is. The notes describe its condition and any wear.',
+};
+
+/** Anything not sold as new needs its condition stated wherever the price is. */
+export function isSecondHand(condition: ComponentCondition): boolean {
+  return condition !== 'new';
+}
 
 export type FormFactor = 'e-atx' | 'atx' | 'micro-atx' | 'mini-itx';
 export type MemoryType = 'ddr4' | 'ddr5';

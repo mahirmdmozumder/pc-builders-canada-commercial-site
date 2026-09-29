@@ -1,0 +1,31 @@
+-- ===========================================================================
+-- Two more condition values
+-- ===========================================================================
+-- Run this file on its own, then carry on. Postgres will not let a new enum
+-- value be used in the transaction that added it, and the seed inserts rows
+-- that reference conditions.
+--
+-- ---------------------------------------------------------------------------
+-- What these mean, so the labels stay honest
+-- ---------------------------------------------------------------------------
+--   new         Sealed, unused, sold as new.
+--   open-box    Packaging opened, unit unused. A return, a display piece or a
+--               cancelled order.
+--   tested      Used, checked over, and confirmed working. Less than a
+--               refurbishment: nothing was replaced, it was verified.
+--   refurbished Used, and actually repaired or reconditioned. Something was
+--               done to it, and the notes say what.
+--   used        Used, sold as-is. The weakest claim on the list, and the one
+--               that has to be most specific about wear in its notes.
+--
+-- `tested` and `refurbished` are deliberately separate. Calling a working
+-- second-hand part "refurbished" when nothing was replaced overstates the work
+-- done to it, and a buyer paying a refurbished price is entitled to a
+-- refurbished unit.
+--
+-- The check constraint from 0004 already requires condition notes on anything
+-- that is not `new`, so these two inherit that requirement automatically.
+-- ===========================================================================
+
+alter type component_condition add value if not exists 'tested';
+alter type component_condition add value if not exists 'used';

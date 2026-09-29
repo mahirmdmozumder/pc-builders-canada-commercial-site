@@ -2,7 +2,15 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { ButtonLink, Card, PageShell, SectionHeading } from '@/components/ui';
 import { PresetCard } from '@/components/build/preset-card';
-import { listLivePromotions, listPublishedPresets } from '@/lib/cms/repository';
+import {
+  listLivePromotions,
+  listPublishedPresets,
+  listPublishedServices,
+} from '@/lib/cms/repository';
+import { loadShopCatalogue, rotateShopItems, type ShopItem } from '@/lib/catalog/shop';
+import { ShopCard } from '@/components/shop/shop-card';
+import { isOrderable, getCatalogSource } from '@/lib/catalog/repository';
+import type { ServiceRecord } from '@/lib/cms/types';
 import { PromotionStrip } from '@/components/home/promotions';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { formatMoney } from '@/lib/utils';
@@ -23,31 +31,47 @@ export default async function HomePage() {
   // Featured presets are chosen in the admin now, not hardcoded here. If none
   // are marked featured, the first few published ones stand in, so the section
   // never renders empty just because nobody has ticked a box yet.
-  const [{ rows: presets }, promotions] = await Promise.all([
+  const [{ rows: presets }, promotions, { rows: services }, shop] = await Promise.all([
     listPublishedPresets(),
     listLivePromotions('home-hero'),
+    listPublishedServices(),
+    loadShopCatalogue(),
   ]);
+
   const picked = presets.filter((p) => p.featured);
   const featured = await summarisePresets((picked.length > 0 ? picked : presets).slice(0, 3));
-  const cheapest = Math.min(...featured.map((f) => f.subtotalCents));
+
+  // The "from" price is the cheapest ASSEMBLED machine, not the cheapest thing
+  // in the catalogue. Using the catalogue minimum would put a $7 cooler behind
+  // "Pre-built from", which is true of nothing we sell.
+  const prebuiltPrices = shop.items
+    .filter((item) => item.kind === 'prebuilt' && item.priceCents > 0)
+    .map((item) => item.priceCents);
+  const cheapestPrebuilt = prebuiltPrices.length > 0 ? Math.min(...prebuiltPrices) : null;
+
+  // Featured products come from the admin. Nothing ticked means the section
+  // stays off rather than filling itself with whatever happened to be first.
+  const featuredProducts = rotateShopItems(shop.items.filter((item) => item.featured)).slice(0, 8);
+  const orderable = isOrderable(getCatalogSource());
 
   return (
     <>
       <OrganizationJsonLd />
-      <Hero fromCents={cheapest} />
+      <Hero fromCents={cheapestPrebuilt} />
       <PromotionStrip promotions={promotions} />
       <Pillars />
+      <FeaturedProducts items={featuredProducts} orderable={orderable} />
       <BeyondTheDesktop />
       <FeaturedBuilds featured={featured} />
       <Process />
-      <Services />
+      <Services services={services} />
       <WhyUs />
       <ContactCta />
     </>
   );
 }
 
-function Hero({ fromCents }: { fromCents: number }) {
+function Hero({ fromCents }: { fromCents: number | null }) {
   return (
     <section className="relative overflow-hidden border-b border-ink-700">
       {/*
@@ -73,13 +97,13 @@ function Hero({ fromCents }: { fromCents: number }) {
             PC Builders Canada
           </p>
           <h1 className="mt-4 text-4xl leading-[1.08] font-semibold tracking-tight text-white sm:text-6xl">
-            Custom PCs built for gaming, work and{' '}
-            <span className="gold-text">performance</span>.
+            Custom PCs, repairs and{' '}
+            <span className="gold-text">on-site IT support</span>.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-300">
-            Pick your parts and the configurator checks them against each other as you go: socket,
-            memory, clearance, radiator support and power draw. Every machine is assembled, cabled
-            and tested before it ships.
+            Desktops and workstations built to order, plus networking, NAS and always-on systems
+            supplied and configured. Build a machine here with live compatibility checks, buy the
+            hardware on its own, or have us come to you and set it up.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -92,22 +116,28 @@ function Hero({ fromCents }: { fromCents: number }) {
           </div>
 
           <dl className="mt-14 grid max-w-2xl grid-cols-2 gap-x-8 gap-y-6 border-t border-ink-700 pt-8 sm:grid-cols-3">
-            <div>
-              <dt className="text-xs tracking-wide text-ink-400 uppercase">Builds from</dt>
-              <dd className="tnum mt-1 text-xl font-semibold text-white">
-                {formatMoney(fromCents, { whole: true })}
-              </dd>
-              <dd className="mt-0.5 text-xs text-ink-400">in parts, before assembly</dd>
-            </div>
+            {/* Omitted entirely when nothing is published, rather than
+                printing a zero or a price nothing is actually sold at. */}
+            {fromCents !== null ? (
+              <div>
+                <dt className="text-xs tracking-wide text-ink-400 uppercase">Pre-built from</dt>
+                <dd className="tnum mt-1 text-xl font-semibold text-white">
+                  {formatMoney(fromCents, { whole: true })}
+                </dd>
+                <dd className="mt-0.5 text-xs text-ink-400">assembled and tested, before tax</dd>
+              </div>
+            ) : null}
             <div>
               <dt className="text-xs tracking-wide text-ink-400 uppercase">Compatibility</dt>
               <dd className="mt-1 text-xl font-semibold text-white">10 checks</dd>
               <dd className="mt-0.5 text-xs text-ink-400">run on every configuration</dd>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <dt className="text-xs tracking-wide text-ink-400 uppercase">Shipping</dt>
-              <dd className="mt-1 text-xl font-semibold text-white">Canada-wide</dd>
-              <dd className="mt-0.5 text-xs text-ink-400">free on systems over $1,500</dd>
+              <dt className="text-xs tracking-wide text-ink-400 uppercase">On-site support</dt>
+              <dd className="mt-1 text-xl font-semibold text-white">Greater Toronto</dd>
+              <dd className="mt-0.5 text-xs text-ink-400">
+                or shipped Canada-wide, free over $1,500
+              </dd>
             </div>
           </dl>
         </div>
@@ -125,20 +155,20 @@ const PILLARS = [
   },
   {
     href: '/gaming-pcs',
-    title: 'Gaming PCs',
-    body: 'Configurations aimed at a resolution and a frame rate target, from high-refresh 1080p through 4K.',
-    cta: 'See gaming builds',
+    title: 'Pre-built gaming PCs',
+    body: 'Ready configurations aimed at a resolution and a frame rate target, assembled and tested before they ship.',
+    cta: 'See pre-built PCs',
   },
   {
-    href: '/workstations',
-    title: 'Workstation PCs',
-    body: 'Core count, memory capacity and storage layout chosen for render, compile and simulation work.',
-    cta: 'See workstations',
+    href: '/shop',
+    title: 'Shop hardware',
+    body: 'Parts, switches, NAS enclosures, drives and mini PCs in one catalogue, including open-box and refurbished stock.',
+    cta: 'Browse the shop',
   },
   {
     href: '/services',
-    title: 'PC services',
-    body: 'Upgrades, hardware diagnostics, Windows installation, driver setup and thermal testing for machines you already own.',
+    title: 'Repairs & IT support',
+    body: 'Diagnostics, upgrades, networking, storage and Windows work — on our bench or at your home or office.',
     cta: 'See services',
   },
 ];
@@ -160,6 +190,41 @@ function Pillars() {
                 {pillar.cta} &rarr;
               </span>
             </Link>
+          ))}
+        </div>
+      </PageShell>
+    </section>
+  );
+}
+
+/**
+ * Products the admin has ticked as featured.
+ *
+ * Renders nothing when none are ticked. That is deliberate: a section that
+ * fills itself with whatever happened to be first would make the tick box
+ * meaningless, and the homepage already has plenty to look at without a row of
+ * arbitrary products.
+ */
+function FeaturedProducts({ items, orderable }: { items: ShopItem[]; orderable: boolean }) {
+  if (items.length === 0) return null;
+
+  return (
+    <section className="border-b border-ink-700">
+      <PageShell className="py-16 sm:py-20">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <SectionHeading
+            eyebrow="Featured"
+            title="Picked out this week"
+            description="Hardware worth a look, whether you are building, upgrading or replacing something that died."
+          />
+          <Link href="/shop" className="text-sm font-medium text-gold-400 hover:text-gold-300">
+            Browse the shop &rarr;
+          </Link>
+        </div>
+
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map((item) => (
+            <ShopCard key={`${item.kind}-${item.id}`} item={item} orderable={orderable} />
           ))}
         </div>
       </PageShell>
@@ -314,18 +379,22 @@ function Process() {
   );
 }
 
-const SERVICE_ITEMS = [
-  'Custom PC building',
-  'PC upgrades',
-  'Hardware diagnostics',
-  'Windows installation',
-  'Driver and software setup',
-  'Performance optimisation',
-  'Thermal testing',
-  'Hardware troubleshooting',
-];
+/**
+ * Services, from the database.
+ *
+ * Previously a hardcoded list of eight strings. It reads the same services
+ * table the services page does, so adding a service in the admin puts it here
+ * too without a code change — which is the whole point of having moved that
+ * content out of the source.
+ *
+ * Featured services lead. If none are marked featured the first few by display
+ * order stand in, because an empty services section on the homepage of a
+ * services business is worse than an unopinionated one.
+ */
+function Services({ services }: { services: ServiceRecord[] }) {
+  const featured = services.filter((service) => service.featured);
+  const shown = (featured.length > 0 ? featured : services).slice(0, 8);
 
-function Services() {
   return (
     <section className="border-b border-ink-700">
       <PageShell className="py-16 sm:py-24">
@@ -333,18 +402,26 @@ function Services() {
           <div>
             <SectionHeading
               eyebrow="Services"
-              title="Work on machines you already own"
-              description="Not every problem needs a new computer. Upgrades, diagnostics and a clean Windows setup often get more back than a replacement would."
+              title="More than building machines"
+              description="Repairs and upgrades, networking and storage, small servers and always-on systems. On your bench or ours — we come to you across the Greater Toronto Area."
             />
             <ButtonLink href="/services" variant="secondary" className="mt-8">
-              See all services
+              View all services
             </ButtonLink>
           </div>
+
           <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-ink-700 bg-ink-700 sm:grid-cols-2">
-            {SERVICE_ITEMS.map((item) => (
-              <li key={item} className="flex items-center gap-3 bg-ink-900 px-5 py-4 text-sm text-ink-100">
-                <span className="size-1.5 rounded-full bg-gold-500" aria-hidden />
-                {item}
+            {shown.map((service) => (
+              <li key={service.id} className="bg-ink-900 px-5 py-4">
+                <Link href={`/services#${service.slug}`} className="group block">
+                  <span className="flex items-center gap-3 text-sm font-medium text-ink-100 group-hover:text-white">
+                    <span className="size-1.5 shrink-0 rounded-full bg-gold-500" aria-hidden />
+                    {service.name}
+                  </span>
+                  <span className="mt-1 block pl-4.5 text-xs leading-relaxed text-ink-400">
+                    {service.short_description}
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>

@@ -6,8 +6,9 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
   {
     heading: 'Build',
     links: [
+      { href: '/shop', label: 'Shop all hardware' },
       { href: '/build', label: 'PC configurator' },
-      { href: '/gaming-pcs', label: 'Gaming PCs' },
+      { href: '/gaming-pcs', label: 'Pre-built gaming PCs' },
       { href: '/workstations', label: 'Workstation PCs' },
       { href: '/quote', label: 'Request a quote' },
     ],

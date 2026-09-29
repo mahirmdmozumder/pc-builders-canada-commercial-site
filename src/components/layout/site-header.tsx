@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useCart } from '@/lib/cart/store';
 import { useClientSession } from '@/lib/auth/use-session';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
@@ -22,16 +22,23 @@ import { buttonClass } from '@/components/ui';
  * accident when a pointer crosses them on the way somewhere else.
  */
 
-const SHOP_LINKS = [
-  { href: '/networking', label: 'Networking & server', hint: 'Switches, PoE, 2.5GbE' },
-  { href: '/nas', label: 'NAS & storage', hint: 'Enclosures and NAS drives' },
-  { href: '/mini-pcs', label: 'Mini PCs & Pi', hint: 'Small always-on machines' },
-  { href: '/refurbished', label: 'Refurbished', hint: 'Tested, priced accordingly' },
-];
-
+/**
+ * Main navigation.
+ *
+ * The Shop group used to be a dropdown. It is a plain link now, because the
+ * shop became one page listing everything rather than six category routes, and
+ * a menu whose only job was to choose between those routes had nothing left to
+ * do.
+ *
+ * The flat bar appears at XL rather than LG. "Pre-built Gaming PCs" is a long
+ * label and eight items plus the logo and the two buttons do not fit on a
+ * 1024px laptop without shrinking the type to the point of being hard to read.
+ * Below XL the same links are in the menu, in full, with nothing hidden.
+ */
 const NAV = [
   { href: '/build', label: 'Build your PC' },
-  { href: '/gaming-pcs', label: 'Gaming PCs' },
+  { href: '/shop', label: 'Shop' },
+  { href: '/gaming-pcs', label: 'Pre-built Gaming PCs' },
   { href: '/workstations', label: 'Workstations' },
   { href: '/services', label: 'Services' },
   { href: '/portfolio', label: 'Portfolio' },
@@ -39,40 +46,24 @@ const NAV = [
   { href: '/contact', label: 'Contact' },
 ];
 
+/** Shown in the mobile menu under Shop, so the sections stay discoverable. */
+const SHOP_SECTIONS = [
+  { href: '/networking', label: 'Networking & switches' },
+  { href: '/nas', label: 'NAS & storage' },
+  { href: '/mini-pcs', label: 'Mini PCs & Pi' },
+  { href: '/refurbished', label: 'Open box & refurbished' },
+];
+
 export function SiteHeader() {
   const pathname = usePathname();
   const { signedIn, isAdmin } = useClientSession();
   const [open, setOpen] = useState(false);
-  const [shopOpen, setShopOpen] = useState(false);
   const lines = useCart((s) => s.lines);
   const hydrated = useHydrated();
-  const shopRef = useRef<HTMLDivElement>(null);
 
   // The cart count lives in localStorage, which the server cannot know, so it
   // stays at zero until hydration rather than causing a markup mismatch.
   const count = hydrated ? lines.reduce((sum, l) => sum + l.quantity, 0) : 0;
-
-  const shopActive = SHOP_LINKS.some(
-    (l) => pathname === l.href || pathname.startsWith(`${l.href}/`),
-  );
-
-  // Close the disclosure on Escape or on a click elsewhere. Without both, an
-  // open menu is a trap for a keyboard user and clutter for everyone else.
-  useEffect(() => {
-    if (!shopOpen) return;
-    function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') setShopOpen(false);
-    }
-    function onClick(event: MouseEvent) {
-      if (!shopRef.current?.contains(event.target as Node)) setShopOpen(false);
-    }
-    document.addEventListener('keydown', onKey);
-    document.addEventListener('mousedown', onClick);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.removeEventListener('mousedown', onClick);
-    };
-  }, [shopOpen]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-ink-700 bg-ink-900/90 backdrop-blur-md">
@@ -103,50 +94,8 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="hidden flex-1 items-center gap-0.5 lg:flex" aria-label="Main">
-          {NAV.slice(0, 3).map((item) => (
-            <NavLink key={item.href} item={item} pathname={pathname} />
-          ))}
-
-          <div className="relative" ref={shopRef}>
-            <button
-              type="button"
-              aria-expanded={shopOpen}
-              aria-controls="shop-menu"
-              onClick={() => setShopOpen((v) => !v)}
-              className={cn(
-                'inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm transition-colors',
-                shopActive || shopOpen ? 'text-white' : 'text-ink-300 hover:text-white',
-              )}
-            >
-              Shop
-              <ChevronIcon className={cn('size-3.5 transition-transform', shopOpen && 'rotate-180')} />
-            </button>
-
-            {shopOpen ? (
-              <div
-                id="shop-menu"
-                className="absolute top-full left-0 mt-1 w-72 overflow-hidden rounded-lg border border-ink-600 bg-ink-850 shadow-2xl shadow-black/60"
-              >
-                <ul className="p-1.5">
-                  {SHOP_LINKS.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        onClick={() => setShopOpen(false)}
-                        className="block rounded-md px-3 py-2.5 hover:bg-ink-800"
-                      >
-                        <span className="block text-sm font-medium text-ink-100">{link.label}</span>
-                        <span className="mt-0.5 block text-xs text-ink-400">{link.hint}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-
-          {NAV.slice(3).map((item) => (
+        <nav className="hidden flex-1 items-center gap-0.5 xl:flex" aria-label="Main">
+          {NAV.map((item) => (
             <NavLink key={item.href} item={item} pathname={pathname} />
           ))}
         </nav>
@@ -178,7 +127,7 @@ export function SiteHeader() {
 
           <button
             type="button"
-            className="rounded-md p-2 text-ink-200 lg:hidden"
+            className="rounded-md p-2 text-ink-200 xl:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             onClick={() => setOpen((v) => !v)}
@@ -192,29 +141,23 @@ export function SiteHeader() {
       {open ? (
         <nav
           id="mobile-nav"
-          className="border-t border-ink-700 bg-ink-850 lg:hidden"
+          className="border-t border-ink-700 bg-ink-850 xl:hidden"
           aria-label="Main"
           onClick={() => setOpen(false)}
         >
           <div className="space-y-1 px-4 py-3">
-            {NAV.slice(0, 3).map((item) => (
+            {NAV.map((item) => (
               <MobileLink key={item.href} href={item.href} label={item.label} />
             ))}
 
-            {/* On a phone there is room to show the group inline, so there is no
-                reason to make somebody tap twice for it. */}
+            {/* The shop sections still have their own pages; listing them here
+                keeps them one tap away without putting a menu in the bar. */}
             <p className="px-3 pt-3 pb-1 text-[0.65rem] font-semibold tracking-[0.16em] text-ink-400 uppercase">
-              Shop
+              Shop sections
             </p>
-            {SHOP_LINKS.map((link) => (
-              <MobileLink key={link.href} href={link.href} label={link.label} />
+            {SHOP_SECTIONS.map((item) => (
+              <MobileLink key={item.href} href={item.href} label={item.label} />
             ))}
-
-            <div className="pt-2">
-              {NAV.slice(3).map((item) => (
-                <MobileLink key={item.href} href={item.href} label={item.label} />
-              ))}
-            </div>
 
             <div className="mt-2 flex gap-2 border-t border-ink-700 pt-3">
               <Link
@@ -264,14 +207,6 @@ function MobileLink({ href, label }: { href: string; label: string }) {
     >
       {label}
     </Link>
-  );
-}
-
-function ChevronIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }
 
