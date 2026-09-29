@@ -9,6 +9,9 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { SAMPLE_COMPONENTS } from '../src/lib/catalog/sample-catalog';
+import { SERVICE_CONTENT } from '../src/content/services';
+import { BUILD_PRESETS } from '../src/lib/catalog/presets';
+import { CATEGORY_LABELS, COMPONENT_CATEGORIES } from '../src/lib/catalog/types';
 import type { ComponentRecord } from '../src/lib/catalog/types';
 
 function sqlString(value: string | null): string {
@@ -52,7 +55,7 @@ const COLUMNS = [
   'stock_quantity',
   'low_stock_threshold',
   'image_url',
-  'active',
+  'status',
   'data_confidence',
   'condition',
   'condition_notes',
@@ -102,7 +105,9 @@ function rowValues(c: ComponentRecord): string {
     sqlNumber(c.stock_quantity),
     sqlNumber(c.low_stock_threshold),
     sqlString(c.image_url),
-    String(c.active),
+    // `active` is derived from this by a trigger in migration 0006, so it is
+    // not seeded directly. Seeding both would let them disagree.
+    sqlString(c.active ? 'published' : 'archived'),
     sqlString(c.data_confidence),
     sqlString(c.condition),
     sqlString(c.condition_notes),
@@ -183,8 +188,101 @@ ${COLUMNS.filter((c) => c !== 'id')
   updated_at = now();
 `;
 
+/**
+ * Category display metadata.
+ *
+ * One row per enum value. The labels come from CATEGORY_LABELS so the seeded
+ * database opens showing exactly what the code showed before it existed.
+ */
+const categoriesSql = `
+
+-- ---------------------------------------------------------------------------
+-- component_categories - display metadata, one row per category
+-- ---------------------------------------------------------------------------
+insert into component_categories (category, label, sort_order) values
+${COMPONENT_CATEGORIES.map(
+  (category, index) =>
+    `  (${sqlString(category)}, ${sqlString(CATEGORY_LABELS[category])}, ${(index + 1) * 10})`,
+).join(',' + '\n')}
+on conflict (category) do update set
+  label = excluded.label,
+  updated_at = now();
+`;
+
+/**
+ * Services.
+ *
+ * Seeded as `published`, because these eight were already live on the public
+ * page before the table existed. Seeding them as drafts would blank the
+ * services page the moment the migration ran.
+ */
+const servicesSql = `
+
+-- ---------------------------------------------------------------------------
+-- services
+-- ---------------------------------------------------------------------------
+insert into services (
+  id, slug, name, short_description, includes, note, price_text,
+  featured, status, sort_order
+) values
+${SERVICE_CONTENT.map(
+  (service) =>
+    `  (${sqlString(service.id)}, ${sqlString(service.slug)}, ${sqlString(service.name)}, ` +
+    `${sqlString(service.short_description)}, ${sqlTextArray(service.includes)}, ` +
+    `${sqlString(service.note ?? null)}, ${sqlString(service.price_text ?? null)}, ` +
+    `${String(Boolean(service.featured))}, 'published', ${service.sort_order})`,
+).join(',' + '\n')}
+on conflict (id) do update set
+  slug = excluded.slug,
+  name = excluded.name,
+  short_description = excluded.short_description,
+  includes = excluded.includes,
+  note = excluded.note,
+  price_text = excluded.price_text,
+  featured = excluded.featured,
+  sort_order = excluded.sort_order,
+  updated_at = now();
+`;
+
+/**
+ * Build presets.
+ *
+ * `status` is NOT overwritten on conflict. Re-running the seed should not
+ * republish a preset an admin has deliberately taken down.
+ */
+const presetsSql = `
+
+-- ---------------------------------------------------------------------------
+-- build_presets
+-- ---------------------------------------------------------------------------
+insert into build_presets (
+  id, slug, name, audience, tagline, rationale, highlights, items,
+  status, sort_order
+) values
+${BUILD_PRESETS.map(
+  (preset, index) =>
+    `  (${sqlString(preset.slug)}, ${sqlString(preset.slug)}, ${sqlString(preset.name)}, ` +
+    `${sqlString(preset.audience)}, ${sqlString(preset.tagline)}, ${sqlString(preset.rationale)}, ` +
+    `${sqlTextArray(preset.highlights)}, ${sqlString(JSON.stringify(preset.items))}::jsonb, ` +
+    `'published', ${(index + 1) * 10})`,
+).join(',' + '\n')}
+on conflict (id) do update set
+  slug = excluded.slug,
+  name = excluded.name,
+  audience = excluded.audience,
+  tagline = excluded.tagline,
+  rationale = excluded.rationale,
+  highlights = excluded.highlights,
+  items = excluded.items,
+  sort_order = excluded.sort_order,
+  updated_at = now();
+`;
+
 const outPath = resolve(process.cwd(), 'supabase/seed/seed.sql');
 mkdirSync(dirname(outPath), { recursive: true });
-writeFileSync(outPath, header + body + footer, 'utf8');
+writeFileSync(outPath, header + body + footer + categoriesSql + servicesSql + presetsSql, 'utf8');
 
-console.log(`Wrote ${SAMPLE_COMPONENTS.length} components to supabase/seed/seed.sql`);
+console.log(
+  `Wrote ${SAMPLE_COMPONENTS.length} components, ${COMPONENT_CATEGORIES.length} categories, ` +
+    `${SERVICE_CONTENT.length} services and ${BUILD_PRESETS.length} presets to supabase/seed/seed.sql`,
+);

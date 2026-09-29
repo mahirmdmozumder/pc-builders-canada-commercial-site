@@ -20,7 +20,17 @@ import {
  * several collections.
  */
 
-const WHOLE_UNIT_CATEGORIES: ComponentCategory[] = ['networking', 'nas', 'mini-pc'];
+// Categories the compatibility engine has no rules for. None may appear in
+// CONFIGURATOR_CATEGORIES, or the configurator would offer a part it cannot
+// check and imply that it had.
+const WHOLE_UNIT_CATEGORIES: ComponentCategory[] = [
+  'networking',
+  'nas',
+  'mini-pc',
+  'case-fan',
+  'monitor',
+  'other',
+];
 
 /** Mirrors the sample-catalogue branch of listComponents(). */
 function query(options: {

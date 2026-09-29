@@ -27,6 +27,13 @@ export const COMPONENT_CATEGORIES = [
   'networking',
   'nas',
   'mini-pc',
+  // Sold alongside a build but with no compatibility rules written for them.
+  // They stay out of CONFIGURATOR_CATEGORIES for the same reason the
+  // whole-unit categories do: the engine can only check what it has rules for,
+  // and listing a category it cannot reason about would imply otherwise.
+  'case-fan',
+  'monitor',
+  'other',
 ] as const;
 
 export type ComponentCategory = (typeof COMPONENT_CATEGORIES)[number];
@@ -57,6 +64,9 @@ export const CATEGORY_LABELS: Record<ComponentCategory, string> = {
   networking: 'Networking & Server',
   nas: 'NAS & Storage Enclosure',
   'mini-pc': 'Mini PC & Single-Board',
+  'case-fan': 'Case Fan',
+  monitor: 'Monitor',
+  other: 'Other',
 };
 
 /**
