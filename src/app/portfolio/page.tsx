@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ButtonLink, Card, EmptyState, PageHeader, PageShell } from '@/components/ui';
 import { listPublishedPortfolio } from '@/lib/cms/repository';
+import { BuildImage } from '@/components/shop/product-image';
 import { formatDate } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -51,17 +52,13 @@ export default async function PortfolioPage() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
             {builds.map((build) => (
-              <Card key={build.id} className="overflow-hidden">
-                {build.hero_image_url || build.image_urls.length > 0 ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={build.hero_image_url ?? build.image_urls[0]}
-                    alt={`${build.title} build`}
-                    loading="lazy"
-                    decoding="async"
-                    className="aspect-[16/10] w-full object-cover"
-                  />
-                ) : null}
+              <Card key={build.id} className="group overflow-hidden">
+                <BuildImage
+                  src={build.hero_image_url ?? build.image_urls[0] ?? null}
+                  alt={`${build.title} build`}
+                  galleryCount={Math.max(0, build.image_urls.length - 1)}
+                  className="rounded-none border-0 border-b border-ink-700"
+                />
 
                 <div className="p-6">
                   <p className="text-xs tracking-wide text-gold-400 uppercase">{build.purpose}</p>

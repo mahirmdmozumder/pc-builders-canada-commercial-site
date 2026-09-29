@@ -8,6 +8,7 @@ import { specChips } from '@/components/configurator/spec-chips';
 import { formatMoney } from '@/lib/utils';
 import { Badge } from '@/components/ui';
 import { AddToCart } from '@/components/shop/add-to-cart';
+import { ProductImage } from '@/components/shop/product-image';
 
 /**
  * A single catalogue row on a storefront page.
@@ -38,7 +39,15 @@ export function ProductCard({
   const isNew = component.condition === 'new';
 
   return (
-    <article className="flex flex-col rounded-lg border border-ink-700 bg-ink-850 p-5 transition-colors hover:border-gold-600/40">
+    <article className="group flex flex-col rounded-lg border border-ink-700 bg-ink-850 p-5 transition-colors hover:border-gold-600/40">
+      <ProductImage
+        src={component.image_url}
+        alt={name}
+        category={component.category}
+        galleryCount={component.gallery_urls?.length ?? 0}
+        className="mb-4"
+      />
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs tracking-wide text-gold-400 uppercase">{component.brand}</p>

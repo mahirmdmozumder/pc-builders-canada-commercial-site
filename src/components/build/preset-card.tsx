@@ -3,9 +3,15 @@ import { Badge, Card } from '@/components/ui';
 import { formatMoney } from '@/lib/utils';
 import { CATEGORY_LABELS, type ComponentCategory } from '@/lib/catalog/types';
 import type { BuildPreset } from '@/lib/catalog/presets';
+import type { BuildPresetRecord } from '@/lib/cms/types';
+import { BuildImage } from '@/components/shop/product-image';
 
 export interface PresetSummary {
-  preset: BuildPreset;
+  /**
+   * Either the in-repo preset or a database row. They are the same shape for
+   * everything this card renders; only the database row carries photographs.
+   */
+  preset: BuildPreset | BuildPresetRecord;
   subtotalCents: number;
   estimatedTotalCents: number;
   estimatedWatts: number;
@@ -24,8 +30,19 @@ export function summaryKeyCategories() {
 
 export function PresetCard({ summary }: { summary: PresetSummary }) {
   const { preset } = summary;
+  // Only a database-backed preset has photographs. The in-repo fallback does
+  // not, so the frame falls through to its placeholder rather than breaking.
+  const record = 'hero_image_url' in preset ? preset : null;
+
   return (
-    <Card className="flex flex-col overflow-hidden transition-colors hover:border-ink-600">
+    <Card className="group flex flex-col overflow-hidden transition-colors hover:border-ink-600">
+      <BuildImage
+        src={record?.hero_image_url ?? record?.gallery_urls?.[0] ?? null}
+        alt={`${preset.name} build`}
+        galleryCount={Math.max(0, (record?.gallery_urls?.length ?? 0) - 1)}
+        className="rounded-none border-0 border-b border-ink-700"
+      />
+
       <div className="border-b border-ink-700 px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
