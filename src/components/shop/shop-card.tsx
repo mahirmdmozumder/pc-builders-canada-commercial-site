@@ -10,13 +10,25 @@ import { AddToCart } from '@/components/shop/add-to-cart';
  * One tile in the shop grid.
  *
  * Handles both things the shop sells. A part gets an Add to cart button and a
- * stock line; a pre-built gets a link into the configurator, because buying a
- * machine means choosing its parts first and there is no single stock number
- * for something assembled to order.
+ * stock line; a pre-built gets a link through to its own page, because there is
+ * no single stock number for something assembled to order.
  *
- * Condition is a badge, never a footnote. Anything not sold as new says so
- * next to its price, with the claim spelled out on hover, because the entire
- * value of a lower price is a buyer knowing why it is lower.
+ * ---------------------------------------------------------------------------
+ * THE CLICK TARGET
+ * ---------------------------------------------------------------------------
+ * The image and the title are links to the product page; the card itself is not.
+ * A whole-card <a> is the tempting version and it breaks two things: the Add to
+ * cart button inside it becomes a nested interactive element, which is invalid
+ * HTML and behaves differently in every browser, and selecting the description
+ * text to copy a model number navigates away instead.
+ *
+ * Two links to the same place also means a keyboard user tabs past the same card
+ * twice, so the image link is aria-hidden and taken out of the tab order — the
+ * title link is the accessible one, and it carries the name.
+ *
+ * Condition is a badge, never a footnote. Anything not sold as new says so next
+ * to its price, with the claim spelled out on hover, because the entire value of
+ * a lower price is a buyer knowing why it is lower.
  */
 export function ShopCard({ item, orderable = true }: { item: ShopItem; orderable?: boolean }) {
   const secondHand = item.condition !== 'new';
@@ -24,13 +36,19 @@ export function ShopCard({ item, orderable = true }: { item: ShopItem; orderable
 
   return (
     <article className="group flex flex-col rounded-lg border border-ink-700 bg-ink-850 p-4 transition-colors hover:border-gold-600/40">
-      <ProductImage
-        src={item.imageUrl}
-        alt={item.name}
-        category={item.category ?? 'case'}
-        galleryCount={item.galleryCount}
-        className="mb-3"
-      />
+      <Link
+        href={item.href}
+        aria-hidden
+        tabIndex={-1}
+        className="mb-3 block focus:outline-none"
+      >
+        <ProductImage
+          src={item.imageUrl}
+          alt={item.name}
+          category={item.category ?? 'case'}
+          galleryCount={item.galleryCount}
+        />
+      </Link>
 
       <div className="mb-2 flex flex-wrap items-center gap-1.5">
         <Badge tone={item.kind === 'prebuilt' ? 'accent' : 'neutral'}>
@@ -47,7 +65,14 @@ export function ShopCard({ item, orderable = true }: { item: ShopItem; orderable
       {item.brand ? (
         <p className="text-xs tracking-wide text-gold-400 uppercase">{item.brand}</p>
       ) : null}
-      <h3 className="mt-0.5 leading-snug font-semibold text-white">{item.name}</h3>
+      <h3 className="mt-0.5 leading-snug font-semibold text-white">
+        <Link
+          href={item.href}
+          className="rounded transition-colors hover:text-gold-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+        >
+          {item.name}
+        </Link>
+      </h3>
 
       <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-ink-300">
         {item.description}
@@ -76,7 +101,7 @@ export function ShopCard({ item, orderable = true }: { item: ShopItem; orderable
             href={item.href}
             className="shrink-0 rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-sm font-medium text-ink-100 transition-colors hover:border-gold-600/50 hover:text-white"
           >
-            Configure
+            View build
           </Link>
         ) : (
           <AddToCart

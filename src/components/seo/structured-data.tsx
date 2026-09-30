@@ -184,6 +184,23 @@ const CONDITION_URL: Record<string, string> = {
   used: 'https://schema.org/UsedCondition',
 };
 
+/**
+ * An aggregate rating, only ever built from real reviews.
+ *
+ * Passed as an explicit object rather than assembled here, so there is no code
+ * path that can produce one from nothing. A product with no reviews passes
+ * `rating: null` and the property is simply absent from the markup.
+ *
+ * Emitting `aggregateRating` with `reviewCount: 0`, or with a made-up average,
+ * is the single most reliably penalised piece of structured data there is —
+ * and in Canada a fabricated rating is a Competition Act problem before it is
+ * ever an SEO one.
+ */
+export interface AggregateRating {
+  value: number;
+  count: number;
+}
+
 export function ProductJsonLd({
   name,
   description,
@@ -194,6 +211,7 @@ export function ProductJsonLd({
   condition,
   inStock,
   url,
+  rating,
 }: {
   name: string;
   description: string;
@@ -204,6 +222,8 @@ export function ProductJsonLd({
   condition: string;
   inStock: boolean;
   url: string;
+  /** Null unless the product has genuine reviews. */
+  rating?: AggregateRating | null;
 }) {
   // No price means no offer. An offer without a price is invalid markup, and
   // "Ask us" is not a number.
@@ -231,6 +251,19 @@ export function ProductJsonLd({
   if (sku) data.sku = sku;
   if (brand) data.brand = { '@type': 'Brand', name: brand };
   if (image) data.image = image.startsWith('http') ? image : `${env.siteUrl}${image}`;
+
+  // The count guard is load-bearing, not defensive tidiness. Google requires
+  // aggregateRating to have a review count of at least one, and a zero-count
+  // rating is the exact shape a manual action gets issued over.
+  if (rating && rating.count > 0) {
+    data.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: rating.value,
+      reviewCount: rating.count,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
 
   return <Ld data={data} />;
 }

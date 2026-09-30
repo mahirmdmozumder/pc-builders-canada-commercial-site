@@ -278,7 +278,14 @@ export type ActivityAction =
   | 'portfolio.updated'
   | 'content.created'
   | 'content.updated'
-  | 'content.archived';
+  | 'content.archived'
+  /**
+   * Review moderation. Both directions are logged, because hiding a customer's
+   * review is the kind of action that has to be answerable later — the log
+   * records who did it, when, and the reason they gave.
+   */
+  | 'review.hidden'
+  | 'review.restored';
 
 export interface ActivityLogEntry {
   id: string;

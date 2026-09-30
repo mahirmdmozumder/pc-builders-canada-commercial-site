@@ -56,6 +56,9 @@ function component(seed: ComponentSeed): ComponentRecord {
     low_stock_threshold: 3,
     image_url: null,
     gallery_urls: [],
+    // No product photography or video for the reference catalogue. The storefront
+    // draws an honest placeholder rather than borrowing a manufacturer render.
+    video_url: null,
     active: true,
     status: 'published',
     featured: false,

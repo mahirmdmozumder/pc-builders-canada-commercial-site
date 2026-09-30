@@ -49,6 +49,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       patch.status = legacyActive ? 'published' : 'archived';
     }
     if (patch.image_url === '') patch.image_url = null;
+    // Same reason: a cleared input arrives as "", and the not-blank constraint
+    // from migration 0009 refuses that. Clearing the field means removing the
+    // video, so it becomes NULL.
+    if (patch.video_url === '') patch.video_url = null;
 
     const changes: string[] = [];
     const before = existing as ComponentRecord;

@@ -42,6 +42,7 @@ const NAV_GROUPS: { heading: string | null; items: { href: string; label: string
       { href: '/admin/content/builds', label: 'PC builds' },
       { href: '/admin/content/portfolio', label: 'Portfolio' },
       { href: '/admin/content/services', label: 'Services' },
+      { href: '/admin/content/reviews', label: 'Reviews' },
       { href: '/admin/content/promotions', label: 'Promotions' },
       { href: '/admin/content/categories', label: 'Categories' },
     ],

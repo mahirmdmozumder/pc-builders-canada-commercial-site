@@ -248,6 +248,16 @@ export const adminComponentFields = z.object({
   pcie_version: z.number().int().min(1).max(6).nullable().optional(),
   condition_notes: z.string().trim().max(600).nullable().optional(),
   image_url: z.url().max(500).nullable().optional().or(z.literal('')),
+  /**
+   * One optional product video.
+   *
+   * Validated as a URL rather than as a storage path, because the two things an
+   * operator actually has are a YouTube link and an uploaded clip. Which of
+   * those a URL is gets decided at render time by describeVideo(); a link this
+   * accepts but that renderer does not recognise simply shows no video, rather
+   * than an empty player.
+   */
+  video_url: z.url().max(600).nullable().optional().or(z.literal('')),
 });
 
 /** Creating a component: every field present, condition rule enforced. */
@@ -286,6 +296,77 @@ export const inventoryAdjustSchema = z.object({
   stock_quantity: z.number().int().min(0).max(100_000),
   reason: z.string().trim().max(200).optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Product reviews
+// ---------------------------------------------------------------------------
+
+/**
+ * A customer review.
+ *
+ * Every limit here matches a CHECK constraint in migration 0009, deliberately.
+ * This layer produces a readable message for a person filling in a form; the
+ * database is what actually enforces the rule, including against SQL run by
+ * hand.
+ *
+ * Note what is ABSENT and cannot be sent: `user_id`, `verified_purchase`,
+ * `hidden_at` and `hidden_reason`. Authorship and verification are established
+ * by the database trigger from the session and from paid order data. A schema
+ * that accepted them would be accepting a client's claim about who it is and
+ * what it bought.
+ */
+const reviewBodyField = z
+  .string()
+  .trim()
+  // 20 characters is roughly "Works great, no issues" — short, but a statement.
+  // Below that a review carries a rating and no information.
+  .min(20, 'Please write at least 20 characters so the review says something.')
+  .max(4000);
+
+export const reviewSchema = z.object({
+  component_id: z.string().trim().min(1).max(120),
+  rating: z.number().int().min(1).max(5),
+  title: z.string().trim().min(3).max(120).nullable().optional().or(z.literal('')),
+  body: reviewBodyField,
+  display_name: z
+    .string()
+    .trim()
+    .min(2, 'Give a name to show on the review.')
+    .max(60),
+});
+
+/** Revising a review: the same rules, minus the product, which cannot move. */
+export const reviewEditSchema = reviewSchema.omit({ component_id: true }).partial();
+
+/**
+ * Hiding or unhiding a review, the only review write an admin may make.
+ *
+ * `hidden: true` requires a reason, and the reason is stored. An unexplained
+ * removal is indistinguishable from suppressing a bad review, and the database
+ * constraint refuses one anyway.
+ *
+ * There is no field here for the rating, the title or the body. The seller does
+ * not get to edit what a customer wrote — see the trigger in migration 0009,
+ * which discards those columns on an admin update rather than trusting this
+ * schema to have left them out.
+ */
+export const reviewModerationSchema = z
+  .object({
+    hidden: z.boolean(),
+    reason: z.string().trim().max(300).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.hidden && (value.reason ?? '').trim().length < 5) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['reason'],
+        message: 'Say why it is being hidden. It is recorded against the review.',
+      });
+    }
+  });
+
+export type ReviewInput = z.infer<typeof reviewSchema>;
+export type ReviewEditInput = z.infer<typeof reviewEditSchema>;
 
 export type SaveBuildInput = z.infer<typeof saveBuildSchema>;
 export type QuoteInput = z.infer<typeof quoteSchema>;

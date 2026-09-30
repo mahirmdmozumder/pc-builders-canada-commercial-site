@@ -3,6 +3,8 @@ import { env } from '@/lib/env';
 import { POLICIES } from '@/content/policies';
 import { listPublishedPresets, listPublishedServices } from '@/lib/cms/repository';
 import { SHOP_COLLECTIONS } from '@/lib/catalog/collections';
+import { listComponents } from '@/lib/catalog/repository';
+import { productHref } from '@/lib/catalog/types';
 
 /**
  * Sitemap.
@@ -92,6 +94,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  /**
+   * One entry per published product.
+   *
+   * These are the pages a specific search actually lands on — somebody typing a
+   * model number wants that product's page, not the shop. Before /products/[slug]
+   * existed there was nothing here to list, because every product shared the shop
+   * URL.
+   *
+   * Only published, in-catalogue rows: listComponents() reads
+   * `components_public`, which filters to published, and an unpublished product's
+   * page returns a real 404. Listing it would be a broken promise to a crawler.
+   *
+   * `lastModified` is the row's own updated_at, so a corrected price or a new
+   * photo is a genuine signal to recrawl rather than a date stamped on every URL
+   * whenever the sitemap regenerates.
+   */
+  const products = await listComponents();
+  const productPages: MetadataRoute.Sitemap = products.map((product) => ({
+    url: `${base}${productHref(product)}`,
+    lastModified: product.updated_at ? new Date(product.updated_at) : now,
+    changeFrequency: 'weekly' as const,
+    // Below the collection pages. A product page is where a specific search
+    // should land, but the collections are what a broader one should.
+    priority: 0.7,
+  }));
+
   const policies: MetadataRoute.Sitemap = POLICIES.map((policy) => ({
     url: `${base}/legal/${policy.slug}`,
     lastModified: now,
@@ -99,5 +127,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.3,
   }));
 
-  return [...primary, ...collections, ...services, ...presets, ...policies];
+  return [
+    ...primary,
+    ...collections,
+    ...services,
+    ...presets,
+    ...productPages,
+    ...policies,
+  ];
 }

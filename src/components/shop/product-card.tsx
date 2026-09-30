@@ -1,7 +1,9 @@
+import Link from 'next/link';
 import {
   CONDITION_LABELS,
   displayName,
   isLowStock,
+  productHref,
   type PublicComponent,
 } from '@/lib/catalog/types';
 import { specChips } from '@/components/configurator/spec-chips';
@@ -40,18 +42,32 @@ export function ProductCard({
 
   return (
     <article className="group flex flex-col rounded-lg border border-ink-700 bg-ink-850 p-5 transition-colors hover:border-gold-600/40">
-      <ProductImage
-        src={component.image_url}
-        alt={name}
-        category={component.category}
-        galleryCount={component.gallery_urls?.length ?? 0}
-        className="mb-4"
-      />
+      {/* The image links to the product page but is hidden from assistive tech
+          and the tab order: the heading below is the accessible link to the same
+          place, and two tab stops per card is noise. The card as a whole is
+          deliberately not a link — it contains an Add to cart button, and nesting
+          a button inside an anchor is invalid and behaves differently in every
+          browser. */}
+      <Link href={productHref(component)} aria-hidden tabIndex={-1} className="mb-4 block">
+        <ProductImage
+          src={component.image_url}
+          alt={name}
+          category={component.category}
+          galleryCount={component.gallery_urls?.length ?? 0}
+        />
+      </Link>
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs tracking-wide text-gold-400 uppercase">{component.brand}</p>
-          <h3 className="mt-1 leading-snug font-semibold text-white">{component.model}</h3>
+          <h3 className="mt-1 leading-snug font-semibold text-white">
+            <Link
+              href={productHref(component)}
+              className="rounded transition-colors hover:text-gold-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+            >
+              {component.model}
+            </Link>
+          </h3>
         </div>
         {!isNew ? (
           <Badge tone="warn" className="shrink-0">

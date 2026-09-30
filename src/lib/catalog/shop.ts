@@ -4,6 +4,7 @@ import { PRICING_CONFIG } from '@/lib/pricing/pricing';
 import {
   CATEGORY_LABELS,
   displayName,
+  productHref,
   type ComponentCategory,
   type ComponentCondition,
   type PublicComponent,
@@ -51,7 +52,15 @@ export interface ShopItem {
   partsCents?: number;
 }
 
-function componentToShopItem(component: PublicComponent): ShopItem {
+/**
+ * Projects one catalogue row onto the shop's card shape.
+ *
+ * Exported so the product page can render its "You may also like" row with the
+ * same card component the shop grid uses. Two card designs for the same product
+ * is how a grid ends up inconsistent, and a second projection is a second place
+ * for the price to be computed.
+ */
+export function toShopItem(component: PublicComponent): ShopItem {
   return {
     kind: 'component',
     id: component.id,
@@ -69,7 +78,14 @@ function componentToShopItem(component: PublicComponent): ShopItem {
     sortOrder: component.sort_order ?? 0,
     stockQuantity: component.stock_quantity,
     lowStockThreshold: component.low_stock_threshold,
-    href: `/shop?q=${encodeURIComponent(displayName(component))}`,
+    // The product's own page.
+    //
+    // This used to be a SEARCH for the product's own name, which meant every
+    // product on the site shared one indexable URL and clicking a card ran a
+    // query instead of opening anything. productHref() is the single place that
+    // builds this address, so cards, breadcrumbs, the sitemap and the structured
+    // data cannot disagree about where a product lives.
+    href: productHref(component),
     specs: component.specs ?? {},
   };
 }
@@ -101,7 +117,14 @@ function presetToShopItem(preset: BuildPresetRecord, parts: Map<string, PublicCo
     sortOrder: preset.sort_order,
     stockQuantity: null,
     lowStockThreshold: 0,
-    href: `/build?preset=${encodeURIComponent(preset.slug)}`,
+    // The machine's own page, not the configurator.
+    //
+    // /pre-built-gaming-pcs/[slug] already existed and is what the sitemap
+    // lists; the card pointed past it into /build?preset=, so the one indexable
+    // page for each machine was the one nothing linked to. The configurator is
+    // still one click away from there, which is the right order: read the
+    // specification, then change it.
+    href: `/pre-built-gaming-pcs/${preset.slug}`,
     specs: {},
   };
 }
@@ -305,7 +328,7 @@ export async function loadShopCatalogue(): Promise<ShopCatalogue> {
   const byId = new Map(components.map((c) => [c.id, c]));
   const items = [
     ...presetResult.rows.map((preset) => presetToShopItem(preset, byId)),
-    ...components.map(componentToShopItem),
+    ...components.map(toShopItem),
   ];
 
   return { items, sample: presetResult.source === 'fallback' };

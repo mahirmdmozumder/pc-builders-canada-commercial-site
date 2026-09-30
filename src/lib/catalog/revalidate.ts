@@ -11,6 +11,7 @@ import { revalidatePath } from 'next/cache';
  */
 const CATALOGUE_PATHS = [
   '/',
+  '/shop',
   '/gaming-pcs',
   '/workstations',
   '/networking',
@@ -20,6 +21,18 @@ const CATALOGUE_PATHS = [
   '/services',
   '/portfolio',
 ] as const;
+
+/**
+ * Product pages, cleared as a group.
+ *
+ * `/products/[slug]` is one route with a page per product, so clearing them one
+ * at a time would mean this function taking an id — and it is called from routes
+ * that edit, duplicate and archive, which do not all have one. `revalidatePath`
+ * with `'page'` on the dynamic segment clears every cached product page, which is
+ * the correct blast radius: an admin edit to any product is a reason to rebuild
+ * the product pages, and there are dozens of them, not thousands.
+ */
+const DYNAMIC_PRODUCT_ROUTE = '/products/[slug]';
 
 /**
  * Rebuilds the storefront after the catalogue changes.
@@ -49,5 +62,11 @@ export function revalidateStorefront(): void {
     } catch (error) {
       console.error('[revalidate] could not revalidate', path, error);
     }
+  }
+
+  try {
+    revalidatePath(DYNAMIC_PRODUCT_ROUTE, 'page');
+  } catch (error) {
+    console.error('[revalidate] could not revalidate product pages', error);
   }
 }

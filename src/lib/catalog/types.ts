@@ -176,6 +176,14 @@ export interface ComponentRecord {
   /** Additional images, in display order. Primary image is `image_url`. */
   gallery_urls: string[];
   /**
+   * One optional product video, as a URL.
+   *
+   * A URL rather than an upload-only field because the two things an operator
+   * actually has are a YouTube link and, occasionally, a phone clip of a
+   * finished machine. Both are accepted — see `describeVideo`.
+   */
+  video_url: string | null;
+  /**
    * Derived from `status` by a trigger in migration 0006. Read-only in
    * practice: write `status` and this follows. Kept because the dashboard,
    * the inventory table and low_stock_components still read it.
@@ -296,6 +304,123 @@ export function isLowStock(
   component: Pick<ComponentRecord, 'stock_quantity' | 'low_stock_threshold'>,
 ): boolean {
   return component.stock_quantity > 0 && component.stock_quantity <= component.low_stock_threshold;
+}
+
+/**
+ * Availability as a customer would describe it.
+ *
+ * Three states, all derived from the stock count and the row's own low-stock
+ * threshold. Nothing here is hardcoded and nothing is invented: a product with
+ * no stock says so rather than saying "ships in 2-3 days", which is a promise
+ * the catalogue cannot make.
+ */
+export type StockState = 'in-stock' | 'low' | 'out';
+
+export function stockState(
+  component: Pick<ComponentRecord, 'stock_quantity' | 'low_stock_threshold'>,
+): StockState {
+  if (component.stock_quantity <= 0) return 'out';
+  return isLowStock(component) ? 'low' : 'in-stock';
+}
+
+/**
+ * The canonical address of a product page.
+ *
+ * ONE function, used by every card, every breadcrumb, the sitemap and the
+ * structured data. A product reachable at two URLs splits its own ranking and
+ * doubles the pages a crawler has to fetch, and that happens the moment two
+ * call sites build the path by hand.
+ *
+ * `slug` is what the column holds; `id` is the fallback because the admin
+ * create route writes `slug: input.id` and older rows may predate the column.
+ * Both are lowercase, hyphenated and unique, so either makes a valid address.
+ */
+export function productHref(component: Pick<ComponentRecord, 'id' | 'slug'>): string {
+  return `/products/${component.slug || component.id}`;
+}
+
+/**
+ * How to play a video URL, if it can be played at all.
+ *
+ * Two kinds arrive in practice and they need different markup:
+ *
+ *   `file`  — an mp4 or webm, either uploaded to the media bucket or hosted
+ *             elsewhere. Rendered as a native <video> with `preload="none"`,
+ *             so a product page that nobody scrolls to the video on costs
+ *             nothing to load.
+ *
+ *   `embed` — YouTube or Vimeo. Rendered as a poster the visitor clicks, which
+ *             then swaps in the iframe. An iframe mounted on page load pulls in
+ *             several hundred kilobytes of third-party script and sets cookies
+ *             before anybody has asked to watch anything.
+ *
+ * Anything else returns null and no video section is rendered. A link that is
+ * not a video must not produce an empty player.
+ */
+export interface VideoSource {
+  kind: 'file' | 'embed';
+  /** For `file`, the media URL. For `embed`, the privacy-mode embed URL. */
+  src: string;
+  /** Present for `embed` only: the provider's own thumbnail. */
+  poster: string | null;
+  label: string;
+}
+
+export function describeVideo(url: string | null | undefined): VideoSource | null {
+  const raw = (url ?? '').trim();
+  if (!raw) return null;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    // Not a URL at all. Nothing to play, and nothing to report: the admin form
+    // validates the field, and a bad row should degrade to no video rather
+    // than to an error page.
+    return null;
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+
+  const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+
+  if (host === 'youtube.com' || host === 'm.youtube.com') {
+    const id = parsed.searchParams.get('v') ?? parsed.pathname.split('/').filter(Boolean).pop();
+    if (id) return youtube(id);
+  }
+  if (host === 'youtu.be') {
+    const id = parsed.pathname.split('/').filter(Boolean)[0];
+    if (id) return youtube(id);
+  }
+  if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+    const id = parsed.pathname.split('/').filter(Boolean).pop();
+    if (id && /^\d+$/.test(id)) {
+      return {
+        kind: 'embed',
+        src: `https://player.vimeo.com/video/${id}?dnt=1`,
+        // Vimeo has no guessable thumbnail URL, so the page draws its own
+        // placeholder rather than linking to an image that may 404.
+        poster: null,
+        label: 'Play product video on Vimeo',
+      };
+    }
+  }
+
+  if (/\.(mp4|webm)$/i.test(parsed.pathname)) {
+    return { kind: 'file', src: raw, poster: null, label: 'Product video' };
+  }
+
+  return null;
+}
+
+function youtube(id: string): VideoSource {
+  // youtube-nocookie, so loading the player does not set advertising cookies
+  // on a visitor who only wanted to watch a graphics card spin.
+  return {
+    kind: 'embed',
+    src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0`,
+    poster: `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`,
+    label: 'Play product video on YouTube',
+  };
 }
 
 /**

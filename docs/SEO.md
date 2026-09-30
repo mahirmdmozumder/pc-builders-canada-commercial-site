@@ -8,6 +8,7 @@ How search sees this site, and which decisions are deliberate.
 | --- | --- | --- | --- | --- | --- |
 | `/` | Homepage | brand, "custom PC builder Toronto" | ✅ | static + CMS prices | Organization, WebSite, LocalBusiness |
 | `/shop` | Whole catalogue | "PC parts Toronto" | ✅ | static | Breadcrumb |
+| `/products/[slug]` | One product | "[brand] [model]", "[model] Toronto" | ✅ | **CMS product** | Product (+AggregateRating when reviewed), Breadcrumb |
 | `/build` | Configurator | "custom PC builder Toronto" | ✅ | static | — |
 | `/gaming-pcs` | Pre-built listing | "pre-built gaming PC Toronto" | ✅ | static | ItemList, Breadcrumb |
 | `/pre-built-gaming-pcs/[slug]` | One machine | "[model] gaming PC" | ✅ | **CMS preset** | Product, Breadcrumb |
@@ -30,6 +31,7 @@ How search sees this site, and which decisions are deliberate.
 
 | Query | Lands on |
 | --- | --- |
+| a specific brand and model | `/products/[slug]` |
 | custom PC builder Toronto | `/build` |
 | pre-built gaming PC Toronto | `/gaming-pcs` |
 | PC repair Toronto | `/services/diagnostics`, `/services/troubleshooting` |
@@ -66,6 +68,26 @@ without a price is invalid. Condition maps honestly — open-box is `NewConditio
 (unused), but `tested` and `used` map to `UsedCondition` and refurbished to
 `RefurbishedCondition`.
 
+**`aggregateRating` only when reviews exist.** `ProductJsonLd` takes the rating
+as an explicit argument and drops the property when the count is zero, so
+there is no code path that can emit a rating for an unreviewed product. The
+number comes from the `product_review_stats` view — Postgres averaging every
+visible review — not from averaging whichever page of reviews the component
+happened to load. A rating that drifts with pagination would be published as
+the product's rating.
+
+**No review is ever generated.** `product_reviews` starts empty and the admin
+screen has no way to add a row. A seller can hide a review, with a recorded
+reason shown to its author, and cannot edit one: the trigger in migration 0009
+discards the rating, title, body and name on an admin update. A fabricated
+rating is a Competition Act problem in Canada before it is ever an SEO one.
+
+**One product, one URL.** `productHref()` is the only thing that builds a
+product address, and cards, breadcrumbs, the sitemap and the structured data
+all call it. A test asserts no two catalogue rows resolve to the same path.
+Product cards previously linked to `/shop?q=<name>`, which meant every product
+on the site shared one indexable URL.
+
 **No invented business facts.** `src/lib/seo/business.ts` omits `address`
 (there is no storefront), `openingHours` (none published), `aggregateRating`
 (no reviews) and `sameAs` (no social profiles configured). Each appears
@@ -99,5 +121,8 @@ has to fill in SEO fields for a product to be indexed properly.
   auto-generated articles would be worse than none.
 - **Portfolio is empty**, so there are no portfolio detail pages yet. Those
   are strong pages when there is real work to show.
-- **No reviews**, so no review schema. This is the single biggest local-SEO
-  gap and it is fixed by asking customers, not by code.
+- **No reviews yet.** The system is now built (`/products/[slug]`, migration
+  0009), and the table is empty because nobody has written one. Product pages
+  say "No reviews yet" and emit no rating until they do. This is still the
+  single biggest local-SEO gap and it is closed by asking customers a week
+  after their machine arrives, not by code.

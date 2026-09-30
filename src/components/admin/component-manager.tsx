@@ -19,6 +19,7 @@ import {
   COMPONENT_CATEGORIES,
   COMPONENT_CONDITIONS,
   CONDITION_LABELS,
+  describeVideo,
   type ComponentCategory,
   type ComponentCondition,
   type ComponentRecord,
@@ -420,6 +421,37 @@ function StockCell({ component }: { component: ComponentRecord }) {
 
 type FormValues = Record<string, unknown> & { brand: string; model: string };
 
+/**
+ * Tells the operator whether the link they pasted will actually play.
+ *
+ * `describeVideo` is the same function the product page uses to decide what to
+ * render, so this is not an approximation of the result — it IS the result. A
+ * mistyped URL silently producing no video on the live page is the failure this
+ * prevents, and it is the kind that goes unnoticed for months.
+ */
+function VideoPreview({ url }: { url: string }) {
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  const video = describeVideo(trimmed);
+  if (!video) {
+    return (
+      <p className="rounded-md border border-warn-500/40 bg-warn-500/10 px-3.5 py-2.5 text-xs leading-relaxed text-warn-400">
+        This link will not play. Supported: a YouTube or Vimeo page URL, or a direct .mp4 / .webm
+        file. The product page will show no video section rather than an empty player.
+      </p>
+    );
+  }
+
+  return (
+    <p className="rounded-md border border-ok-600/40 bg-ok-600/10 px-3.5 py-2.5 text-xs leading-relaxed text-ok-400">
+      {video.kind === 'embed'
+        ? 'Recognised. It will appear as a thumbnail the visitor clicks to play, so the page does not load the player for people who never watch it.'
+        : 'Recognised as a video file. It will appear with normal playback controls and will not download until played.'}
+    </p>
+  );
+}
+
 /** Everything a create call accepts, taken off an existing record. */
 function stripForWrite(record: ComponentRecord): Record<string, unknown> {
   const typed: Record<string, unknown> = {};
@@ -441,6 +473,7 @@ function stripForWrite(record: ComponentRecord): Record<string, unknown> {
     condition_notes: record.condition_notes,
     image_url: record.image_url,
     gallery_urls: record.gallery_urls ?? [],
+    video_url: record.video_url,
     sort_order: record.sort_order,
     seo_title: record.seo_title,
     seo_description: record.seo_description,
@@ -479,6 +512,7 @@ function ComponentForm({
   const [sortOrder, setSortOrder] = useState(record?.sort_order ?? 0);
   const [imageUrl, setImageUrl] = useState<string | null>(record?.image_url ?? null);
   const [gallery, setGallery] = useState<string[]>(record?.gallery_urls ?? []);
+  const [videoUrl, setVideoUrl] = useState(record?.video_url ?? '');
   const [condition, setCondition] = useState<ComponentCondition>(record?.condition ?? 'new');
   const [conditionNotes, setConditionNotes] = useState(record?.condition_notes ?? '');
   const [seoTitle, setSeoTitle] = useState(record?.seo_title ?? '');
@@ -536,6 +570,9 @@ function ComponentForm({
       sort_order: Number(sortOrder),
       image_url: imageUrl,
       gallery_urls: gallery,
+      // Empty means no video. Sent as null rather than "" so the column's
+      // not-blank constraint from 0009 is never the thing that rejects a save.
+      video_url: videoUrl.trim() || null,
       condition,
       condition_notes: condition === 'new' ? null : conditionNotes.trim() || null,
       data_confidence: isVerified ? 'verified' : 'sample',
@@ -674,15 +711,34 @@ function ComponentForm({
         </section>
 
         <section className="space-y-4 border-t border-ink-700 pt-6">
-          <h3 className="text-xs font-semibold tracking-wide text-ink-300 uppercase">Images</h3>
+          <h3 className="text-xs font-semibold tracking-wide text-ink-300 uppercase">Media</h3>
           <ImageUpload
             value={imageUrl}
             onChange={setImageUrl}
             folder="components"
             label="Primary image"
-            hint="Shown on cards and in the configurator. Without one, a category glyph is drawn instead."
+            hint="Shown on cards, in the configurator and first in the product page gallery. Without one, a category glyph is drawn instead."
           />
           <GalleryUpload value={gallery} onChange={setGallery} folder="components" />
+
+          {/* A URL rather than only an upload, because the video an operator
+              actually has is usually already on YouTube. Uploading an mp4 to the
+              media bucket works too and produces a URL that lands in this same
+              field. */}
+          <Field
+            label="Product video"
+            htmlFor="cf-video"
+            hint="Optional. A YouTube or Vimeo link, or a direct .mp4 / .webm URL. Appears as the last item in the gallery. Anything else is ignored rather than shown as a broken player."
+          >
+            <Input
+              id="cf-video"
+              type="url"
+              value={videoUrl}
+              placeholder="https://www.youtube.com/watch?v=…"
+              onChange={(e) => setVideoUrl(e.target.value)}
+            />
+          </Field>
+          <VideoPreview url={videoUrl} />
         </section>
 
         <section className="space-y-4 border-t border-ink-700 pt-6">

@@ -6,6 +6,7 @@ import type {
   PublicPromotion,
   ServiceRecord,
 } from '@/lib/cms/types';
+import type { PublicReview, ReviewStats } from '@/lib/reviews/types';
 import type {
   ActivityLogEntry,
   Order,
@@ -62,6 +63,30 @@ interface Table<Row, I = Insert<Row>, U = Partial<I>> {
   Relationships: [];
 }
 
+/**
+ * The product_reviews row, as the table holds it.
+ *
+ * Defined here rather than in lib/reviews/types.ts because that module describes
+ * what the STOREFRONT sees — and the difference between the two is the point. The
+ * moderation columns and the author's user id exist on the row and are absent
+ * from the public view.
+ */
+interface ReviewRow {
+  id: string;
+  component_id: string;
+  user_id: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  display_name: string;
+  /** Written by a database trigger from paid order data, never by a client. */
+  verified_purchase: boolean;
+  hidden_at: string | null;
+  hidden_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ContactMessage {
   id: string;
   name: string;
@@ -91,6 +116,13 @@ export interface Database {
       services: Table<ServiceRecord>;
       build_presets: Table<BuildPresetRecord>;
       promotions: Table<PromotionRecord>;
+      /**
+       * Customer reviews. The storefront never reads this table — it reads the
+       * two views below, neither of which contains user_id. Only the author's own
+       * account page and the admin moderation queue read the row itself, and RLS
+       * is what scopes each of those. See migration 0009.
+       */
+      product_reviews: Table<ReviewRow>;
     };
     Views: {
       /**
@@ -105,6 +137,24 @@ export interface Database {
       promotions_public: {
         Relationships: [];
         Row: Simplify<PublicPromotion>;
+      };
+      /**
+       * Visible reviews, without user_id. This is what anonymous and signed-in
+       * visitors read.
+       */
+      product_reviews_public: {
+        Relationships: [];
+        Row: Simplify<PublicReview>;
+      };
+      /**
+       * The rating aggregate, computed by Postgres over every visible review.
+       *
+       * A product with no visible reviews has NO ROW here rather than a row of
+       * zeroes, which is why every consumer types this as possibly absent.
+       */
+      product_review_stats: {
+        Relationships: [];
+        Row: Simplify<ReviewStats>;
       };
       low_stock_components: {
         Relationships: [];

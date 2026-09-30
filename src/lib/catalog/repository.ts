@@ -235,6 +235,139 @@ export async function getComponent(id: string): Promise<PublicComponent | null> 
 }
 
 /**
+ * One product, by the slug in its URL.
+ *
+ * Matches `slug` OR `id`, because the two are the same string for every row the
+ * admin has created (`slug: input.id` in the create route) and a row predating
+ * the slug column has only the id. Accepting both means no product is
+ * unreachable, and since both columns are unique there is no ambiguity about
+ * which row a given address resolves to.
+ *
+ * Reads `components_public`, so an unpublished or archived product is simply
+ * absent and the page returns a real 404. That is deliberate: a soft 404 leaves
+ * a dead URL in Google's index pointing at an empty shell.
+ *
+ * No sample-catalogue fallback on a configured deployment, for the reason
+ * isOrderable() documents — a sample row carries an id the cart cannot resolve,
+ * so a product page built from one would offer an Add to cart button that fails
+ * at checkout. On an unconfigured deployment the sample catalogue is all there
+ * is, and the page is browsable from it.
+ */
+export async function getComponentBySlug(slug: string): Promise<PublicComponent | null> {
+  const wanted = slug.trim().toLowerCase();
+
+  /**
+   * Shape-checked before it reaches the query, and this is not cosmetic.
+   *
+   * The lookup below uses PostgREST's `or`, whose filters are comma-separated
+   * text. A slug containing a comma or a dot would be parsed as ADDITIONAL
+   * filters rather than as a value — `a,id.eq.b` becomes two conditions. Nothing
+   * outside `components_public` is reachable that way, so it is not a data leak,
+   * but it turns a 404 into a 400 and it is the kind of hole that stops being
+   * harmless the moment this helper is copied somewhere with a wider view.
+   *
+   * Every id and slug in the catalogue is lowercase alphanumeric with hyphens —
+   * the admin create route enforces exactly this pattern — so anything else
+   * cannot match a real product and is a 404 regardless.
+   */
+  if (!/^[a-z0-9-]{1,120}$/.test(wanted)) return null;
+
+  const supabase = getSupabasePublicClient();
+  if (!supabase) {
+    const row = SAMPLE_COMPONENTS.find(
+      (candidate) => candidate.active && (candidate.slug === wanted || candidate.id === wanted),
+    );
+    return row ? stripCost(row) : null;
+  }
+
+  const { data, error } = await supabase
+    .from('components_public')
+    .select('*')
+    .or(`slug.eq.${wanted},id.eq.${wanted}`)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[catalog] product lookup failed', error.message);
+    return null;
+  }
+  return (data as unknown as PublicComponent) ?? null;
+}
+
+/**
+ * Products to show beside this one.
+ *
+ * Ranked rather than randomly picked, because "related" has a defensible order:
+ *
+ *   1. Same category AND same brand. The closest substitute a shopper is
+ *      actually choosing between.
+ *   2. Same category, any brand. Still a substitute.
+ *   3. Parts that go WITH it, per COMPANION_CATEGORIES. Somebody looking at a
+ *      motherboard is plausibly also buying memory; somebody looking at a NAS is
+ *      not buying a CPU socket.
+ *
+ * Within each tier, in-stock first and then by the admin's display order, so a
+ * suggestion is something that can actually be bought today.
+ *
+ * The current product is always excluded. Everything comes from the catalogue —
+ * nothing here invents a relationship that is not in the data.
+ */
+const COMPANION_CATEGORIES: Partial<Record<ComponentCategory, ComponentCategory[]>> = {
+  cpu: ['motherboard', 'cooler', 'ram'],
+  motherboard: ['cpu', 'ram', 'storage'],
+  cooler: ['case', 'case-fan'],
+  ram: ['motherboard', 'cpu'],
+  gpu: ['psu', 'case'],
+  storage: ['motherboard', 'nas'],
+  psu: ['case', 'gpu'],
+  case: ['case-fan', 'cooler', 'psu'],
+  'case-fan': ['case', 'cooler'],
+  nas: ['storage', 'networking'],
+  networking: ['nas', 'mini-pc'],
+  'mini-pc': ['networking', 'storage', 'monitor'],
+  monitor: ['gpu', 'accessory'],
+  accessory: ['monitor', 'case-fan'],
+  os: ['storage'],
+  other: [],
+};
+
+export async function relatedComponents(
+  product: PublicComponent,
+  limit = 8,
+): Promise<PublicComponent[]> {
+  const companions = COMPANION_CATEGORIES[product.category] ?? [];
+
+  // One query covering both tiers. Two queries would be a round trip to save
+  // filtering a few dozen rows in memory.
+  const candidates = await listComponents({
+    categories: [product.category, ...companions],
+  });
+
+  const pool = candidates.filter((row) => row.id !== product.id);
+
+  function tier(row: PublicComponent): number {
+    if (row.category === product.category) {
+      return row.brand.toLowerCase() === product.brand.toLowerCase() ? 0 : 1;
+    }
+    // Preserves the order companions were declared in, so the first-listed
+    // companion category ranks above the third.
+    return 2 + Math.max(0, companions.indexOf(row.category));
+  }
+
+  return pool
+    .sort((a, b) => {
+      const byTier = tier(a) - tier(b);
+      if (byTier !== 0) return byTier;
+      const aStocked = a.stock_quantity > 0 ? 0 : 1;
+      const bStocked = b.stock_quantity > 0 ? 0 : 1;
+      if (aStocked !== bStocked) return aStocked - bStocked;
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+      return a.price_cents - b.price_cents;
+    })
+    .slice(0, limit);
+}
+
+/**
  * Turn stored build items into a build the engines can evaluate.
  *
  * Items whose component no longer exists are dropped and reported, so an

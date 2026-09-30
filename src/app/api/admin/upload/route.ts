@@ -26,11 +26,25 @@ const BUCKET = 'media';
 const FOLDERS = ['components', 'builds', 'portfolio', 'services', 'promotions', 'categories'] as const;
 type Folder = (typeof FOLDERS)[number];
 
+/**
+ * Content types the bucket accepts, and the extension each one is stored under.
+ *
+ * Must stay in step with `allowed_mime_types` on the media bucket (migrations
+ * 0006 and 0009). The bucket is what enforces this at write time — a browser can
+ * claim any content type, so the check here is a routing decision about the file
+ * extension, not a security boundary.
+ *
+ * Video was added for product videos. The bucket cap is 50 MB, so a clip has to
+ * be short; the field also accepts a YouTube link, which is what most product
+ * videos will be.
+ */
 const EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
   'image/avif': 'avif',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
 };
 
 export async function POST(request: Request) {
@@ -55,7 +69,7 @@ export async function POST(request: Request) {
     // rather than a security one.
     const extension = EXTENSIONS[body.contentType ?? ''];
     if (!extension) {
-      return badRequest('Images must be JPEG, PNG, WebP or AVIF.');
+      return badRequest('Images must be JPEG, PNG, WebP or AVIF; video must be MP4 or WebM.');
     }
 
     const supabase = getSupabaseAdminClient();

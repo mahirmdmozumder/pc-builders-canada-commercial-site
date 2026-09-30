@@ -59,6 +59,9 @@ export async function POST(request: Request) {
       cost_cents: input.cost_cents ?? null,
       image_url: input.image_url || null,
       gallery_urls: input.gallery_urls ?? [],
+      // Empty string means no video, and the column's not-blank constraint would
+      // reject one. Same normalisation the edit route applies to image_url.
+      video_url: input.video_url || null,
       // `active` is derived from `status` by a trigger, so only status is set.
       status: input.status ?? (input.active === false ? 'archived' : 'draft'),
       specs: input.specs ?? {},
