@@ -12,9 +12,10 @@ import {
 } from '@/lib/catalog/shop';
 import { COMPONENT_CONDITIONS, CONDITION_LABELS } from '@/lib/catalog/types';
 import { cn } from '@/lib/utils';
+import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 
 export const metadata: Metadata = {
-  title: 'Shop PC Parts, Pre-built PCs, Networking & NAS',
+  title: 'Shop PC Parts, Pre-built PCs, Networking & NAS | Toronto',
   description:
     'Pre-built PCs, components, networking switches, NAS enclosures, drives, mini PCs and open-box hardware. Supplied and supported across the Greater Toronto Area.',
   alternates: { canonical: '/shop' },
@@ -113,6 +114,15 @@ export default async function ShopPage({
       />
 
       <PageShell className="py-8 sm:py-12">
+        <div className="mb-6">
+          <Breadcrumbs
+            crumbs={[
+              { name: 'Home', href: '/' },
+              { name: 'Shop', href: '/shop' },
+            ]}
+          />
+        </div>
+
         {sample ? (
           <p className="mb-6 rounded-md border border-ink-600 bg-ink-850 px-4 py-3 text-sm text-ink-300">
             Some of this list comes from the in-repo sample catalogue rather than live inventory.

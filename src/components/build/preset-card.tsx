@@ -46,7 +46,16 @@ export function PresetCard({ summary }: { summary: PresetSummary }) {
       <div className="border-b border-ink-700 px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold text-white">{preset.name}</h3>
+            <h3 className="text-lg font-semibold text-white">
+              {/* Links to the machine's own page rather than straight into
+                  the configurator, so the page can be found and shared. */}
+              <Link
+                href={`/pre-built-gaming-pcs/${preset.slug}`}
+                className="hover:text-gold-400"
+              >
+                {preset.name}
+              </Link>
+            </h3>
             <p className="mt-1 text-sm text-ink-300">{preset.tagline}</p>
           </div>
           {summary.compatible ? (

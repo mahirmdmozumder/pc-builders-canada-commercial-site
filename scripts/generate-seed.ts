@@ -223,13 +223,14 @@ const servicesSql = `
 -- ---------------------------------------------------------------------------
 insert into services (
   id, slug, name, short_description, includes, note, price_text,
-  featured, status, sort_order
+  faqs, featured, status, sort_order
 ) values
 ${SERVICE_CONTENT.map(
   (service) =>
     `  (${sqlString(service.id)}, ${sqlString(service.slug)}, ${sqlString(service.name)}, ` +
     `${sqlString(service.short_description)}, ${sqlTextArray(service.includes)}, ` +
     `${sqlString(service.note ?? null)}, ${sqlString(service.price_text ?? null)}, ` +
+    `${sqlString(JSON.stringify(service.faqs ?? []))}::jsonb, ` +
     `${String(Boolean(service.featured))}, 'published', ${service.sort_order})`,
 ).join(',' + '\n')}
 on conflict (id) do update set
@@ -239,6 +240,7 @@ on conflict (id) do update set
   includes = excluded.includes,
   note = excluded.note,
   price_text = excluded.price_text,
+  faqs = excluded.faqs,
   featured = excluded.featured,
   sort_order = excluded.sort_order,
   updated_at = now();

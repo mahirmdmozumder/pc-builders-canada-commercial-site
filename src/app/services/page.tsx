@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import { ButtonLink, Card, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { ServiceJsonLd } from '@/components/seo/structured-data';
+import Link from 'next/link';
 import { listPublishedServices } from '@/lib/cms/repository';
+import { ItemListJsonLd } from '@/components/seo/structured-data';
+import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'PC Repair, Networking, NAS & On-Site IT Services',
@@ -27,6 +30,10 @@ export default async function ServicesPage() {
   return (
     <>
       <ServiceJsonLd services={services} />
+      <ItemListJsonLd
+        name="PC and IT services"
+        items={services.map((s) => ({ name: s.name, url: `/services/${s.slug}` }))}
+      />
       <PageHeader
         eyebrow="Services"
         title="PC, network and IT services"
@@ -42,6 +49,15 @@ export default async function ServicesPage() {
       />
 
       <PageShell className="py-12 sm:py-16">
+        <div className="mb-8">
+          <Breadcrumbs
+            crumbs={[
+              { name: 'Home', href: '/' },
+              { name: 'Services', href: '/services' },
+            ]}
+          />
+        </div>
+
         {/*
           An index, not decoration. With thirteen services the breadth of the
           work is the thing a visitor most needs to see, and it is exactly what
@@ -59,12 +75,12 @@ export default async function ServicesPage() {
             <ul className="mt-5 flex flex-wrap gap-2">
               {services.map((service) => (
                 <li key={service.id}>
-                  <a
-                    href={`#${service.slug}`}
+                  <Link
+                    href={`/services/${service.slug}`}
                     className="inline-block rounded-md border border-ink-700 bg-ink-850 px-3 py-1.5 text-sm text-ink-200 transition-colors hover:border-gold-600/50 hover:text-white"
                   >
                     {service.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -74,7 +90,11 @@ export default async function ServicesPage() {
         <div className="grid gap-5 lg:grid-cols-2">
           {services.map((service) => (
             <Card key={service.id} id={service.slug} className="scroll-mt-24 p-6">
-              <h2 className="text-lg font-semibold text-white">{service.name}</h2>
+              <h2 className="text-lg font-semibold text-white">
+                <Link href={`/services/${service.slug}`} className="hover:text-gold-400">
+                  {service.name}
+                </Link>
+              </h2>
               <p className="mt-2 text-sm leading-relaxed text-ink-300">{service.short_description}</p>
               {service.price_text ? (
                 <p className="mt-2 text-sm font-medium text-gold-400">{service.price_text}</p>

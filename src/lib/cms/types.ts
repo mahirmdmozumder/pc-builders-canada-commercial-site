@@ -79,8 +79,19 @@ export interface ServiceRecord extends ContentFields {
   price_text: string | null;
   image_url: string | null;
   icon: string | null;
+  /**
+   * Questions with real answers, rendered on the service page and emitted as
+   * FAQPage structured data from the same array. Google requires marked-up
+   * answers to be visible, and one source is what guarantees that.
+   */
+  faqs: FaqEntry[];
   created_at: string;
   updated_at: string;
+}
+
+export interface FaqEntry {
+  question: string;
+  answer: string;
 }
 
 // ---------------------------------------------------------------------------

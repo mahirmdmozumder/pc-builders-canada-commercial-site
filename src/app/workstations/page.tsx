@@ -3,9 +3,11 @@ import { ButtonLink, Card, PageHeader, PageShell, SectionHeading } from '@/compo
 import { PresetCard } from '@/components/build/preset-card';
 import { listPublishedPresets } from '@/lib/cms/repository';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
+import { Breadcrumbs } from '@/components/seo/breadcrumbs';
+import { ItemListJsonLd } from '@/components/seo/structured-data';
 
 export const metadata: Metadata = {
-  title: 'Workstation PC Builds',
+  title: 'Custom Workstation PCs | Toronto & GTA',
   description:
     'Custom workstations for rendering, compilation, simulation and virtualisation, built and tested in Canada. Core count, memory capacity and storage layout chosen for the workload.',
   alternates: { canonical: '/workstations' },
@@ -53,7 +55,23 @@ export default async function WorkstationsPage() {
         }
       />
 
+      <ItemListJsonLd
+        name="Workstations"
+        items={summaries.map((s) => ({
+          name: s.preset.name,
+          url: `/pre-built-gaming-pcs/${s.preset.slug}`,
+        }))}
+      />
       <PageShell className="py-12 sm:py-16">
+        <div className="mb-8">
+          <Breadcrumbs
+            crumbs={[
+              { name: 'Home', href: '/' },
+              { name: 'Workstations', href: '/workstations' },
+            ]}
+          />
+        </div>
+
         <div className="grid gap-5 md:grid-cols-2">
           {summaries.map((summary) => (
             <PresetCard key={summary.preset.slug} summary={summary} />

@@ -4,6 +4,7 @@ import './globals.css';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { env } from '@/lib/env';
+import { SiteJsonLd } from '@/components/seo/structured-data';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -21,27 +22,31 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
   title: {
-    default: 'PC Builders Canada | Custom Gaming & Workstation PCs',
+    default: 'PC Builders Canada | Custom PCs, Repairs & IT Support in Toronto',
     template: '%s | PC Builders Canada',
   },
   description:
-    'Custom PC builds, gaming PCs and workstations assembled and tested in Canada. Configure a build with live compatibility checks, or book upgrades, diagnostics and Windows setup.',
+    'Custom PC builds and pre-built gaming PCs, computer repair and upgrades, networking, NAS and storage, small servers and on-site IT support across Toronto and the GTA.',
+  /**
+   * Google has ignored the keywords meta tag since 2009. It is kept short and
+   * honest rather than stuffed, because the only thing it can still do is make
+   * the page look spammy to a human reading the source.
+   */
   keywords: [
-    'PC Builders Canada',
-    'custom PC builds Canada',
-    'gaming PC builds',
-    'workstation PC builds',
-    'PC hardware services',
-    'PC upgrades',
+    'custom PC builder Toronto',
+    'computer repair Toronto',
+    'on-site IT support Toronto',
+    'network setup Toronto',
+    'NAS setup Toronto',
   ],
   applicationName: 'PC Builders Canada',
   openGraph: {
     type: 'website',
     locale: 'en_CA',
     siteName: 'PC Builders Canada',
-    title: 'PC Builders Canada | Custom Gaming & Workstation PCs',
+    title: 'PC Builders Canada | Custom PCs, Repairs & IT Support in Toronto',
     description:
-      'Configure a custom PC with live compatibility and power checks, or book upgrades, diagnostics and Windows setup.',
+      'Custom PC builds, computer repair, networking, NAS and on-site IT support across Toronto and the GTA.',
     url: env.siteUrl,
     images: [
       {
@@ -65,6 +70,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en-CA" className={`${inter.variable} ${mono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-ink-900">
+        {/* Organization, WebSite and LocalBusiness, emitted once for the
+            whole site. Page-level schema references these by @id rather
+            than restating them. */}
+        <SiteJsonLd />
         <a href="#main" className="skip-link">
           Skip to main content
         </a>

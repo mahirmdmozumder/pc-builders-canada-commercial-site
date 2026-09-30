@@ -333,6 +333,19 @@ export const adminServiceFields = z.object({
   price_text: z.string().trim().max(120).nullable().optional(),
   image_url: imageUrl,
   icon: z.string().trim().max(60).nullable().optional(),
+  /**
+   * Minimum lengths mirror the database check constraint in 0008. A one-word
+   * answer is not an answer, and it would reach Google as structured data.
+   */
+  faqs: z
+    .array(
+      z.object({
+        question: z.string().trim().min(5).max(300),
+        answer: z.string().trim().min(20).max(2000),
+      }),
+    )
+    .max(12)
+    .default([]),
   ...contentFields,
 });
 export const adminServiceSchema = adminServiceFields;

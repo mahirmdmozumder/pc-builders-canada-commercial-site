@@ -3,11 +3,13 @@ import { ButtonLink, PageHeader, PageShell, SectionHeading } from '@/components/
 import { PresetCard } from '@/components/build/preset-card';
 import { listPublishedPresets } from '@/lib/cms/repository';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
+import { Breadcrumbs } from '@/components/seo/breadcrumbs';
+import { ItemListJsonLd } from '@/components/seo/structured-data';
 
 export const metadata: Metadata = {
-  title: 'Gaming PC Builds',
+  title: 'Pre-Built Gaming PCs | Toronto & GTA',
   description:
-    'Custom gaming PCs built to order in Canada, configured around a resolution and frame rate target. Every configuration is compatibility checked and tested before it ships.',
+    'Pre-built gaming PCs assembled and tested in Toronto, configured around a resolution and frame rate target. Change any part before you order, or have one built to spec.',
   alternates: { canonical: '/gaming-pcs' },
 };
 
@@ -53,7 +55,23 @@ export default async function GamingPcsPage() {
         }
       />
 
+      <ItemListJsonLd
+        name="Pre-built Gaming PCs"
+        items={summaries.map((s) => ({
+          name: s.preset.name,
+          url: `/pre-built-gaming-pcs/${s.preset.slug}`,
+        }))}
+      />
       <PageShell className="py-12 sm:py-16">
+        <div className="mb-8">
+          <Breadcrumbs
+            crumbs={[
+              { name: 'Home', href: '/' },
+              { name: 'Pre-built Gaming PCs', href: '/gaming-pcs' },
+            ]}
+          />
+        </div>
+
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {summaries.map((summary) => (
             <PresetCard key={summary.preset.slug} summary={summary} />

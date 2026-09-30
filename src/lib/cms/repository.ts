@@ -61,6 +61,7 @@ function fallbackServices(): ServiceRecord[] {
     price_text: service.price_text ?? null,
     image_url: null,
     icon: null,
+    faqs: service.faqs ?? [],
     status: 'published' as const,
     featured: Boolean(service.featured),
     sort_order: service.sort_order,

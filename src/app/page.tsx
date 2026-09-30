@@ -14,7 +14,6 @@ import type { ServiceRecord } from '@/lib/cms/types';
 import { PromotionStrip } from '@/components/home/promotions';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { formatMoney } from '@/lib/utils';
-import { OrganizationJsonLd } from '@/components/seo/structured-data';
 import { ParticleField } from '@/components/visual/particle-field';
 
 export const metadata: Metadata = {
@@ -56,7 +55,6 @@ export default async function HomePage() {
 
   return (
     <>
-      <OrganizationJsonLd />
       <Hero fromCents={cheapestPrebuilt} />
       <PromotionStrip promotions={promotions} />
       <Pillars />
