@@ -24,6 +24,21 @@ import { SHOP_COLLECTIONS } from '@/lib/catalog/collections';
  * `robots: { index: false, follow: true }` of its own; this is the matching
  * half of that decision.
  */
+/**
+ * Regenerated hourly rather than only at deploy time.
+ *
+ * This file reads published services and presets from the database, so baking
+ * it once at build meant a service added through the admin never reached the
+ * sitemap until the next deployment. That quietly broke the thing the CMS
+ * exists for: it happened here, with five new services live on the site while
+ * the sitemap still advertised the previous eight.
+ *
+ * An hour is short enough that a crawler picks new pages up the same day, and
+ * long enough that this costs two database queries an hour rather than two per
+ * crawler request.
+ */
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = env.siteUrl.replace(/\/$/, '');
   const now = new Date();
