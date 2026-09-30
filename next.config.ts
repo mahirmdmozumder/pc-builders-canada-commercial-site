@@ -15,8 +15,22 @@ import type { NextConfig } from 'next';
  *
  * - `frame-ancestors 'none'` rather than X-Frame-Options alone, because it is
  *   the header browsers actually respect now. Both are sent.
+ *
+ * - `frame-src` names the video hosts as well as Stripe. See the note on that
+ *   line: a product video is an iframe, and a frame-src that does not list its
+ *   host produces a blocked player rather than a broken-looking one, which is
+ *   harder to diagnose because nothing in the application logs it.
  */
-const CSP = [
+/**
+ * Exported so a test can assert it against the code that depends on it.
+ *
+ * Next only reads the default export from this file, so exporting this changes
+ * nothing about the build. It exists because the video feature and this policy
+ * were written independently and the mismatch shipped: the player was blocked on
+ * the live site with a browser-level message that nothing in the application
+ * logged. See next-config.test.ts.
+ */
+export const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://js.stripe.com",
   "style-src 'self' 'unsafe-inline'",
@@ -24,7 +38,27 @@ const CSP = [
   "font-src 'self' https://fonts.gstatic.com data:",
   // Supabase for data and auth, Stripe for payment session creation.
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
-  'frame-src https://js.stripe.com https://hooks.stripe.com',
+  // Stripe for the payment sheet; the two video hosts for product videos.
+  //
+  // The video entries are exactly the origins describeVideo() can produce and
+  // nothing wider — `youtube-nocookie.com` rather than `youtube.com`, and
+  // `player.vimeo.com` rather than all of Vimeo. A wildcard here would permit
+  // any Google or Vimeo property to be framed on the storefront, which is a
+  // much larger grant than "play the clip on this product".
+  //
+  // This does not weaken frame-ancestors below. That directive governs who may
+  // embed THIS site; this one governs what this site may embed. They are
+  // independent, and the protection against clickjacking is unchanged.
+  //
+  // The player is still only mounted on click (see product-gallery.tsx), so a
+  // visitor who never presses play loads nothing from either host.
+  [
+    'frame-src',
+    'https://js.stripe.com',
+    'https://hooks.stripe.com',
+    'https://www.youtube-nocookie.com',
+    'https://player.vimeo.com',
+  ].join(' '),
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",
