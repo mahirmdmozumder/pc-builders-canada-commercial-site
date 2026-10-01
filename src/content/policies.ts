@@ -1,19 +1,34 @@
+import { CHANNELS } from '@/content/business';
+
 /**
  * Policy content.
  *
- * IMPORTANT: these are operational drafts describing how the business
- * intends to work. They are NOT legal advice and have not been reviewed by a
- * lawyer. Consumer protection legislation differs by province, and some of
- * these areas (warranty, returns, privacy) carry statutory minimums that
- * override whatever a policy page says.
+ * ---------------------------------------------------------------------------
+ * WHAT THESE ARE
+ * ---------------------------------------------------------------------------
+ * A plain description of how PC Builders Canada actually operates, confirmed by
+ * the owner. They are NOT drafted by a lawyer, and having them reviewed before
+ * relying on them as formal legal documents remains a sensible step.
  *
- * Every page renders a visible notice to that effect. Remove the notice only
- * once the text has been reviewed and the placeholders below are filled in:
- *   - legal business name and address
- *   - contact address for privacy and warranty claims
- *   - actual carrier, transit times and service area
- *   - the return window and restocking terms the business will honour
+ * Consumer protection legislation differs by province and carries statutory
+ * minimums that override whatever a policy page says. Every page therefore
+ * states that provincial law prevails, which is both true and the honest
+ * position for a small seller.
+ *
+ * ---------------------------------------------------------------------------
+ * RULES FOR EDITING
+ * ---------------------------------------------------------------------------
+ * Nothing here may state a term the business has not confirmed. That is why
+ * there is no invented transit time, no restocking percentage and no data
+ * retention period: each was either confirmed by the owner, or written as the
+ * thing that is actually true -- "quoted before you return anything", "kept as
+ * long as required for tax and warranty purposes".
+ *
+ * Contact details come from src/content/business.ts rather than being typed
+ * here, so a changed address changes on every page at once.
  */
+
+const REVIEWED = '30 September 2026';
 
 export interface PolicySection {
   heading: string;
@@ -30,7 +45,13 @@ export interface Policy {
   sections: PolicySection[];
 }
 
-const PLACEHOLDER_CONTACT = 'the contact address published on our contact page';
+/**
+ * Read from the single source of truth rather than typed into five sections.
+ *
+ * Falls back to naming the contact page when no address is configured, so a
+ * policy can never instruct somebody to write to "null".
+ */
+const CONTACT = CHANNELS.email ?? 'the address on our contact page';
 
 export const POLICIES: Policy[] = [
   {
@@ -40,7 +61,7 @@ export const POLICIES: Policy[] = [
       'What personal information PC Builders Canada collects, why, where it is stored, and how to ask for it to be removed.',
     summary:
       'We collect what an order needs and nothing else. Payment card details never reach our systems.',
-    lastReviewed: 'Draft — not yet reviewed',
+    lastReviewed: REVIEWED,
     sections: [
       {
         heading: 'What we collect',
@@ -75,7 +96,7 @@ export const POLICIES: Policy[] = [
       {
         heading: 'Your choices',
         paragraphs: [
-          `You can ask for a copy of what we hold about you, ask for corrections, or ask for deletion of anything not required for a tax or warranty record. Write to ${PLACEHOLDER_CONTACT}.`,
+          `You can ask for a copy of what we hold about you, ask for corrections, or ask for deletion of anything not required for a tax or warranty record. Write to ${CONTACT}.`,
         ],
       },
       {
@@ -93,7 +114,7 @@ export const POLICIES: Policy[] = [
       'The terms that apply to orders placed with PC Builders Canada, including pricing, availability and acceptance.',
     summary:
       'Configurator totals are estimates. An order is accepted when we confirm it, not when the page says thanks.',
-    lastReviewed: 'Draft — not yet reviewed',
+    lastReviewed: REVIEWED,
     sections: [
       {
         heading: 'Prices and estimates',
@@ -127,6 +148,25 @@ export const POLICIES: Policy[] = [
         ],
       },
       {
+        heading: 'Sales tax',
+        paragraphs: [
+          'PC Builders Canada is not currently registered to collect GST/HST, so no sales tax is added to your order and the total shown is the total you pay. If that changes, tax will appear as a separate line before you pay, and it will never be applied to an order already placed.',
+        ],
+      },
+      {
+        heading: 'Who you are dealing with',
+        paragraphs: [
+          'PC Builders Canada is a small independent business operating from Ontario, Canada, which sells and services computer hardware. It trades under that name. Contact details are on our contact page.',
+        ],
+      },
+      {
+        heading: 'Governing law',
+        paragraphs: [
+          'These terms are governed by the laws of the Province of Ontario and the federal laws of Canada that apply there. A dispute that cannot be resolved between us belongs to the courts of Ontario.',
+          'This does not ask you to give up protection your own province gives you. Where the consumer protection legislation of your province applies to you, it applies regardless of this clause.',
+        ],
+      },
+      {
         heading: 'Limitation',
         paragraphs: [
           'Nothing in these terms limits rights you have under applicable consumer protection legislation. Where a term conflicts with that legislation, the legislation applies.',
@@ -140,7 +180,7 @@ export const POLICIES: Policy[] = [
     description:
       'How PC Builders Canada packs and ships custom PCs, expected timelines, and what happens if something arrives damaged.',
     summary: 'Built to order, so shipping starts after assembly and testing, not after payment.',
-    lastReviewed: 'Draft — not yet reviewed',
+    lastReviewed: REVIEWED,
     sections: [
       {
         heading: 'Build time comes first',
@@ -164,13 +204,21 @@ export const POLICIES: Policy[] = [
       {
         heading: 'Damage in transit',
         paragraphs: [
-          `Inspect the box on arrival. If there is visible damage, photograph it before unpacking and contact ${PLACEHOLDER_CONTACT} the same day. Photographs taken before unpacking make a carrier claim straightforward and their absence makes it difficult.`,
+          `Inspect the box on arrival. If there is visible damage, photograph it before unpacking and contact ${CONTACT} the same day. Photographs taken before unpacking make a carrier claim straightforward and their absence makes it difficult.`,
         ],
       },
       {
         heading: 'Carrier and transit times',
         paragraphs: [
-          'Carrier selection and published transit times are being finalised and will be listed here.',
+          'Shipping is arranged per order with a national carrier, and you get a tracking number when the machine leaves. We do not publish a transit time, because it depends on the carrier and the destination, and a number printed here would be a promise we do not control.',
+          'If a delivery date matters for your order, tell us before you pay and we will confirm in writing what is achievable.',
+        ],
+      },
+      {
+        heading: 'Local pickup',
+        paragraphs: [
+          'Customers in the Greater Toronto Area can collect an order in person instead of having it shipped, and there is no charge for that.',
+          'Pickup is arranged in advance rather than by turning up. This is a workspace rather than a shop with a counter, so a time has to be agreed first — by email or phone, using the details on our contact page.',
         ],
       },
     ],
@@ -181,7 +229,7 @@ export const POLICIES: Policy[] = [
     description:
       'Returns, cancellations and refunds for custom-built PCs and individual components from PC Builders Canada.',
     summary: 'Cancel before assembly starts for a full refund. Custom builds differ from stock parts.',
-    lastReviewed: 'Draft — not yet reviewed',
+    lastReviewed: REVIEWED,
     sections: [
       {
         heading: 'Cancelling before assembly',
@@ -192,14 +240,22 @@ export const POLICIES: Policy[] = [
       {
         heading: 'Custom builds',
         paragraphs: [
-          'A machine built to a specification chosen by the customer is not a stock item. Once assembled and tested, returns are handled case by case, and a restocking charge may apply to cover the labour and the loss in value of opened components.',
+          'A machine built to a specification chosen by the customer is not a stock item and cannot simply go back on a shelf. Once it has been assembled and tested, a return is handled case by case: we look at what was built, what it would be worth as a second-hand machine, and what the labour was. Any charge is quoted to you before you return it, not deducted afterwards.',
           'This does not affect a return for a faulty machine, which is covered by the warranty policy.',
         ],
       },
       {
-        heading: 'Individual components',
+        heading: 'Unopened components',
         paragraphs: [
-          'Unopened components in original packaging can be returned within the return window shown at checkout. Opened components may be subject to a restocking charge, and some categories cannot be returned once opened.',
+          'An unopened component in its original packaging can be returned within 14 days of delivery. Contact us first with your order number so the return is recorded against it.',
+          'Return shipping on a change of mind is paid by the customer. Return shipping on a confirmed fault is not — see below.',
+        ],
+      },
+      {
+        heading: 'Opened components',
+        paragraphs: [
+          'An opened component can sometimes be taken back and sometimes cannot, depending on what it is and what condition it is in. Where we can take it back, a charge may apply to cover the drop in value, and that charge is quoted to you before you send anything. We do not publish a fixed percentage, because it genuinely depends on the item.',
+          'A few things cannot be returned once opened at all, chiefly software and anything with a licence key that has been redeemed. We tell you which applies before you return it rather than after.',
         ],
       },
       {
@@ -215,9 +271,9 @@ export const POLICIES: Policy[] = [
         ],
       },
       {
-        heading: 'To be confirmed',
+        heading: 'Your rights under provincial law',
         paragraphs: [
-          'The exact return window and restocking percentages are being finalised and will be published here before they are applied to any order.',
+          'Consumer protection legislation in your province may give you rights beyond this policy, and nothing here reduces them. Where this policy and that legislation disagree, the legislation applies.',
         ],
       },
     ],
@@ -229,13 +285,14 @@ export const POLICIES: Policy[] = [
       'How warranty works on custom PCs from PC Builders Canada: manufacturer coverage on parts and our coverage on assembly.',
     summary:
       'Parts carry their manufacturer warranty. Our work on the assembly is covered separately.',
-    lastReviewed: 'Draft — not yet reviewed',
+    lastReviewed: REVIEWED,
     sections: [
       {
         heading: 'Two kinds of coverage',
         paragraphs: [
-          'Components carry the warranty offered by their manufacturer, for the period that manufacturer sets. That coverage is between you and them, and we will help you use it.',
-          'Our own work, meaning the assembly, cabling and configuration, is covered by us. If something we did causes a fault, we fix it.',
+          'Our own work is covered by us for one year. That means the building, the cabling, the configuration, the repair or the servicing: if we made a mistake doing any of it and that mistake causes a fault, we fix it at no charge for twelve months from the date you received the work.',
+          'Components carry the warranty offered by their manufacturer, for whatever period that manufacturer sets. That is a separate thing from our one year, and it is not something we can extend or shorten. Our one year is not a manufacturer warranty, and we do not claim that every part carries one.',
+          'In practice the distinction rarely costs you anything, because we do the diagnosis either way. If the fault turns out to be a faulty part rather than our work, we tell you whose warranty applies and help you claim under it.',
         ],
       },
       {
@@ -248,7 +305,7 @@ export const POLICIES: Policy[] = [
       {
         heading: 'Making a claim',
         paragraphs: [
-          `Open a support ticket from your account, or write to ${PLACEHOLDER_CONTACT} with your order number and a description of the fault, including when it happens and what you have already tried. Diagnosis comes first: replacing parts without identifying the cause usually moves the symptom rather than fixing it.`,
+          `Open a support ticket from your account, or write to ${CONTACT} with your order number and a description of the fault, including when it happens and what you have already tried. Diagnosis comes first: replacing parts without identifying the cause usually moves the symptom rather than fixing it.`,
         ],
       },
       {
@@ -258,9 +315,10 @@ export const POLICIES: Policy[] = [
         ],
       },
       {
-        heading: 'To be confirmed',
+        heading: 'How the repair happens',
         paragraphs: [
-          'The coverage period for assembly work, and the process for on-site versus return-to-base service, are being finalised and will be published here.',
+          'For customers in the Greater Toronto Area we come to you where the job can be done on site, or you drop the machine off with us by arrangement. Either way there is no shipping cost to you on a warranty repair that is our responsibility.',
+          'For customers further away we work out the most sensible route with you before anything is sent, so nobody posts a tower across the country on a guess.',
         ],
       },
     ],

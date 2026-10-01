@@ -269,6 +269,14 @@ function CheckoutViewInner({ paymentsConfigured, testMode }: CheckoutViewProps) 
                 {formatMoney(summary.price.totalCents)}
               </dd>
             </div>
+            {/* The same note as the cart, on the page where the amount is
+                actually authorised. Somebody comparing the two must not find a
+                figure that changed between them without explanation. */}
+            {summary.price.taxLines.length === 0 ? (
+              <p className="pt-2 text-xs leading-relaxed text-ink-500">
+                No sales tax is charged on this order.
+              </p>
+            ) : null}
           </dl>
         ) : (
           <p className="px-5 py-4 text-sm text-ink-400">Calculating...</p>

@@ -19,6 +19,7 @@ How search sees this site, and which decisions are deliberate.
 | `/refurbished` | Open-box listing | "refurbished PC parts Toronto" | ✅ | static | — |
 | `/portfolio` | Completed builds | social proof | ✅ | static | — |
 | `/quote` `/contact` `/about` | Conversion | brand | ✅ | static | — |
+| `/faq` | Help | question-shaped queries | ✅ | static | FAQPage, Breadcrumb |
 | `/refer` | Referral terms | — | ✅ | static | — |
 | `/legal/[slug]` | Policies | — | ✅ | CMS-ish | — |
 | `/scan` | QR landing | — | ❌ noindex, follow | static | — |
@@ -87,6 +88,18 @@ product address, and cards, breadcrumbs, the sitemap and the structured data
 all call it. A test asserts no two catalogue rows resolve to the same path.
 Product cards previously linked to `/shop?q=<name>`, which meant every product
 on the site shared one indexable URL.
+
+**FAQPage markup is emitted without expecting a rich result.** The 33 questions
+on `/faq` are all visible on the page, which is the actual requirement, and the
+schema carries the same words. But Google restricted FAQ rich results to
+government and health sites in 2023, so this is very unlikely to produce the
+expanded snippets it once did. It stays because it is accurate and costs
+nothing, not because it is expected to win anything.
+
+**`openingHoursSpecification` appears because hours now exist.** It was absent
+while none were published. Closed days are omitted rather than emitted with null
+times, and both the markup and the contact page read `HOURS` in
+`src/content/business.ts`, so they cannot drift.
 
 **No invented business facts.** `src/lib/seo/business.ts` omits `address`
 (there is no storefront), `openingHours` (none published), `aggregateRating`

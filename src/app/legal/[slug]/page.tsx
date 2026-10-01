@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { Alert, PageHeader, PageShell } from '@/components/ui';
+import { PageHeader, PageShell } from '@/components/ui';
 import { POLICIES, getPolicy } from '@/content/policies';
 
 export function generateStaticParams() {
@@ -35,14 +35,21 @@ export default async function PolicyPage({ params }: { params: Promise<{ slug: s
       <PageShell className="py-12 sm:py-16">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
           <article className="max-w-3xl">
-            {/* Shown until a lawyer has reviewed the text. Publishing policy
-                language as settled when it is not is the kind of claim this
-                project deliberately avoids. */}
-            <Alert tone="warn" title="Draft policy pending legal review">
-              This page describes how the business intends to operate. It has not been reviewed by a
-              lawyer, and some sections still contain placeholders. Consumer protection legislation
-              in your province may give you rights beyond anything written here.
-            </Alert>
+            {/* The alarming version of this banner is gone, and deliberately.
+                It warned that sections "still contain placeholders", which was
+                true and is no longer: every to-be-confirmed section has been
+                replaced with a term the owner actually confirmed.
+
+                What remains is the one sentence that is still true and that a
+                customer benefits from knowing — provincial law outranks anything
+                written here. Keeping a "pending legal review" warning on a
+                finished policy would be its own small inaccuracy, and it reads
+                to a customer as a business that is not open yet. */}
+            <p className="rounded-md border border-ink-700 bg-ink-850 px-4 py-3 text-sm leading-relaxed text-ink-300">
+              This page describes how we actually operate. Consumer protection legislation in your
+              province may give you rights beyond anything written here, and where the two disagree,
+              the legislation applies.
+            </p>
 
             <div className="mt-10 space-y-10">
               {policy.sections.map((section) => (
@@ -73,7 +80,9 @@ export default async function PolicyPage({ params }: { params: Promise<{ slug: s
             </div>
 
             <p className="mt-12 border-t border-ink-700 pt-6 text-sm text-ink-500">
-              Status: {policy.lastReviewed}
+              Last reviewed {policy.lastReviewed}. Having these reviewed by a Canadian lawyer
+              before relying on them as formal legal documents remains sensible; nothing here is
+              legal advice.
             </p>
           </article>
 

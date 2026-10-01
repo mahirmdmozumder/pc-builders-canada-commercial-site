@@ -5,6 +5,7 @@ import { COMPATIBLE_AM5_BUILD } from '@/lib/catalog/test-helpers';
 import { SAMPLE_COMPONENTS_BY_ID } from '@/lib/catalog/sample-catalog';
 import type { SavedBuildItem } from '@/types/domain';
 import type { ComponentCategory } from '@/lib/catalog/types';
+import { TAX_REGISTRATION } from '@/lib/pricing/tax';
 
 /**
  * These run against the in-repo sample catalogue, which is what the
@@ -168,8 +169,15 @@ describe('cart resolution', () => {
 
     const taxable =
       ontario.price.subtotalCents + ontario.price.servicesCents + ontario.price.shippingCents;
-    expect(ontario.price.taxCents).toBe(Math.round(taxable * 0.13));
-    expect(alberta.price.taxCents).toBe(Math.round(taxable * 0.05));
+
+    if (TAX_REGISTRATION.registered) {
+      expect(ontario.price.taxCents).toBe(Math.round(taxable * 0.13));
+      expect(alberta.price.taxCents).toBe(Math.round(taxable * 0.05));
+    } else {
+      // Not registered to collect, so the cart charges no tax in any province.
+      expect(ontario.price.taxCents).toBe(0);
+      expect(alberta.price.taxCents).toBe(0);
+    }
   });
 
   it('totals to the sum of its parts', async () => {

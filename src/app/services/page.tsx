@@ -146,9 +146,15 @@ export default async function ServicesPage() {
             </div>
           </div>
 
+          {/* Reworded from "rates are being finalised", which read as a business
+              that had not opened. Quoting per job is a deliberate way to work,
+              not an unfinished page, so the copy now says that instead of
+              apologising for it. No rate is invented to fill the gap. */}
           <p className="mt-10 max-w-3xl text-sm text-ink-400">
-            Service rates are being finalised and are not published here yet. Send a description of
-            the problem and you will get a written quote before any work starts.
+            Every job is quoted individually rather than from a price list, because the same symptom
+            can be twenty minutes or an afternoon and a published rate would be wrong in one
+            direction or the other. Describe the problem and you get a written quote before any work
+            starts &mdash; nothing is charged that you have not agreed to first.
           </p>
           <ButtonLink href="/contact" className="mt-6">
             Describe the problem

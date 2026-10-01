@@ -1,34 +1,47 @@
 import { describe, expect, it } from 'vitest';
 import { priceBuild, priceCart, PRICING_CONFIG } from '@/lib/pricing/pricing';
-import { calculateTax, combinedRate, normalizeProvince } from '@/lib/pricing/tax';
+import {
+  calculateTax,
+  calculateTaxAtRate,
+  combinedRate,
+  normalizeProvince,
+  TAX_REGISTRATION,
+} from '@/lib/pricing/tax';
 import { buildFromIds, COMPATIBLE_AM5_BUILD } from '@/lib/catalog/test-helpers';
 
-describe('tax', () => {
+describe('tax rates', () => {
+  /**
+   * These assert the RATE TABLE, so they call calculateTaxAtRate rather than
+   * calculateTax. calculateTax returns nothing while the business is not
+   * registered to collect (see TAX_REGISTRATION), and a rate table that is
+   * only exercised through the registered path stops being tested the moment
+   * the switch is off -- which is its default.
+   */
   it('applies a single HST line in Ontario', () => {
-    const { lines, totalCents } = calculateTax(100_00, 'ON');
+    const { lines, totalCents } = calculateTaxAtRate(100_00, 'ON');
     expect(lines).toHaveLength(1);
     expect(lines[0].label).toBe('HST');
     expect(totalCents).toBe(13_00);
   });
 
   it('applies GST and PST separately in British Columbia', () => {
-    const { lines, totalCents } = calculateTax(100_00, 'BC');
+    const { lines, totalCents } = calculateTaxAtRate(100_00, 'BC');
     expect(lines.map((l) => l.label)).toEqual(['GST', 'PST']);
     expect(totalCents).toBe(12_00);
   });
 
   it('applies GST only in Alberta', () => {
-    expect(calculateTax(100_00, 'AB').totalCents).toBe(5_00);
+    expect(calculateTaxAtRate(100_00, 'AB').totalCents).toBe(5_00);
   });
 
   it('handles the Quebec fractional QST rate', () => {
-    const { totalCents } = calculateTax(100_00, 'QC');
+    const { totalCents } = calculateTaxAtRate(100_00, 'QC');
     expect(totalCents).toBe(500 + 998); // 5% + 9.975%, each rounded
     expect(combinedRate('QC')).toBeCloseTo(0.14975, 5);
   });
 
   it('rounds each tax line to the cent', () => {
-    const { lines } = calculateTax(3333, 'ON');
+    const { lines } = calculateTaxAtRate(3333, 'ON');
     expect(Number.isInteger(lines[0].amount_cents)).toBe(true);
     expect(lines[0].amount_cents).toBe(433); // 33.33 * 0.13 = 4.3329
   });
@@ -37,6 +50,61 @@ describe('tax', () => {
     expect(normalizeProvince('ZZ')).toBe('ON');
     expect(normalizeProvince(null)).toBe('ON');
     expect(normalizeProvince('bc')).toBe('BC');
+  });
+});
+
+/**
+ * GST/HST registration.
+ *
+ * This is the one tax rule that is about money leaving somebody else's pocket
+ * rather than arithmetic. A seller who is not registered has no number to remit
+ * under, so sales tax collected is collected for nothing -- and the site did
+ * exactly that on every Ontario order before this switch existed.
+ *
+ * The tests are written against whichever way the switch is currently set, so
+ * they keep working when it is turned on rather than becoming a reason not to
+ * turn it on.
+ */
+describe('tax registration', () => {
+  it('charges nothing while unregistered, and the full rate once registered', () => {
+    const { lines, totalCents } = calculateTax(100_00, 'ON');
+
+    if (TAX_REGISTRATION.registered) {
+      expect(totalCents).toBe(13_00);
+      expect(lines).toHaveLength(1);
+      // Required on receipts once registered. A registered seller with no
+      // number on the record is a different compliance problem.
+      expect(TAX_REGISTRATION.number, 'registered with no business number').toBeTruthy();
+    } else {
+      expect(totalCents).toBe(0);
+      // No line at all, rather than a zero-valued one. A "HST $0.00" row on an
+      // invoice states that the seller charges HST and happened to charge none.
+      expect(lines).toEqual([]);
+    }
+  });
+
+  it('never invents a tax line for any province while unregistered', () => {
+    if (TAX_REGISTRATION.registered) return;
+    for (const province of ['ON', 'BC', 'AB', 'QC', 'NS', 'YT'] as const) {
+      expect(calculateTax(500_00, province).lines, province).toEqual([]);
+      expect(calculateTax(500_00, province).totalCents, province).toBe(0);
+    }
+  });
+
+  it('keeps the rate table intact regardless, so registering needs no new code', () => {
+    // The table is the thing that would be tempting to delete while tax is off.
+    expect(calculateTaxAtRate(100_00, 'ON').totalCents).toBe(13_00);
+    expect(calculateTaxAtRate(100_00, 'AB').totalCents).toBe(5_00);
+  });
+
+  it('leaves the order total as goods plus services plus shipping', () => {
+    if (TAX_REGISTRATION.registered) return;
+    const build = buildFromIds(COMPATIBLE_AM5_BUILD);
+    const price = priceBuild(build, { province: 'ON' });
+    expect(price.taxCents).toBe(0);
+    expect(price.totalCents).toBe(
+      price.subtotalCents + price.servicesCents + price.shippingCents,
+    );
   });
 });
 
@@ -90,10 +158,15 @@ describe('build pricing', () => {
     expect(cheap.shippingCents).toBe(PRICING_CONFIG.partsShippingCents);
   });
 
-  it('taxes hardware, services and shipping together', () => {
+  it('taxes hardware, services and shipping together once registered', () => {
     const price = priceBuild(buildFromIds(['ssd-wd-black-sn850x-1tb']), { province: 'ON' });
     const taxable = price.subtotalCents + price.servicesCents + price.shippingCents;
-    expect(price.taxCents).toBe(Math.round(taxable * 0.13));
+    // Shipping and labour are part of the taxable base for a good shipped
+    // within Canada, which is the rule this asserts. It only has anything to
+    // assert while the business is registered to collect.
+    expect(price.taxCents).toBe(
+      TAX_REGISTRATION.registered ? Math.round(taxable * 0.13) : 0,
+    );
   });
 
   it('produces a total equal to the sum of its parts', () => {
@@ -103,12 +176,21 @@ describe('build pricing', () => {
     );
   });
 
-  it('changes the total when the province changes', () => {
+  it('changes the total by province only where tax is charged', () => {
     const build = buildFromIds(COMPATIBLE_AM5_BUILD);
     const ontario = priceBuild(build, { province: 'ON' });
     const alberta = priceBuild(build, { province: 'AB' });
-    expect(alberta.totalCents).toBeLessThan(ontario.totalCents);
+
+    // The goods never change with the destination. Only tax does.
     expect(alberta.subtotalCents).toBe(ontario.subtotalCents);
+
+    if (TAX_REGISTRATION.registered) {
+      expect(alberta.totalCents).toBeLessThan(ontario.totalCents);
+    } else {
+      // Unregistered: a buyer in Alberta and a buyer in Ontario pay the same,
+      // because neither is charged tax.
+      expect(alberta.totalCents).toBe(ontario.totalCents);
+    }
   });
 
   it('keeps every figure an integer number of cents', () => {

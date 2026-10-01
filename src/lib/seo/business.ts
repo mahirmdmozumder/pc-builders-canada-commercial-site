@@ -1,5 +1,5 @@
 import { env } from '@/lib/env';
-import { CHANNELS } from '@/content/business';
+import { CHANNELS, HOURS, HOURS_PUBLISHED } from '@/content/business';
 
 /**
  * The facts a search engine is told about this business.
@@ -16,7 +16,8 @@ import { CHANNELS } from '@/content/business';
  *
  *   no `address`          — there is no public storefront. A service-area
  *                           business without premises must not invent one.
- *   no `openingHours`     — no published hours exist to declare.
+ *   `openingHoursSpecification` appears only while hours are published; it was
+ *   absent until the business set them, and withdraws if HOURS_PUBLISHED goes false.
  *   no `aggregateRating`  — no reviews exist. Rating markup without reviews is
  *                           the single most penalised piece of fake schema.
  *   no `sameAs`           — no social profiles are set up yet. The array is
@@ -96,6 +97,34 @@ export function localBusinessSchema() {
 
   if (CHANNELS.phone) schema.telephone = CHANNELS.phone;
   if (CHANNELS.email) schema.email = CHANNELS.email;
+
+  /**
+   * Opening hours, now that there are some.
+   *
+   * This is the mechanism this module was built around: a fact appears in the
+   * markup the moment it becomes true in src/content/business.ts, rather than
+   * being invented to fill a schema template. Hours were absent because none
+   * were published; they are here because they now are.
+   *
+   * Closed days are omitted rather than emitted with null times. A
+   * specification for Sunday with no opening time is malformed, and the
+   * absence of a day already means closed.
+   *
+   * These are the same hours the contact page prints, from the same table, so
+   * the markup cannot drift from the visible page — which is the mismatch
+   * Google actually acts on.
+   */
+  if (HOURS_PUBLISHED) {
+    const open = HOURS.filter((day) => day.opens && day.closes);
+    if (open.length > 0) {
+      schema.openingHoursSpecification = open.map((day) => ({
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: `https://schema.org/${day.day}`,
+        opens: day.opens,
+        closes: day.closes,
+      }));
+    }
+  }
 
   const profiles = sameAs();
   if (profiles.length > 0) schema.sameAs = profiles;

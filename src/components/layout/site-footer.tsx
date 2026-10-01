@@ -37,6 +37,10 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
       { href: '/about', label: 'About' },
       { href: '/portfolio', label: 'Portfolio' },
       { href: '/contact', label: 'Contact' },
+      // The footer rather than the header. The main nav already carries eight
+      // items plus a shop dropdown, and a ninth to reach a help page costs more
+      // in scanning than it returns — this is where people look for it anyway.
+      { href: '/faq', label: 'FAQ' },
       { href: '/account/support', label: 'Support' },
       { href: '/refer', label: 'Refer a friend' },
     ],

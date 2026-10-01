@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { localBusinessSchema, organizationSchema, SERVICE_AREAS } from '@/lib/seo/business';
 import { SERVICE_CONTENT } from '@/content/services';
-import { CHANNELS } from '@/content/business';
+import { CHANNELS, HOURS, HOURS_PUBLISHED } from '@/content/business';
 
 /**
  * Guards against the failure mode that actually hurts: structured data that
@@ -19,9 +19,47 @@ describe('local business schema', () => {
     expect(schema.address).toBeUndefined();
   });
 
-  it('never claims opening hours', () => {
+  /**
+   * Hours are now published, so the test changed from "never claims hours" to
+   * "claims exactly the hours the site displays". The original assertion was
+   * correct when none existed; keeping it would have meant either a failing
+   * suite or hours that never reach the markup.
+   *
+   * What must stay true is that the schema and the visible page cannot disagree,
+   * because they read the same table. A mismatch between marked-up hours and
+   * displayed hours is the thing Google acts on.
+   */
+  it('declares exactly the hours the site publishes, and no closed days', () => {
+    const spec = schema.openingHoursSpecification as
+      | { dayOfWeek: string; opens: string; closes: string }[]
+      | undefined;
+
+    if (!HOURS_PUBLISHED) {
+      expect(spec).toBeUndefined();
+      return;
+    }
+
+    const open = HOURS.filter((day) => day.opens && day.closes);
+    expect(spec).toHaveLength(open.length);
+
+    for (const day of HOURS) {
+      const entry = spec!.find((s) => s.dayOfWeek.endsWith(day.day));
+      if (day.opens && day.closes) {
+        expect(entry, `${day.day} is open but missing from the markup`).toBeDefined();
+        expect(entry!.opens).toBe(day.opens);
+        expect(entry!.closes).toBe(day.closes);
+      } else {
+        // A closed day is omitted, not emitted with null times. A
+        // specification with no opening time is malformed markup.
+        expect(entry, `${day.day} is closed but present in the markup`).toBeUndefined();
+      }
+    }
+  });
+
+  it('never uses the vague openingHours string form', () => {
+    // openingHours takes free text like "Mo-Sa 10:00-20:00" and is far easier to
+    // get subtly wrong than the structured form.
     expect(schema.openingHours).toBeUndefined();
-    expect(schema.openingHoursSpecification).toBeUndefined();
   });
 
   it('never claims a rating or review count', () => {

@@ -58,6 +58,130 @@ export const CHANNELS: BusinessChannels = {
 export const hasDirectContact = Boolean(CHANNELS.phone || CHANNELS.email);
 
 // ---------------------------------------------------------------------------
+// Opening hours
+// ---------------------------------------------------------------------------
+
+/**
+ * When somebody can expect an answer.
+ *
+ * One table, because these appear on the contact page, the about page, the FAQ
+ * and in LocalBusiness structured data. Hours that disagree between the page
+ * and the markup are the kind of thing Google flags, and the kind of thing a
+ * customer turns up for.
+ *
+ * `null` means closed that day, which is a different statement from "hours not
+ * published" — see HOURS_PUBLISHED below.
+ *
+ * Times are 24-hour local, and the zone is stated rather than assumed. A
+ * customer in Vancouver reading "10 to 8" without a zone is being told
+ * something untrue by omission.
+ */
+export interface DayHours {
+  /** Schema.org day name, used directly in openingHoursSpecification. */
+  day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+  /** 'HH:MM' in TIMEZONE_LABEL, or null when closed. */
+  opens: string | null;
+  closes: string | null;
+}
+
+export const TIMEZONE = 'America/Toronto';
+export const TIMEZONE_LABEL = 'Eastern time';
+
+export const HOURS: DayHours[] = [
+  { day: 'Monday', opens: '10:00', closes: '20:00' },
+  { day: 'Tuesday', opens: '10:00', closes: '20:00' },
+  { day: 'Wednesday', opens: '10:00', closes: '20:00' },
+  { day: 'Thursday', opens: '10:00', closes: '20:00' },
+  { day: 'Friday', opens: '10:00', closes: '20:00' },
+  { day: 'Saturday', opens: '10:00', closes: '20:00' },
+  { day: 'Sunday', opens: null, closes: null },
+];
+
+/**
+ * Whether to publish hours at all.
+ *
+ * Set false to withdraw them everywhere, including from structured data, rather
+ * than editing seven rows to null — which would publish "closed every day".
+ */
+export const HOURS_PUBLISHED = true;
+
+/** '10:00' as '10am', because nobody says "ten hundred" about a repair shop. */
+export function formatTime(time: string): string {
+  const [rawHour, minute] = time.split(':');
+  const hour = Number(rawHour);
+  const suffix = hour >= 12 ? 'pm' : 'am';
+  const twelve = hour % 12 === 0 ? 12 : hour % 12;
+  return minute === '00' ? `${twelve}${suffix}` : `${twelve}:${minute}${suffix}`;
+}
+
+/**
+ * Collapses the week into the shortest honest description.
+ *
+ * "Monday to Saturday, 10am to 8pm" rather than six identical rows. Runs of
+ * matching days are grouped, so changing one day's hours changes the summary
+ * automatically instead of leaving a hand-written sentence behind.
+ */
+export function summariseHours(): { label: string; hours: string }[] {
+  const groups: { days: DayHours[]; opens: string | null; closes: string | null }[] = [];
+
+  for (const entry of HOURS) {
+    const last = groups[groups.length - 1];
+    if (last && last.opens === entry.opens && last.closes === entry.closes) {
+      last.days.push(entry);
+    } else {
+      groups.push({ days: [entry], opens: entry.opens, closes: entry.closes });
+    }
+  }
+
+  return groups.map((group) => {
+    const first = group.days[0].day;
+    const last = group.days[group.days.length - 1].day;
+    const label = group.days.length === 1 ? first : `${first} to ${last}`;
+    const hours =
+      group.opens && group.closes
+        ? `${formatTime(group.opens)} to ${formatTime(group.closes)}`
+        : 'Closed';
+    return { label, hours };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// In person
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether, and how, a customer can meet the business in person.
+ *
+ * NO ADDRESS IS PUBLISHED, and there is no field for one. This is a service-area
+ * business working out of a workspace, not a shop with a counter. Publishing an
+ * address would invite people to turn up to something that is not a storefront,
+ * and inventing one would be worse.
+ *
+ * Pickup and drop-off happen, but by arrangement — so the copy says "arrange it
+ * first" everywhere rather than implying a door that can be walked through.
+ */
+export interface InPersonPolicy {
+  /** Finished machines and hardware can be collected. */
+  pickup: boolean;
+  /** A machine can be left with us for work. */
+  dropOff: boolean;
+  /** Both require arranging in advance. */
+  byAppointment: boolean;
+  /** We travel to the customer for on-site work. */
+  onSite: boolean;
+  /** True only if there is a storefront the public may walk into. There is not. */
+  walkIn: boolean;
+}
+
+export const IN_PERSON: InPersonPolicy = {
+  pickup: true,
+  dropOff: true,
+  byAppointment: true,
+  onSite: true,
+  walkIn: false,
+};
+
+// ---------------------------------------------------------------------------
 // Referral offer
 // ---------------------------------------------------------------------------
 

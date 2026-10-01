@@ -39,7 +39,36 @@ export default function AboutPage() {
       <PageShell className="py-12 sm:py-16">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <div className="space-y-6 text-ink-300">
-            <h2 className="text-2xl font-semibold tracking-tight text-white">What we do</h2>
+            {/* ---------------------------------------------------------------
+                Who is behind it.
+                ---------------------------------------------------------------
+                Every figure in this section was supplied by the owner: the
+                Seneca diploma, four years of building, and more than fifty
+                systems. Nothing is inferred, rounded up or padded with a number
+                nobody gave — and there is no claim to be the best, biggest or
+                most trusted anything, because none of that can be backed up.
+            --------------------------------------------------------------- */}
+            <h2 className="text-2xl font-semibold tracking-tight text-white">Who you are dealing with</h2>
+            <p className="leading-relaxed">
+              PC Builders Canada is run by one technician, not a call centre. The person who answers
+              your message is the person who builds the machine and the person who looks at it if
+              something goes wrong later. That is deliberate, and it is the reason the work can be
+              explained rather than escalated.
+            </p>
+            <p className="leading-relaxed">
+              Behind it is formal IT training and a diploma from Seneca, four years of building PCs,
+              and more than fifty custom systems put together over that time. The technical side is
+              the part that was never in question; what this business adds to it is doing the job
+              for other people properly, and being straight with them about what their money buys.
+            </p>
+            <p className="leading-relaxed">
+              It is a small operation and growing on purpose, one machine at a time. That means you
+              get somebody who genuinely wants the build to be right rather than closed, and it also
+              means honest limits: there is no warehouse, no showroom and no overnight courier
+              contract. What there is, is care about the work and the time to do it properly.
+            </p>
+
+            <h2 className="pt-4 text-2xl font-semibold tracking-tight text-white">What we do</h2>
             <p className="leading-relaxed">
               Every machine is assembled by hand, cabled so that airflow and future access are not
               compromised, then tested under sustained load before the operating system goes on. The
@@ -93,8 +122,9 @@ export default function AboutPage() {
                 </div>
               </dl>
               <p className="mt-4 border-t border-ink-700 pt-4 text-xs leading-relaxed text-ink-500">
-                Full business details, service area and hours are being finalised and will be
-                published here.
+                We work from a workspace rather than a storefront, so there is no address to visit.
+                Pickup and drop-off are arranged in advance, and on-site work covers Toronto and the
+                GTA.
               </p>
             </Card>
 

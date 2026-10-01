@@ -248,6 +248,14 @@ function CartViewInner() {
                 {formatMoney(summary.price.totalCents)}
               </dd>
             </div>
+            {/* Says why there is no tax row. An absent tax line on a Canadian
+                order reads as a bug, and a customer who thinks the total is
+                incomplete does not reach checkout. */}
+            {summary.price.taxLines.length === 0 ? (
+              <p className="pt-2 text-xs leading-relaxed text-ink-500">
+                No sales tax is charged on this order.
+              </p>
+            ) : null}
           </dl>
         ) : (
           <p className="px-5 py-4 text-sm text-ink-400">
