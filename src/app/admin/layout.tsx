@@ -29,6 +29,9 @@ const NAV_GROUPS: { heading: string | null; items: { href: string; label: string
       { href: '/admin/orders', label: 'Orders' },
       { href: '/admin/quotes', label: 'Quotes' },
       { href: '/admin/inventory', label: 'Inventory' },
+      // Next to Inventory, because they are the same kind of job: scan a list,
+      // change one number per row. Both edit a single column on `components`.
+      { href: '/admin/pricing', label: 'Pricing' },
       { href: '/admin/customers', label: 'Customers' },
       { href: '/admin/builds', label: 'Saved builds' },
       { href: '/admin/support', label: 'Support' },

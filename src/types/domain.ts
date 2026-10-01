@@ -271,6 +271,13 @@ export type ActivityAction =
   | 'component.updated'
   | 'component.deactivated'
   | 'inventory.adjusted'
+  /**
+   * A price change from the pricing screen. Its own action rather than
+   * `component.updated`, for the same reason stock adjustments have one: the
+   * old and new figures belong in the log, and "what did this part cost in
+   * March" is a question that gets asked.
+   */
+  | 'price.changed'
   | 'quote.status_changed'
   | 'quote.note_added'
   | 'ticket.status_changed'

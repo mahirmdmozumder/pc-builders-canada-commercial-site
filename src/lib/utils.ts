@@ -22,6 +22,28 @@ export function formatMoney(cents: number, opts: { whole?: boolean } = {}): stri
   return opts.whole && Number.isInteger(value) ? CAD_WHOLE.format(value) : CAD.format(value);
 }
 
+/**
+ * Turns a dollar figure typed by a person into integer cents.
+ *
+ * The rounding is the whole point. `19.99 * 100` is 1998.9999999999998 in
+ * IEEE754, so truncating sells the part for $19.98 — a bug that is invisible in
+ * review, shows up as a one-cent discrepancy nobody can reproduce, and compounds
+ * once a quantity multiplies it.
+ *
+ * Returns null for anything that is not a usable amount: blank, non-numeric,
+ * negative, or infinite. The caller decides what to say about that, because "you
+ * left it blank" and "that is not a number" are different messages.
+ */
+export function dollarsToCents(input: string | number): number | null {
+  const text = String(input).trim();
+  if (text === '') return null;
+
+  const dollars = Number(text);
+  if (!Number.isFinite(dollars) || dollars < 0) return null;
+
+  return Math.round(dollars * 100);
+}
+
 export function formatDate(value: string | Date): string {
   const date = typeof value === 'string' ? new Date(value) : value;
   return new Intl.DateTimeFormat('en-CA', { dateStyle: 'medium' }).format(date);

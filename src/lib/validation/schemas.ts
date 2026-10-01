@@ -297,6 +297,25 @@ export const inventoryAdjustSchema = z.object({
   reason: z.string().trim().max(200).optional(),
 });
 
+/**
+ * A price change made from the pricing screen.
+ *
+ * Deliberately the same shape as the inventory adjustment above: one component,
+ * one new value, an optional reason. Component prices move often enough that
+ * editing them through the full product form is the wrong tool, exactly as it is
+ * for counting stock.
+ *
+ * `price_cents` carries the same bounds as the product editor's own field, so a
+ * figure this route accepts is a figure that form would accept. Cents, integer:
+ * the screen takes dollars and converts, because money stored as a float is a
+ * rounding bug waiting for a total.
+ */
+export const priceUpdateSchema = z.object({
+  component_id: z.string().min(1).max(120),
+  price_cents: z.number().int().min(0).max(100_000_00),
+  reason: z.string().trim().max(200).optional(),
+});
+
 // ---------------------------------------------------------------------------
 // Product reviews
 // ---------------------------------------------------------------------------
