@@ -35,37 +35,40 @@ export function PresetCard({ summary }: { summary: PresetSummary }) {
   const record = 'hero_image_url' in preset ? preset : null;
 
   return (
-    /* `relative` is what the title link's overlay below is positioned against,
-       so the whole card becomes the click target. */
-    <Card className="group relative flex flex-col overflow-hidden transition-colors hover:border-ink-600">
-      <BuildImage
-        src={record?.hero_image_url ?? record?.gallery_urls?.[0] ?? null}
-        alt={`${preset.name} build`}
-        galleryCount={Math.max(0, (record?.gallery_urls?.length ?? 0) - 1)}
-        className="rounded-none border-0 border-b border-ink-700"
-      />
+    <Card className="group flex flex-col overflow-hidden transition-colors hover:border-ink-600">
+      {/* The image links to the machine's page, and is hidden from assistive
+          tech and the tab order: the heading below links to the same place and
+          carries the name, so two tab stops per card would be noise.
+
+          This mirrors ShopCard exactly, which is the point -- a product card
+          should click the same way everywhere on the site. The card as a whole
+          is deliberately NOT a link: it holds a second link to the
+          configurator, and nesting anchors is invalid HTML. */}
+      <Link
+        href={`/pre-built-gaming-pcs/${preset.slug}`}
+        aria-hidden
+        tabIndex={-1}
+        className="block focus:outline-none"
+      >
+        <BuildImage
+          src={record?.hero_image_url ?? record?.gallery_urls?.[0] ?? null}
+          alt={`${preset.name} build`}
+          galleryCount={Math.max(0, (record?.gallery_urls?.length ?? 0) - 1)}
+          className="rounded-none border-0 border-b border-ink-700"
+        />
+      </Link>
 
       <div className="border-b border-ink-700 px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold text-white">
               {/* Links to the machine's own page rather than straight into
-                  the configurator, so the page can be found and shared.
-
-                  The `after:` pseudo-element stretches this one link over the
-                  whole card, so clicking anywhere on it opens the machine —
-                  previously only the name itself was clickable, which meant
-                  most of a large card did nothing.
-
-                  Done this way rather than by wrapping the card in an anchor
-                  because the card holds a SECOND link to the configurator.
-                  Nesting two anchors is invalid HTML and behaves differently in
-                  every browser; an overlay keeps one anchor per destination,
-                  one tab stop each, and the card's accessible name is still the
-                  machine's name rather than the whole card read aloud. */}
+                  the configurator, so the page can be found and shared. Same
+                  classes as ShopCard's title, including the focus ring, since
+                  this is the keyboard-reachable link for the card. */}
               <Link
                 href={`/pre-built-gaming-pcs/${preset.slug}`}
-                className="hover:text-gold-400 after:absolute after:inset-0 after:content-['']"
+                className="rounded transition-colors hover:text-gold-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
               >
                 {preset.name}
               </Link>
@@ -106,13 +109,9 @@ export function PresetCard({ summary }: { summary: PresetSummary }) {
           </div>
         </div>
 
-        {/* `relative z-10` lifts this above the title link's overlay. Without
-            it the overlay would sit on top and swallow the click, sending
-            somebody to the machine's page when they asked for the
-            configurator. */}
         <Link
           href={`/build?preset=${preset.slug}`}
-          className="relative z-10 block w-full rounded-md border border-ink-600 bg-ink-700 px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-ink-600"
+          className="block w-full rounded-md border border-ink-600 bg-ink-700 px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-ink-600"
         >
           Open in configurator
         </Link>
