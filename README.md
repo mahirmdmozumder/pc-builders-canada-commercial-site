@@ -307,6 +307,6 @@ Stated plainly rather than left for a reader to discover:
 
 ## Licence
 
-Copyright (c) 2026 Arnob Sarfraj. All rights reserved. See [LICENSE](LICENSE).
+Copyright (c) 2026 Mahir Mohammed Mozumder. All rights reserved. See [LICENSE](LICENSE).
 This is proprietary software for PC Builders Canada, published here as a
 portfolio reference rather than as an open-source project.

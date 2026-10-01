@@ -35,5 +35,6 @@
     "typescript": "^5",
     "vitest": "^5.0.1"
   },
-  "description": "Custom PC configurator and e-commerce platform for PC Builders Canada"
+  "description": "Custom PC configurator and e-commerce platform for PC Builders Canada",
+  "author": "Mahir Mohammed Mozumder"
 }
