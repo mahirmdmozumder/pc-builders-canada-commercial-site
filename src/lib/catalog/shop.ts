@@ -396,43 +396,27 @@ export async function loadShopCatalogue(): Promise<ShopCatalogue> {
   return { items, sample: presetResult.source === 'fallback' };
 }
 
-export interface LowestMachine {
-  priceCents: number;
-  /**
-   * Which kind the cheapest machine turned out to be.
-   *
-   * The caller needs this for its caption, not for arithmetic. "Assembled and
-   * tested" is true of a machine we build and false of one bought in, so a
-   * single fixed caption would make a claim about work nobody did as soon as a
-   * resold machine became the cheapest.
-   */
-  source: 'assembled' | 'stocked';
-}
-
 /**
- * The cheapest finished machine on sale, of either kind.
+ * The price of the cheapest finished machine on sale, of either kind.
  *
- * Only finished machines count. Using the catalogue minimum would put a $7
- * cooler behind "Pre-built from", which is true of nothing we sell.
+ * Only finished machines count -- a preset we assemble, or a machine bought in
+ * and resold. Using the catalogue minimum would put a $7 cooler behind
+ * "Pre-built from", which is true of nothing we sell.
  *
  * Pure, and takes the already-loaded catalogue, so the homepage does not pay for
  * a second read of something it is holding. Returns null when nothing is
  * published, so the caller can omit the line rather than print a zero.
  *
- * Ties go to 'assembled'. A dead heat is not worth a rule, and the stronger
- * claim is the one we can actually stand behind.
+ * It returns only the figure, deliberately. An earlier version also reported
+ * WHICH kind was cheapest so the caption could avoid claiming "assembled and
+ * tested" of a machine bought in. That turned out to be unnecessary: resold
+ * machines are stripped, reassembled, tested and rebranded before sale, so the
+ * claim holds for everything sold here. A field with no consumer is worse than
+ * no field.
  */
-export function lowestFinishedMachine(items: ShopItem[]): LowestMachine | null {
-  const machines = items.filter((item) => isFinishedMachine(item) && item.priceCents > 0);
-  if (machines.length === 0) return null;
-
-  const cheapest = machines.reduce((best, item) => {
-    if (item.priceCents !== best.priceCents) return item.priceCents < best.priceCents ? item : best;
-    return best.kind === 'prebuilt' ? best : item;
-  });
-
-  return {
-    priceCents: cheapest.priceCents,
-    source: cheapest.kind === 'prebuilt' ? 'assembled' : 'stocked',
-  };
+export function lowestFinishedMachinePriceCents(items: ShopItem[]): number | null {
+  const prices = items
+    .filter((item) => isFinishedMachine(item) && item.priceCents > 0)
+    .map((item) => item.priceCents);
+  return prices.length > 0 ? Math.min(...prices) : null;
 }

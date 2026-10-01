@@ -9,9 +9,8 @@ import {
 } from '@/lib/cms/repository';
 import {
   loadShopCatalogue,
-  lowestFinishedMachine,
+  lowestFinishedMachinePriceCents,
   rotateShopItems,
-  type LowestMachine,
   type ShopItem,
 } from '@/lib/catalog/shop';
 import { ShopCard } from '@/components/shop/shop-card';
@@ -22,7 +21,6 @@ import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { formatMoney } from '@/lib/utils';
 import { ParticleField } from '@/components/visual/particle-field';
 import { NavCard, type NavCardItem } from '@/components/home/nav-card';
-import { TAX_REGISTRATION } from '@/lib/pricing/tax';
 
 export const metadata: Metadata = {
   title: 'Custom Gaming & Workstation PCs Built in Canada',
@@ -52,7 +50,7 @@ export default async function HomePage() {
   // or one bought in and resold. This used to test `kind === 'prebuilt'` inline,
   // which predated resold machines and so ignored them entirely -- the figure
   // could advertise a higher price than something actually on the shelf.
-  const cheapestMachine = lowestFinishedMachine(shop.items);
+  const cheapestMachine = lowestFinishedMachinePriceCents(shop.items);
 
   // Featured products come from the admin. Nothing ticked means the section
   // stays off rather than filling itself with whatever happened to be first.
@@ -61,7 +59,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero machine={cheapestMachine} />
+      <Hero fromCents={cheapestMachine} />
       <PromotionStrip promotions={promotions} />
       <Pillars />
       <FeaturedProducts items={featuredProducts} orderable={orderable} />
@@ -75,7 +73,7 @@ export default async function HomePage() {
   );
 }
 
-function Hero({ machine }: { machine: LowestMachine | null }) {
+function Hero({ fromCents }: { fromCents: number | null }) {
   return (
     <section className="relative overflow-hidden border-b border-ink-700">
       {/*
@@ -140,25 +138,20 @@ function Hero({ machine }: { machine: LowestMachine | null }) {
           <dl className="mt-14 grid max-w-2xl grid-cols-2 gap-x-8 gap-y-6 border-t border-ink-700 pt-8 sm:grid-cols-3">
             {/* Omitted entirely when nothing is published, rather than
                 printing a zero or a price nothing is actually sold at. */}
-            {machine !== null ? (
+            {fromCents !== null ? (
               <div>
                 <dt className="text-xs tracking-wide text-ink-400 uppercase">Pre-built from</dt>
                 <dd className="tnum mt-1 text-xl font-semibold text-white">
-                  {formatMoney(machine.priceCents, { whole: true })}
+                  {formatMoney(fromCents, { whole: true })}
                 </dd>
-                {/* The caption follows whichever machine is cheapest. "Assembled
-                    and tested" is true of one we build and false of one bought
-                    in, so a fixed caption would claim work nobody did the moment
-                    a resold machine undercut the presets.
+                {/* One caption for every machine, and it is accurate for both
+                    kinds: a resold machine is stripped, reassembled, tested and
+                    rebranded before it is sold, so it was assembled and tested
+                    here as much as a preset build was.
 
-                    The second clause names what actually gets added, which
-                    depends on whether we are registered to collect tax. It said
-                    "before tax" when no tax is charged, implying a surcharge
-                    that does not exist. */}
-                <dd className="mt-0.5 text-xs text-ink-400">
-                  {machine.source === 'assembled' ? 'assembled and tested' : 'in stock, ready to ship'}
-                  {TAX_REGISTRATION.registered ? ', before tax and shipping' : ', before shipping'}
-                </dd>
+                    "before tax" because trading starts after GST/HST
+                    registration, so tax is what a customer will be charged. */}
+                <dd className="mt-0.5 text-xs text-ink-400">assembled and tested, before tax</dd>
               </div>
             ) : null}
             <div>

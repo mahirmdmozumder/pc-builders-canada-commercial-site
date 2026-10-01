@@ -7,7 +7,7 @@ import { specChips } from '@/components/configurator/spec-chips';
 import {
   findShopFilter,
   isFinishedMachine,
-  lowestFinishedMachine,
+  lowestFinishedMachinePriceCents,
   toShopItem,
   type ShopItem,
 } from '@/lib/catalog/shop';
@@ -466,42 +466,32 @@ describe('cheapest finished machine', () => {
   it('ignores parts, however cheap', () => {
     // The whole reason this helper exists: a $7 cooler must never sit behind
     // "Pre-built from".
-    const result = lowestFinishedMachine([part, preset]);
-    expect(result?.priceCents).toBe(200000);
+    expect(lowestFinishedMachinePriceCents([part, preset])).toBe(200000);
   });
 
   it('counts a resold machine, which is the bug this fixes', () => {
-    const result = lowestFinishedMachine([part, preset, resold]);
-    expect(result?.priceCents).toBe(120000);
-    expect(result?.source).toBe('stocked');
+    expect(lowestFinishedMachinePriceCents([part, preset, resold])).toBe(120000);
   });
 
   it('counts a preset when it is the cheaper of the two', () => {
     const cheapPreset = { ...preset, priceCents: 90000 };
-    const result = lowestFinishedMachine([part, cheapPreset, resold]);
-    expect(result?.priceCents).toBe(90000);
-    expect(result?.source).toBe('assembled');
+    expect(lowestFinishedMachinePriceCents([part, cheapPreset, resold])).toBe(90000);
   });
 
-  /**
-   * The caption depends on `source`, and "assembled and tested" is the stronger
-   * claim. On a dead heat we say the thing we can stand behind.
-   */
-  it('prefers the assembled machine on a tie', () => {
+  it('reports one price on a tie rather than erroring', () => {
     const tied = { ...preset, priceCents: 120000 };
-    expect(lowestFinishedMachine([resold, tied])?.source).toBe('assembled');
-    expect(lowestFinishedMachine([tied, resold])?.source).toBe('assembled');
+    expect(lowestFinishedMachinePriceCents([resold, tied])).toBe(120000);
   });
 
   it('skips anything with no price, so "Ask us" never becomes $0', () => {
     const unpriced = { ...preset, id: 'discontinued', priceCents: 0 };
-    expect(lowestFinishedMachine([unpriced, resold])?.priceCents).toBe(120000);
-    expect(lowestFinishedMachine([unpriced])).toBeNull();
+    expect(lowestFinishedMachinePriceCents([unpriced, resold])).toBe(120000);
+    expect(lowestFinishedMachinePriceCents([unpriced])).toBeNull();
   });
 
   it('returns null with nothing published, so the line is omitted', () => {
-    expect(lowestFinishedMachine([])).toBeNull();
-    expect(lowestFinishedMachine([part])).toBeNull();
+    expect(lowestFinishedMachinePriceCents([])).toBeNull();
+    expect(lowestFinishedMachinePriceCents([part])).toBeNull();
   });
 
   it('agrees with the shop filter about what a finished machine is', () => {
