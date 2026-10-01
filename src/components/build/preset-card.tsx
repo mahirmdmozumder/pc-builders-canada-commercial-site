@@ -35,7 +35,9 @@ export function PresetCard({ summary }: { summary: PresetSummary }) {
   const record = 'hero_image_url' in preset ? preset : null;
 
   return (
-    <Card className="group flex flex-col overflow-hidden transition-colors hover:border-ink-600">
+    /* `relative` is what the title link's overlay below is positioned against,
+       so the whole card becomes the click target. */
+    <Card className="group relative flex flex-col overflow-hidden transition-colors hover:border-ink-600">
       <BuildImage
         src={record?.hero_image_url ?? record?.gallery_urls?.[0] ?? null}
         alt={`${preset.name} build`}
@@ -48,10 +50,22 @@ export function PresetCard({ summary }: { summary: PresetSummary }) {
           <div>
             <h3 className="text-lg font-semibold text-white">
               {/* Links to the machine's own page rather than straight into
-                  the configurator, so the page can be found and shared. */}
+                  the configurator, so the page can be found and shared.
+
+                  The `after:` pseudo-element stretches this one link over the
+                  whole card, so clicking anywhere on it opens the machine —
+                  previously only the name itself was clickable, which meant
+                  most of a large card did nothing.
+
+                  Done this way rather than by wrapping the card in an anchor
+                  because the card holds a SECOND link to the configurator.
+                  Nesting two anchors is invalid HTML and behaves differently in
+                  every browser; an overlay keeps one anchor per destination,
+                  one tab stop each, and the card's accessible name is still the
+                  machine's name rather than the whole card read aloud. */}
               <Link
                 href={`/pre-built-gaming-pcs/${preset.slug}`}
-                className="hover:text-gold-400"
+                className="hover:text-gold-400 after:absolute after:inset-0 after:content-['']"
               >
                 {preset.name}
               </Link>
@@ -92,9 +106,13 @@ export function PresetCard({ summary }: { summary: PresetSummary }) {
           </div>
         </div>
 
+        {/* `relative z-10` lifts this above the title link's overlay. Without
+            it the overlay would sit on top and swallow the click, sending
+            somebody to the machine's page when they asked for the
+            configurator. */}
         <Link
           href={`/build?preset=${preset.slug}`}
-          className="block w-full rounded-md border border-ink-600 bg-ink-700 px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-ink-600"
+          className="relative z-10 block w-full rounded-md border border-ink-600 bg-ink-700 px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-ink-600"
         >
           Open in configurator
         </Link>
