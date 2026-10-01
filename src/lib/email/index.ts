@@ -1,4 +1,5 @@
 import { env, isEmailConfigured } from '@/lib/env';
+import { TAX_REGISTRATION } from '@/lib/pricing/tax';
 
 /**
  * Transactional email.
@@ -104,14 +105,28 @@ ${
 PC Builders Canada`;
 }
 
+/**
+ * Payment confirmation.
+ *
+ * This email is the thing a customer keeps as a receipt, so it carries the
+ * GST/HST registration number once there is one. A registrant charging tax is
+ * required to show its number on a receipt, and a receipt is exactly what this
+ * is -- so the line appears automatically with registration rather than waiting
+ * for somebody to remember this file.
+ */
 export function orderPaidEmail(params: {
   name: string | null;
   orderNumber: string;
   totalCents: number;
 }) {
+  const taxLine =
+    TAX_REGISTRATION.registered && TAX_REGISTRATION.number
+      ? `\n\nGST/HST registration number: ${TAX_REGISTRATION.number}`
+      : '';
+
   return `Hi${params.name ? ` ${params.name}` : ''},
 
-Payment for order ${params.orderNumber} has been confirmed: $${(params.totalCents / 100).toFixed(2)} CAD.
+Payment for order ${params.orderNumber} has been confirmed: $${(params.totalCents / 100).toFixed(2)} CAD.${taxLine}
 
 Next: we check the parts list, order anything not in stock, then assemble and test the machine. You will get an update each time the order changes status, and you can follow it in your account.
 

@@ -165,12 +165,31 @@ describe('policies do not invent terms', () => {
     expect(text).toContain('Ontario');
   });
 
-  it('does not claim to collect tax it is not registered for', () => {
+  /**
+   * Asserted in BOTH directions, because only testing the current one is how
+   * the flag became a trap. The original version checked the unregistered case
+   * and would have passed silently while the page told registered customers
+   * the business collected no tax.
+   */
+  it('describes the tax position that is actually configured', () => {
     const terms = POLICIES.find((p) => p.slug === 'terms')!;
     const text = terms.sections.flatMap((s) => s.paragraphs).join(' ');
-    if (!TAX_REGISTRATION.registered) {
+
+    if (TAX_REGISTRATION.registered) {
+      expect(text).toContain('Sales tax is charged');
+      expect(text).not.toContain('not currently registered');
+      // A registrant must show its number where tax is charged.
+      expect(TAX_REGISTRATION.number, 'registered with no business number').toBeTruthy();
+      expect(text).toContain(TAX_REGISTRATION.number!);
+    } else {
       expect(text).toContain('not currently registered');
+      expect(text).not.toContain('Sales tax is charged');
     }
+  });
+
+  it('keeps a Sales tax section whichever way the flag is set', () => {
+    const terms = POLICIES.find((p) => p.slug === 'terms')!;
+    expect(terms.sections.filter((s) => s.heading === 'Sales tax')).toHaveLength(1);
   });
 });
 

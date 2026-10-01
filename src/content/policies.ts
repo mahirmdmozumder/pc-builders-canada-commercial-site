@@ -1,4 +1,5 @@
 import { CHANNELS } from '@/content/business';
+import { TAX_REGISTRATION } from '@/lib/pricing/tax';
 
 /**
  * Policy content.
@@ -147,12 +148,29 @@ export const POLICIES: Policy[] = [
           'Operating system and other software licences supplied with an order are subject to the terms of their publisher.',
         ],
       },
-      {
-        heading: 'Sales tax',
-        paragraphs: [
-          'PC Builders Canada is not currently registered to collect GST/HST, so no sales tax is added to your order and the total shown is the total you pay. If that changes, tax will appear as a separate line before you pay, and it will never be applied to an order already placed.',
-        ],
-      },
+      /**
+       * Follows TAX_REGISTRATION rather than being written once.
+       *
+       * Static prose here was a trap. Turning registration on is two values in
+       * one file, and this page would have gone on telling customers the
+       * business was not registered while the checkout charged them tax --
+       * a contradiction on the one page that exists to be relied on.
+       */
+      TAX_REGISTRATION.registered
+        ? {
+            heading: 'Sales tax',
+            paragraphs: [
+              `Sales tax is charged at the rate for your province and shown as a separate line before you pay. Our GST/HST registration number is ${TAX_REGISTRATION.number ?? 'shown on your receipt'}.`,
+              'Tax is calculated on the goods, the assembly labour and the shipping together, which is the normal treatment for a product shipped within Canada.',
+            ],
+          }
+        : {
+            heading: 'Sales tax',
+            paragraphs: [
+              'PC Builders Canada is not currently registered to collect GST/HST, so no sales tax is added to your order and the total shown is the total you pay.',
+              'If that changes, tax will appear as a separate line before you pay, and it will never be applied to an order that was already placed.',
+            ],
+          },
       {
         heading: 'Who you are dealing with',
         paragraphs: [
