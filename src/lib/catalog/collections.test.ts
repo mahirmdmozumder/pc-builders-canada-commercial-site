@@ -20,14 +20,30 @@ import {
  * several collections.
  */
 
-// Categories the compatibility engine has no rules for. None may appear in
-// CONFIGURATOR_CATEGORIES, or the configurator would offer a part it cannot
-// check and imply that it had.
+/**
+ * Categories sold as FINISHED UNITS, which may never appear in
+ * CONFIGURATOR_CATEGORIES.
+ *
+ * The distinction that matters is not "has no compatibility rules" — it is
+ * "cannot be part of a tower build". A switch, a NAS and a mini PC are complete
+ * machines; putting one in a build would ask the engine to compare a socket
+ * against a rack-mount switch. A monitor sits beside the machine rather than
+ * inside it, and nothing about a build constrains it.
+ *
+ * `case-fan` was on this list and has been removed, deliberately. A fan goes
+ * inside the tower being built, and buyers expect to add them while building.
+ * Having no rules written for a part is not a reason to hide it: the engine
+ * applies the rules it has and reports what it could not check, exactly as it
+ * does for an OS licence, which has always been in the configurator.
+ */
 const WHOLE_UNIT_CATEGORIES: ComponentCategory[] = [
   'networking',
   'nas',
   'mini-pc',
-  'case-fan',
+  // A complete machine bought in and resold. It has no socket to compare and no
+  // clearance to check, so it must never reach the configurator -- the same
+  // reasoning as a switch, applied to a desktop. Added in migration 0010.
+  'prebuilt',
   'monitor',
   'other',
 ];
@@ -135,6 +151,19 @@ describe('whole-unit categories', () => {
     for (const category of CONFIGURATOR_CATEGORIES) {
       expect(COMPONENT_CATEGORIES).toContain(category);
     }
+  });
+
+  /**
+   * Case fans are selectable, and optional.
+   *
+   * Both halves matter. Offering them is the point of the change; making them
+   * required would mean every existing saved build and every preset instantly
+   * reported itself incomplete.
+   */
+  it('offers case fans in the configurator without requiring them', () => {
+    expect(CONFIGURATOR_CATEGORIES).toContain('case-fan');
+    expect(REQUIRED_CATEGORIES).not.toContain('case-fan');
+    expect(CATEGORY_LABELS['case-fan']).toBeTruthy();
   });
 });
 

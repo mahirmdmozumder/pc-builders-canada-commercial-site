@@ -29,10 +29,25 @@ export const COMPONENT_CATEGORIES = [
   'networking',
   'nas',
   'mini-pc',
-  // Sold alongside a build but with no compatibility rules written for them.
-  // They stay out of CONFIGURATOR_CATEGORIES for the same reason the
-  // whole-unit categories do: the engine can only check what it has rules for,
-  // and listing a category it cannot reason about would imply otherwise.
+  /**
+   * A complete machine, bought in and resold rather than assembled here.
+   *
+   * Deliberately distinct from a configurator PRESET. A preset is a parts list
+   * whose price is the sum of its rows, recomputed on every render; this is a
+   * sealed product with its own fixed price, stock count and photographs, which
+   * is what a machine sourced from a supplier actually is.
+   *
+   * It is a catalogue category, not a configurator one — see
+   * CONFIGURATOR_CATEGORIES. Added in migration 0010.
+   */
+  'prebuilt',
+  // Sold alongside a build, with no compatibility rules written for them.
+  //
+  // `case-fan` IS offered in the configurator, because a fan is a part of the
+  // tower being built and buyers reasonably expect to add them there. See the
+  // note on CONFIGURATOR_CATEGORIES. `monitor` is not: it sits on the desk
+  // beside the machine rather than inside it, and nothing about a build
+  // constrains which monitor can be plugged into it.
   'case-fan',
   'monitor',
   'other',
@@ -66,6 +81,7 @@ export const CATEGORY_LABELS: Record<ComponentCategory, string> = {
   networking: 'Networking & Server',
   nas: 'NAS & Storage Enclosure',
   'mini-pc': 'Mini PC & Single-Board',
+  prebuilt: 'Pre-built PC',
   'case-fan': 'Case Fan',
   monitor: 'Monitor',
   other: 'Other',
@@ -88,6 +104,19 @@ export const CONFIGURATOR_CATEGORIES: ComponentCategory[] = [
   'storage',
   'psu',
   'case',
+  // Case fans go INSIDE the tower, which is what separates them from the
+  // whole-unit categories above. They were originally excluded for the same
+  // reason as a switch — no compatibility rules are written for them — but that
+  // reasoning does not hold: a switch cannot be part of a build at all, while a
+  // case fan is a part somebody is buying precisely because they are building.
+  //
+  // Having no rules is not the same as being unreasonable to include. The engine
+  // applies the rules it has and reports what it could not check; a fan simply
+  // has nothing to check, the same as an OS licence. It still contributes to the
+  // power estimate, which is the one thing it does affect.
+  //
+  // Not in REQUIRED_CATEGORIES: a build is complete without extra fans.
+  'case-fan',
   'os',
   'accessory',
 ];

@@ -180,8 +180,23 @@ export const SHOP_FILTERS: ShopFilter[] = [
   {
     slug: 'prebuilt',
     label: 'Pre-built PCs',
-    description: 'Machines that arrive assembled, cabled and tested.',
-    matches: (item) => item.kind === 'prebuilt',
+    description: 'Machines that arrive assembled and ready to use.',
+    /**
+     * Matches BOTH kinds of finished machine, which are genuinely different
+     * things behind the scenes:
+     *
+     *   kind === 'prebuilt'          a configurator preset — a parts list we
+     *                                assemble, priced from its rows and fully
+     *                                editable before ordering.
+     *   category === 'prebuilt'      a complete machine bought in and resold,
+     *                                with its own fixed price and stock count.
+     *
+     * A customer shopping for a finished PC does not care which, and should not
+     * have to find them under two different tiles. The cards still show the
+     * difference: a preset offers "View build", a stocked machine offers Add to
+     * cart with a real stock line.
+     */
+    matches: (item) => item.kind === 'prebuilt' || item.category === 'prebuilt',
   },
   {
     slug: 'components',

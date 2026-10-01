@@ -1,0 +1,64 @@
+-- ===========================================================================
+-- Standalone pre-built PCs
+-- ===========================================================================
+-- Run this file ON ITS OWN, as one query. It adds a single enum value and
+-- nothing else.
+--
+-- IMPORTANT: do not add other statements to this file that USE the new value.
+-- Postgres refuses to let a new enum value be used in the transaction that
+-- added it, which is the same rule that forced migration 0004 and the seed
+-- apart. Nothing here uses it; the storefront and admin pick it up from code.
+--
+-- ---------------------------------------------------------------------------
+-- WHY A CATEGORY RATHER THAN A NEW TABLE
+-- ---------------------------------------------------------------------------
+-- The requirement is a pre-built machine that can be listed, priced and sold
+-- WITHOUT choosing components from inventory -- a complete PC bought from a
+-- supplier and resold.
+--
+-- `build_presets` cannot hold one. A preset is defined by its `items`: a list of
+-- catalogue rows whose prices are summed on every render, which is exactly what
+-- stops a preset advertising a total its parts no longer cost. A machine with no
+-- parts list has no price under that model.
+--
+-- A new table could hold one, and would then need its own admin screen, its own
+-- cart path, its own order lines, its own inventory, its own product page and
+-- its own structured data -- a second product system alongside the first, which
+-- is the thing this project has been careful not to build.
+--
+-- A `components` row already is this product. It carries, today, with no schema
+-- change beyond this line:
+--
+--   title            brand + model
+--   price            price_cents, and cost_cents for margin
+--   description      description + short_description
+--   images           image_url + gallery_urls
+--   video            video_url                        (migration 0009)
+--   specifications   specs jsonb, free-form           (no migration per spec)
+--   availability     stock_quantity + low_stock_threshold
+--   condition        condition + condition_notes      (open-box resale)
+--   publishing       status, featured, sort_order
+--   SEO              seo_title, seo_description
+--
+-- and it inherits the product page at /products/[slug], Add to cart, checkout,
+-- order lines, inventory adjustment, the activity log and the admin editor,
+-- because all of those already work on components.
+--
+-- This is the precedent set by migration 0004, which added `networking`, `nas`
+-- and `mini-pc` for exactly this reason: things sold complete rather than
+-- assembled from parts. A pre-built desktop is the same kind of thing.
+--
+-- ---------------------------------------------------------------------------
+-- WHAT THIS DELIBERATELY DOES NOT DO
+-- ---------------------------------------------------------------------------
+-- `prebuilt` is kept OUT of CONFIGURATOR_CATEGORIES in code. A finished machine
+-- has no socket to compare and no clearance to check, so offering it inside a
+-- tower build would hand the compatibility engine something it cannot reason
+-- about. It is a storefront and catalogue category only.
+--
+-- The existing configurator presets are untouched and keep working exactly as
+-- they do now. The two coexist: a preset is a parts list you can open and edit,
+-- a `prebuilt` row is a sealed machine with a fixed price.
+-- ===========================================================================
+
+alter type component_category add value if not exists 'prebuilt';

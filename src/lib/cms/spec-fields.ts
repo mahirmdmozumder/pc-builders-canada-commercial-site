@@ -256,6 +256,26 @@ export const SUGGESTED_SPECS: Partial<Record<ComponentCategory, string[]>> = {
   monitor: ['panel_size', 'resolution', 'refresh_rate', 'panel_type', 'response_time', 'inputs'],
   'case-fan': ['size_mm', 'rpm_range', 'airflow_cfm', 'static_pressure', 'connector', 'noise_level'],
   os: ['edition', 'delivery'],
+  /**
+   * A resold machine has no typed compatibility columns -- it is a finished
+   * unit -- so its whole specification sheet comes from here. These are the rows
+   * a buyer actually compares between two pre-built PCs, in the order they
+   * compare them.
+   */
+  prebuilt: [
+    'cpu',
+    'gpu',
+    'memory',
+    'storage',
+    'os',
+    'psu',
+    'case',
+    'cooling',
+    'network',
+    'ports',
+    'warranty',
+    'supplier',
+  ],
 };
 
 /**
@@ -272,6 +292,16 @@ export const RESERVED_SPEC_KEYS = ['unverified', 'price_checked', 'source'] as c
 export function humanizeSpecKey(key: string): string {
   return key
     .replace(/_/g, ' ')
-    .replace(/\b(gb|tb|mm|cfm|rpm|tbw|poe|vlan|nand|soc|cpu|usb|lan)\b/gi, (m) => m.toUpperCase())
+    // `gpu`, `psu`, `ram`, `ssd`, `hdd` and `nvme` joined this list when
+    // pre-built listings started using them as spec keys. "Gpu: RTX 4060" on a
+    // spec sheet reads as a typo, and `cpu` was already handled — the omission
+    // of its counterpart was an oversight rather than a decision.
+    //
+    // Deliberately NOT ghz/mhz: those are GHz and MHz, so blanket uppercasing
+    // would make them wrong rather than right.
+    .replace(
+      /\b(gb|tb|mm|cfm|rpm|tbw|poe|vlan|nand|soc|cpu|gpu|psu|ram|ssd|hdd|nvme|usb|lan)\b/gi,
+      (m) => m.toUpperCase(),
+    )
     .replace(/^./, (c) => c.toUpperCase());
 }

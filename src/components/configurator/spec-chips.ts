@@ -72,6 +72,15 @@ export function specChips(component: PublicComponent): string[] {
       if (typeof s.uplink === 'string') chips.push('10G uplink');
       if (typeof s.management === 'string') chips.push(s.management);
       break;
+    // A finished machine. Its chips are the three things somebody compares
+    // between two pre-builts, and they come from `specs` because there are no
+    // typed columns on a whole unit.
+    case 'prebuilt':
+      if (typeof s.cpu === 'string') chips.push(s.cpu);
+      if (typeof s.gpu === 'string') chips.push(s.gpu);
+      if (typeof s.memory === 'string') chips.push(s.memory);
+      if (typeof s.storage === 'string') chips.push(s.storage);
+      break;
     case 'nas':
       if (typeof s.bays === 'number') chips.push(`${s.bays} bays`);
       if (typeof s.memory === 'string') chips.push(s.memory);

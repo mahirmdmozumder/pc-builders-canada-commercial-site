@@ -26,6 +26,10 @@ export const CATEGORY_POWER_DEFAULTS: Partial<Record<ComponentCategory, number>>
   psu: 0,
   os: 0,
   accessory: 0,
+  // Per fan, and the configurator multiplies by quantity. Six fans is 12 W,
+  // which is small but not nothing — and this module's whole principle is that
+  // a part draws a documented figure rather than silently drawing zero.
+  'case-fan': 2,
 };
 
 /**

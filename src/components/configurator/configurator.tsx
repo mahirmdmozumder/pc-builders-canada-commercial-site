@@ -27,7 +27,11 @@ import {
 import type { SavedBuildItem } from '@/types/domain';
 
 /** Categories where more than one distinct part can be added. */
-const MULTI_SELECT: ComponentCategory[] = ['storage', 'accessory'];
+// Case fans join storage and accessories here because a build routinely wants
+// three or six of them, and a single-select picker would make somebody choose
+// one fan and then ask us for the rest in the order notes. The quantity control
+// the multi-select path already provides is exactly the right affordance.
+const MULTI_SELECT: ComponentCategory[] = ['storage', 'accessory', 'case-fan'];
 /** Categories where a quantity control makes sense. */
 const QUANTITY_ALLOWED: ComponentCategory[] = ['ram', 'storage', 'accessory'];
 

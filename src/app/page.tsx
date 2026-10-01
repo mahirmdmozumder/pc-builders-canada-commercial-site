@@ -15,6 +15,7 @@ import { PromotionStrip } from '@/components/home/promotions';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { formatMoney } from '@/lib/utils';
 import { ParticleField } from '@/components/visual/particle-field';
+import { NavCard, type NavCardItem } from '@/components/home/nav-card';
 
 export const metadata: Metadata = {
   title: 'Custom Gaming & Workstation PCs Built in Canada',
@@ -162,30 +163,34 @@ function Hero({ fromCents }: { fromCents: number | null }) {
   );
 }
 
-const PILLARS = [
+const PILLARS: NavCardItem[] = [
   {
     href: '/build',
     title: 'Custom PC builds',
     body: 'Start from nothing or from a configuration, then change any part. Compatibility and estimated power update as you select.',
     cta: 'Open the configurator',
+    image: '/home/custom-pc-builds.webp',
   },
   {
     href: '/gaming-pcs',
     title: 'Pre-built gaming PCs',
     body: 'Ready configurations aimed at a resolution and a frame rate target, assembled and tested before they ship.',
     cta: 'See pre-built PCs',
+    image: '/home/pre-built-gaming-pcs.webp',
   },
   {
     href: '/shop',
     title: 'Shop hardware',
     body: 'Parts, switches, NAS enclosures, drives and mini PCs in one catalogue, including open-box and refurbished stock.',
     cta: 'Browse the shop',
+    image: '/home/shop-hardware.webp',
   },
   {
     href: '/services',
     title: 'Repairs & IT support',
     body: 'Diagnostics, upgrades, networking, storage and Windows work — on our bench or at your home or office.',
     cta: 'See services',
+    image: '/home/repairs-it-support.webp',
   },
 ];
 
@@ -194,18 +199,10 @@ function Pillars() {
     <section className="border-b border-ink-700 bg-ink-850">
       <PageShell className="py-16 sm:py-20">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Eager, because this row sits near the fold and is part of what the
+              page gets measured on. The second row below is lazy. */}
           {PILLARS.map((pillar) => (
-            <Link
-              key={pillar.href}
-              href={pillar.href}
-              className="group flex flex-col rounded-lg border border-ink-700 bg-ink-900 p-6 transition-colors hover:border-gold-600/50"
-            >
-              <h2 className="text-base font-semibold text-white">{pillar.title}</h2>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-ink-300">{pillar.body}</p>
-              <span className="mt-5 text-sm font-medium text-gold-400 group-hover:text-gold-300">
-                {pillar.cta} &rarr;
-              </span>
-            </Link>
+            <NavCard key={pillar.href} item={pillar} priority />
           ))}
         </div>
       </PageShell>
@@ -256,30 +253,34 @@ function FeaturedProducts({ items, orderable }: { items: ShopItem[]; orderable: 
  * configurator. Presenting them next to "Build your PC" would imply the
  * compatibility engine has something to say about them, and it does not.
  */
-const BEYOND = [
+const BEYOND: NavCardItem[] = [
   {
     href: '/networking',
     title: 'Networking & server',
     body: 'Smart and PoE switches for segmenting a network, powering access points and cameras, or getting a NAS past a gigabit bottleneck.',
     cta: 'See switches',
+    image: '/home/networking-server.webp',
   },
   {
     href: '/nas',
     title: 'NAS & network storage',
     body: 'Enclosures and NAS-rated drives, supplied bare or built out with a redundant array, shares and backup schedules configured.',
     cta: 'See NAS builds',
+    image: '/home/nas-storage.webp',
   },
   {
     href: '/mini-pcs',
     title: 'Mini PCs & Raspberry Pi',
     body: 'Small always-on machines. Barebones x86 mini PCs, and Pi boards with the cooling, power and NVMe storage that make them reliable.',
     cta: 'See mini PCs',
+    image: '/home/mini-pcs.webp',
   },
   {
     href: '/refurbished',
     title: 'Refurbished & open box',
     body: 'Tested hardware at a lower price, with every listing stating what was checked, what was replaced and what warranty applies.',
     cta: 'See refurbished',
+    image: '/home/refurbished.webp',
   },
 ];
 
@@ -293,25 +294,10 @@ function BeyondTheDesktop() {
           description="Not everything worth building is a tower. These are sold as finished units, with the setup work available as a service."
         />
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Lazy: this row is a long scroll from the top and has no business
+              being fetched before somebody reaches it. */}
           {BEYOND.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="group relative flex flex-col overflow-hidden rounded-lg border border-ink-700 bg-ink-850 p-6 transition-colors hover:border-gold-600/50"
-            >
-              {/* Gold wash on hover. Opacity only, so it composites on the GPU. */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,160,60,0.10),transparent_70%)] opacity-0 transition-opacity group-hover:opacity-100"
-              />
-              <h3 className="relative text-base font-semibold text-white">{item.title}</h3>
-              <p className="relative mt-3 flex-1 text-sm leading-relaxed text-ink-300">
-                {item.body}
-              </p>
-              <span className="relative mt-5 text-sm font-medium text-gold-400 group-hover:text-gold-300">
-                {item.cta} &rarr;
-              </span>
-            </Link>
+            <NavCard key={item.href} item={item} />
           ))}
         </div>
       </PageShell>

@@ -3,7 +3,8 @@ import { SAMPLE_COMPONENTS } from '@/lib/catalog/sample-catalog';
 import { getComponentBySlug, relatedComponents } from '@/lib/catalog/repository';
 import { buildSpecSheet, specRowCount } from '@/lib/catalog/spec-sheet';
 import { describeVideo, productHref, stockState, stripCost } from '@/lib/catalog/types';
-import { toShopItem } from '@/lib/catalog/shop';
+import { specChips } from '@/components/configurator/spec-chips';
+import { findShopFilter, toShopItem } from '@/lib/catalog/shop';
 
 /**
  * Product page data.
@@ -309,5 +310,121 @@ describe('related products', () => {
     for (const item of related) {
       expect(productHref(item)).toMatch(/^\/products\/[a-z0-9-]+$/);
     }
+  });
+});
+
+/**
+ * Standalone pre-built machines (migration 0010).
+ *
+ * A complete PC bought from a supplier and resold is a `components` row with
+ * category 'prebuilt' rather than a new table or a configurator preset. These
+ * assert the consequences of that choice, because the whole value of it is that
+ * the existing storefront already handles the row.
+ */
+describe('standalone pre-built listings', () => {
+  /**
+   * A listing as the admin would actually create one.
+   *
+   * Every tower-build column is explicitly null, which is not fixture tidiness:
+   * TYPED_FIELDS has no entry for 'prebuilt', so the admin editor never offers
+   * those inputs and a real row cannot have them set. The first draft of this
+   * test spread a CPU and inherited its socket, and the spec-sheet assertion
+   * below caught it -- which is the assertion doing its job.
+   */
+  const machine = {
+    ...SAMPLE[0],
+    socket: null,
+    supported_sockets: null,
+    chipset: null,
+    form_factor: null,
+    supported_form_factors: null,
+    memory_type: null,
+    memory_capacity_gb: null,
+    memory_modules: null,
+    memory_speed_mts: null,
+    memory_slots: null,
+    max_memory_gb: null,
+    m2_slots: null,
+    sata_ports: null,
+    tdp_watts: null,
+    recommended_psu_watts: null,
+    psu_wattage: null,
+    psu_efficiency: null,
+    psu_form_factor: null,
+    gpu_length_mm: null,
+    max_gpu_length_mm: null,
+    cooler_height_mm: null,
+    max_cooler_height_mm: null,
+    radiator_support_mm: null,
+    radiator_size_mm: null,
+    cooler_type: null,
+    cooling_capacity_watts: null,
+    storage_interface: null,
+    storage_capacity_gb: null,
+    pcie_version: null,
+    id: 'prebuilt-test-machine',
+    slug: 'prebuilt-test-machine',
+    sku: 'PRE-TEST-1',
+    category: 'prebuilt' as const,
+    brand: 'Acme',
+    model: 'Starter Gaming Desktop',
+    price_cents: 129900,
+    stock_quantity: 3,
+    low_stock_threshold: 1,
+    specs: { cpu: 'Ryzen 5 7600', gpu: 'RTX 4060', memory: '16 GB DDR5', storage: '1 TB NVMe' },
+  };
+
+  it('is purchasable like any other product, not a configurator preset', () => {
+    const item = toShopItem(machine);
+    // 'component' is what gives it Add to cart and a real stock line. A preset
+    // is kind 'prebuilt' and offers "View build" instead, which a sealed machine
+    // has nothing to show.
+    expect(item.kind).toBe('component');
+    expect(item.stockQuantity).toBe(3);
+    expect(item.priceCents).toBe(129900);
+  });
+
+  it('gets its own product page at the usual address', () => {
+    expect(productHref(machine)).toBe('/products/prebuilt-test-machine');
+    expect(toShopItem(machine).href).toBe(productHref(machine));
+  });
+
+  it('appears under the Pre-built PCs filter', () => {
+    const filter = findShopFilter('prebuilt');
+    expect(filter.matches(toShopItem(machine))).toBe(true);
+  });
+
+  /**
+   * It must NOT also appear under PC components. A finished machine listed as a
+   * part is how a customer ends up putting a whole desktop in a tower build.
+   */
+  it('does not appear under PC components', () => {
+    const filter = findShopFilter('components');
+    expect(filter.matches(toShopItem(machine))).toBe(false);
+  });
+
+  it('builds a specification sheet from specs alone, with no compatibility rows', () => {
+    const groups = buildSpecSheet(machine);
+    const rows = groups.flatMap((g) => g.rows);
+
+    // A whole unit has no typed compatibility columns, so nothing is marked as
+    // engine-checked...
+    expect(rows.some((r) => r.checked)).toBe(false);
+    // ...but the sheet is still populated from what the admin entered.
+    expect(rows.find((r) => r.label === 'CPU')?.value).toBe('Ryzen 5 7600');
+    expect(rows.find((r) => r.label === 'GPU')?.value).toBe('RTX 4060');
+    expect(specRowCount(groups)).toBeGreaterThan(6);
+  });
+
+  it('shows its headline parts as card chips', () => {
+    const chips = specChips(machine);
+    expect(chips).toContain('Ryzen 5 7600');
+    expect(chips).toContain('RTX 4060');
+  });
+
+  it('reports stock states from its own count', () => {
+    expect(stockState(machine)).toBe('in-stock');
+    expect(stockState({ ...machine, stock_quantity: 1 })).toBe('low');
+    expect(stockState({ ...machine, stock_quantity: 0 })).toBe('out');
   });
 });

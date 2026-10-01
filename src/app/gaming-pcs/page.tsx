@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import { ButtonLink, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { PresetCard } from '@/components/build/preset-card';
 import { listPublishedPresets } from '@/lib/cms/repository';
+import { isOrderable, listComponentsWithSource } from '@/lib/catalog/repository';
+import { toShopItem } from '@/lib/catalog/shop';
+import { ShopCard } from '@/components/shop/shop-card';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { ItemListJsonLd } from '@/components/seo/structured-data';
@@ -36,8 +39,17 @@ const CONSIDERATIONS = [
 ];
 
 export default async function GamingPcsPage() {
-  const { rows: presets } = await listPublishedPresets('gaming');
+  const [{ rows: presets }, stockedResult] = await Promise.all([
+    listPublishedPresets('gaming'),
+    // Complete machines bought in and resold. A separate query rather than a
+    // join: they live in `components` and have nothing structurally to do with
+    // presets beyond both being a finished PC to a customer.
+    listComponentsWithSource({ category: 'prebuilt' }),
+  ]);
+
   const summaries = await summarisePresets(presets);
+  const stocked = stockedResult.components.map(toShopItem);
+  const orderable = isOrderable(stockedResult.source);
 
   return (
     <>
@@ -55,12 +67,18 @@ export default async function GamingPcsPage() {
         }
       />
 
+      {/* Both kinds of machine, because both are items on this list and each
+          has its own page. Listing only the presets would advertise half the
+          page to a crawler. */}
       <ItemListJsonLd
         name="Pre-built Gaming PCs"
-        items={summaries.map((s) => ({
-          name: s.preset.name,
-          url: `/pre-built-gaming-pcs/${s.preset.slug}`,
-        }))}
+        items={[
+          ...stocked.map((item) => ({ name: item.name, url: item.href })),
+          ...summaries.map((s) => ({
+            name: s.preset.name,
+            url: `/pre-built-gaming-pcs/${s.preset.slug}`,
+          })),
+        ]}
       />
       <PageShell className="py-12 sm:py-16">
         <div className="mb-8">
@@ -72,20 +90,68 @@ export default async function GamingPcsPage() {
           />
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {summaries.map((summary) => (
-            <PresetCard key={summary.preset.slug} summary={summary} />
-          ))}
-        </div>
+        {/* ---------------------------------------------------------------
+            In stock now, listed FIRST.
+            ---------------------------------------------------------------
+            These can be bought today at the price shown, so they go above the
+            configurations, which have to be built. Somebody who wants a machine
+            this week should not have to scroll past six things that take a week
+            to find the one that does not.
+
+            Rendered with the normal ShopCard rather than PresetCard, because
+            that is what they are: catalogue products with a stock count and an
+            Add to cart button. PresetCard shows a parts breakdown and a
+            "View build" link, neither of which applies to a sealed machine.
+        --------------------------------------------------------------- */}
+        {stocked.length > 0 ? (
+          <section className="mb-14">
+            <SectionHeading
+              eyebrow="In stock"
+              title="Ready to ship"
+              description="Complete machines we hold in stock, at the price shown. No build time — these go out as they are."
+            />
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {stocked.map((item) => (
+                <ShopCard key={item.id} item={item} orderable={orderable} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {summaries.length > 0 ? (
+          <section>
+            {/* The heading only appears when there is something above it to
+                distinguish these FROM. On a page showing only presets it would
+                be labelling the single thing on the page. */}
+            {stocked.length > 0 ? (
+              <SectionHeading
+                eyebrow="Built to order"
+                title="Configurations you can change"
+                description="Each one is a real parts list priced from the current catalogue. Load it in the configurator and swap anything you like."
+              />
+            ) : null}
+            <div
+              className={`grid gap-5 md:grid-cols-2 lg:grid-cols-3${stocked.length > 0 ? ' mt-8' : ''}`}
+            >
+              {summaries.map((summary) => (
+                <PresetCard key={summary.preset.slug} summary={summary} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div className="mt-8 rounded-lg border border-ink-700 bg-ink-850 p-6">
           <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
             About these prices
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-300">
-            Prices come straight from the parts catalogue and change when it changes. The figure on
-            each card is the hardware subtotal; the estimated total adds assembly, shipping and
-            provincial tax. Neither is a quote until an order is placed.
+            On the configurations, prices come straight from the parts catalogue and change when it
+            changes. The figure on each card is the hardware subtotal; the estimated total adds
+            assembly and shipping. Neither is a quote until an order is placed.
+          </p>
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-300">
+            Machines listed as in stock are priced as sold, and that price does not move with the
+            parts catalogue. Shipping is added at checkout.
           </p>
         </div>
       </PageShell>
