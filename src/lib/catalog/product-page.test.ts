@@ -4,7 +4,13 @@ import { getComponentBySlug, relatedComponents } from '@/lib/catalog/repository'
 import { buildSpecSheet, specRowCount } from '@/lib/catalog/spec-sheet';
 import { describeVideo, productHref, stockState, stripCost } from '@/lib/catalog/types';
 import { specChips } from '@/components/configurator/spec-chips';
-import { findShopFilter, toShopItem } from '@/lib/catalog/shop';
+import {
+  findShopFilter,
+  isFinishedMachine,
+  lowestFinishedMachine,
+  toShopItem,
+  type ShopItem,
+} from '@/lib/catalog/shop';
 
 /**
  * Product page data.
@@ -426,5 +432,86 @@ describe('standalone pre-built listings', () => {
     expect(stockState(machine)).toBe('in-stock');
     expect(stockState({ ...machine, stock_quantity: 1 })).toBe('low');
     expect(stockState({ ...machine, stock_quantity: 0 })).toBe('out');
+  });
+});
+
+/**
+ * The homepage "Pre-built from" figure.
+ *
+ * This existed as an inline predicate on the homepage that predated resold
+ * machines, so it only ever looked at configurator presets. A machine bought in
+ * and listed at half the price of the cheapest preset was ignored, and the
+ * homepage advertised a "from" price higher than something on the shelf.
+ */
+describe('cheapest finished machine', () => {
+  const part = toShopItem({ ...SAMPLE[0], id: 'a-part', price_cents: 700 });
+
+  const preset: ShopItem = {
+    ...part,
+    kind: 'prebuilt',
+    id: 'a-preset',
+    category: null,
+    priceCents: 200000,
+    stockQuantity: null,
+  };
+
+  const resold: ShopItem = {
+    ...part,
+    kind: 'component',
+    id: 'a-resold-machine',
+    category: 'prebuilt',
+    priceCents: 120000,
+  };
+
+  it('ignores parts, however cheap', () => {
+    // The whole reason this helper exists: a $7 cooler must never sit behind
+    // "Pre-built from".
+    const result = lowestFinishedMachine([part, preset]);
+    expect(result?.priceCents).toBe(200000);
+  });
+
+  it('counts a resold machine, which is the bug this fixes', () => {
+    const result = lowestFinishedMachine([part, preset, resold]);
+    expect(result?.priceCents).toBe(120000);
+    expect(result?.source).toBe('stocked');
+  });
+
+  it('counts a preset when it is the cheaper of the two', () => {
+    const cheapPreset = { ...preset, priceCents: 90000 };
+    const result = lowestFinishedMachine([part, cheapPreset, resold]);
+    expect(result?.priceCents).toBe(90000);
+    expect(result?.source).toBe('assembled');
+  });
+
+  /**
+   * The caption depends on `source`, and "assembled and tested" is the stronger
+   * claim. On a dead heat we say the thing we can stand behind.
+   */
+  it('prefers the assembled machine on a tie', () => {
+    const tied = { ...preset, priceCents: 120000 };
+    expect(lowestFinishedMachine([resold, tied])?.source).toBe('assembled');
+    expect(lowestFinishedMachine([tied, resold])?.source).toBe('assembled');
+  });
+
+  it('skips anything with no price, so "Ask us" never becomes $0', () => {
+    const unpriced = { ...preset, id: 'discontinued', priceCents: 0 };
+    expect(lowestFinishedMachine([unpriced, resold])?.priceCents).toBe(120000);
+    expect(lowestFinishedMachine([unpriced])).toBeNull();
+  });
+
+  it('returns null with nothing published, so the line is omitted', () => {
+    expect(lowestFinishedMachine([])).toBeNull();
+    expect(lowestFinishedMachine([part])).toBeNull();
+  });
+
+  it('agrees with the shop filter about what a finished machine is', () => {
+    // One predicate, so the tile and the homepage figure cannot disagree about
+    // which products count.
+    for (const item of [preset, resold]) {
+      expect(isFinishedMachine(item), item.id).toBe(true);
+      expect(findShopFilter('prebuilt').matches(item), item.id).toBe(true);
+    }
+    expect(isFinishedMachine(part)).toBe(false);
+    expect(findShopFilter('prebuilt').matches(part)).toBe(false);
   });
 });

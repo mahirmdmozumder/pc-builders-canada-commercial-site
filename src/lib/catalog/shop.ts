@@ -188,6 +188,30 @@ function spec(item: ShopItem, key: string): string {
   return value === undefined || value === null ? '' : String(value).toLowerCase();
 }
 
+/**
+ * A complete machine, as opposed to a part.
+ *
+ * Two different things satisfy this, and they are genuinely different behind the
+ * scenes:
+ *
+ *   kind === 'prebuilt'        a configurator preset — a parts list we assemble,
+ *                              priced from its rows and editable before ordering.
+ *   category === 'prebuilt'    a machine bought in and resold, with its own fixed
+ *                              price and stock count (migration 0010).
+ *
+ * A customer shopping for a finished PC does not care which, so both belong
+ * under one tile and both count toward "Pre-built from".
+ *
+ * ONE function, exported, because this test was previously written out in three
+ * places: here, an unused helper below, and an inline copy on the homepage. The
+ * homepage copy predated resold machines and never learned about them, so the
+ * "Pre-built from" figure silently ignored every machine bought in — which is
+ * exactly the drift a shared predicate prevents.
+ */
+export function isFinishedMachine(item: ShopItem): boolean {
+  return item.kind === 'prebuilt' || item.category === 'prebuilt';
+}
+
 export const SHOP_FILTERS: ShopFilter[] = [
   {
     slug: 'all',
@@ -199,22 +223,7 @@ export const SHOP_FILTERS: ShopFilter[] = [
     slug: 'prebuilt',
     label: 'Pre-built PCs',
     description: 'Machines that arrive assembled and ready to use.',
-    /**
-     * Matches BOTH kinds of finished machine, which are genuinely different
-     * things behind the scenes:
-     *
-     *   kind === 'prebuilt'          a configurator preset — a parts list we
-     *                                assemble, priced from its rows and fully
-     *                                editable before ordering.
-     *   category === 'prebuilt'      a complete machine bought in and resold,
-     *                                with its own fixed price and stock count.
-     *
-     * A customer shopping for a finished PC does not care which, and should not
-     * have to find them under two different tiles. The cards still show the
-     * difference: a preset offers "View build", a stocked machine offers Add to
-     * cart with a real stock line.
-     */
-    matches: (item) => item.kind === 'prebuilt' || item.category === 'prebuilt',
+    matches: isFinishedMachine,
   },
   {
     slug: 'components',
@@ -387,19 +396,43 @@ export async function loadShopCatalogue(): Promise<ShopCatalogue> {
   return { items, sample: presetResult.source === 'fallback' };
 }
 
+export interface LowestMachine {
+  priceCents: number;
+  /**
+   * Which kind the cheapest machine turned out to be.
+   *
+   * The caller needs this for its caption, not for arithmetic. "Assembled and
+   * tested" is true of a machine we build and false of one bought in, so a
+   * single fixed caption would make a claim about work nobody did as soon as a
+   * resold machine became the cheapest.
+   */
+  source: 'assembled' | 'stocked';
+}
+
 /**
- * The lowest price of an assembled machine currently on sale.
+ * The cheapest finished machine on sale, of either kind.
  *
- * Only pre-builts are considered. Using the catalogue minimum would put a
- * $7 cooler behind "Pre-built from", which is true of nothing.
+ * Only finished machines count. Using the catalogue minimum would put a $7
+ * cooler behind "Pre-built from", which is true of nothing we sell.
  *
- * Returns null when nothing is published, so the caller can leave the line out
- * rather than print a zero.
+ * Pure, and takes the already-loaded catalogue, so the homepage does not pay for
+ * a second read of something it is holding. Returns null when nothing is
+ * published, so the caller can omit the line rather than print a zero.
+ *
+ * Ties go to 'assembled'. A dead heat is not worth a rule, and the stronger
+ * claim is the one we can actually stand behind.
  */
-export async function lowestPrebuiltPriceCents(): Promise<number | null> {
-  const { items } = await loadShopCatalogue();
-  const prices = items
-    .filter((item) => item.kind === 'prebuilt' && item.priceCents > 0)
-    .map((item) => item.priceCents);
-  return prices.length > 0 ? Math.min(...prices) : null;
+export function lowestFinishedMachine(items: ShopItem[]): LowestMachine | null {
+  const machines = items.filter((item) => isFinishedMachine(item) && item.priceCents > 0);
+  if (machines.length === 0) return null;
+
+  const cheapest = machines.reduce((best, item) => {
+    if (item.priceCents !== best.priceCents) return item.priceCents < best.priceCents ? item : best;
+    return best.kind === 'prebuilt' ? best : item;
+  });
+
+  return {
+    priceCents: cheapest.priceCents,
+    source: cheapest.kind === 'prebuilt' ? 'assembled' : 'stocked',
+  };
 }

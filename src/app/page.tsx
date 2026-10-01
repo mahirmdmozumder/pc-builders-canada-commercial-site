@@ -7,7 +7,13 @@ import {
   listPublishedPresets,
   listPublishedServices,
 } from '@/lib/cms/repository';
-import { loadShopCatalogue, rotateShopItems, type ShopItem } from '@/lib/catalog/shop';
+import {
+  loadShopCatalogue,
+  lowestFinishedMachine,
+  rotateShopItems,
+  type LowestMachine,
+  type ShopItem,
+} from '@/lib/catalog/shop';
 import { ShopCard } from '@/components/shop/shop-card';
 import { isOrderable, getCatalogSource } from '@/lib/catalog/repository';
 import type { ServiceRecord } from '@/lib/cms/types';
@@ -16,6 +22,7 @@ import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { formatMoney } from '@/lib/utils';
 import { ParticleField } from '@/components/visual/particle-field';
 import { NavCard, type NavCardItem } from '@/components/home/nav-card';
+import { TAX_REGISTRATION } from '@/lib/pricing/tax';
 
 export const metadata: Metadata = {
   title: 'Custom Gaming & Workstation PCs Built in Canada',
@@ -41,13 +48,11 @@ export default async function HomePage() {
   const picked = presets.filter((p) => p.featured);
   const featured = await summarisePresets((picked.length > 0 ? picked : presets).slice(0, 3));
 
-  // The "from" price is the cheapest ASSEMBLED machine, not the cheapest thing
-  // in the catalogue. Using the catalogue minimum would put a $7 cooler behind
-  // "Pre-built from", which is true of nothing we sell.
-  const prebuiltPrices = shop.items
-    .filter((item) => item.kind === 'prebuilt' && item.priceCents > 0)
-    .map((item) => item.priceCents);
-  const cheapestPrebuilt = prebuiltPrices.length > 0 ? Math.min(...prebuiltPrices) : null;
+  // The cheapest finished machine of EITHER kind: one we assemble from a preset,
+  // or one bought in and resold. This used to test `kind === 'prebuilt'` inline,
+  // which predated resold machines and so ignored them entirely -- the figure
+  // could advertise a higher price than something actually on the shelf.
+  const cheapestMachine = lowestFinishedMachine(shop.items);
 
   // Featured products come from the admin. Nothing ticked means the section
   // stays off rather than filling itself with whatever happened to be first.
@@ -56,7 +61,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero fromCents={cheapestPrebuilt} />
+      <Hero machine={cheapestMachine} />
       <PromotionStrip promotions={promotions} />
       <Pillars />
       <FeaturedProducts items={featuredProducts} orderable={orderable} />
@@ -70,7 +75,7 @@ export default async function HomePage() {
   );
 }
 
-function Hero({ fromCents }: { fromCents: number | null }) {
+function Hero({ machine }: { machine: LowestMachine | null }) {
   return (
     <section className="relative overflow-hidden border-b border-ink-700">
       {/*
@@ -135,13 +140,25 @@ function Hero({ fromCents }: { fromCents: number | null }) {
           <dl className="mt-14 grid max-w-2xl grid-cols-2 gap-x-8 gap-y-6 border-t border-ink-700 pt-8 sm:grid-cols-3">
             {/* Omitted entirely when nothing is published, rather than
                 printing a zero or a price nothing is actually sold at. */}
-            {fromCents !== null ? (
+            {machine !== null ? (
               <div>
                 <dt className="text-xs tracking-wide text-ink-400 uppercase">Pre-built from</dt>
                 <dd className="tnum mt-1 text-xl font-semibold text-white">
-                  {formatMoney(fromCents, { whole: true })}
+                  {formatMoney(machine.priceCents, { whole: true })}
                 </dd>
-                <dd className="mt-0.5 text-xs text-ink-400">assembled and tested, before tax</dd>
+                {/* The caption follows whichever machine is cheapest. "Assembled
+                    and tested" is true of one we build and false of one bought
+                    in, so a fixed caption would claim work nobody did the moment
+                    a resold machine undercut the presets.
+
+                    The second clause names what actually gets added, which
+                    depends on whether we are registered to collect tax. It said
+                    "before tax" when no tax is charged, implying a surcharge
+                    that does not exist. */}
+                <dd className="mt-0.5 text-xs text-ink-400">
+                  {machine.source === 'assembled' ? 'assembled and tested' : 'in stock, ready to ship'}
+                  {TAX_REGISTRATION.registered ? ', before tax and shipping' : ', before shipping'}
+                </dd>
               </div>
             ) : null}
             <div>
