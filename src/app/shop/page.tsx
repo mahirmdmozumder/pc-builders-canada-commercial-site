@@ -6,11 +6,12 @@ import { isOrderable, getCatalogSource } from '@/lib/catalog/repository';
 import {
   SHOP_FILTERS,
   findShopFilter,
+  findSubCategory,
   loadShopCatalogue,
   rotateShopItems,
   type ShopItem,
 } from '@/lib/catalog/shop';
-import { COMPONENT_CONDITIONS, CONDITION_LABELS } from '@/lib/catalog/types';
+import { CATEGORY_LABELS, COMPONENT_CONDITIONS, CONDITION_LABELS } from '@/lib/catalog/types';
 import { cn } from '@/lib/utils';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 
@@ -49,6 +50,9 @@ export default async function ShopPage({
   };
 
   const activeFilter = findShopFilter(one('c'));
+  // Resolved against the active filter, so a stale `?sub=` from a shared link
+  // falls back to the whole filter rather than an empty grid.
+  const subCategory = findSubCategory(activeFilter, one('sub'));
   const query = (one('q') ?? '').trim();
   const condition = one('condition') ?? 'all';
   const sort = one('sort') ?? 'featured';
@@ -58,6 +62,13 @@ export default async function ShopPage({
   const orderable = isOrderable(getCatalogSource());
 
   let visible = items.filter(activeFilter.matches);
+
+  // Narrows within the filter rather than replacing it, so "PC components" plus
+  // "Graphics card" means graphics cards that are also components -- which keeps
+  // the parent count honest as the sum of its children.
+  if (subCategory) {
+    visible = visible.filter((item) => item.category === subCategory);
+  }
 
   if (condition !== 'all') {
     visible = visible.filter((item) => item.condition === condition);
@@ -85,6 +96,10 @@ export default async function ShopPage({
     const next = new URLSearchParams();
     const merged: Record<string, string | undefined> = {
       c: activeFilter.slug,
+      // Carried, so changing the sort or paging does not silently drop the
+      // chosen subcategory. Cleared explicitly by the category tiles below,
+      // because a subcategory of one filter is meaningless under another.
+      sub: subCategory ?? undefined,
       q: query || undefined,
       condition: condition === 'all' ? undefined : condition,
       sort: sort === 'featured' ? undefined : sort,
@@ -140,7 +155,7 @@ export default async function ShopPage({
               return (
                 <li key={filter.slug} className="shrink-0">
                   <Link
-                    href={hrefWith({ c: filter.slug, page: undefined })}
+                    href={hrefWith({ c: filter.slug, sub: undefined, page: undefined })}
                     aria-current={active ? 'page' : undefined}
                     title={filter.description}
                     className={cn(
@@ -166,7 +181,71 @@ export default async function ShopPage({
           </ul>
         </nav>
 
-        <p className="mt-3 text-sm text-ink-400">{activeFilter.description}</p>
+        {/* --- subcategories ---------------------------------------------
+            Only rendered for a filter that declares them, which today is PC
+            components alone. Forty-odd parts across nine categories is too many
+            to scan, and somebody after a graphics card does not want to wade
+            through power supplies to find one.
+
+            A category with nothing in it is still shown, disabled, rather than
+            hidden. "Graphics card 0" tells a shopper we are out of them; an
+            absent tile tells them nothing and looks like we never sold any.
+        ----------------------------------------------------------------- */}
+        {activeFilter.subCategories ? (
+          <nav aria-label={`${activeFilter.label} subcategories`} className="mt-3">
+            <ul className="thin-scroll -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0 sm:overflow-visible">
+              <li className="shrink-0">
+                <Link
+                  href={hrefWith({ sub: undefined, page: undefined })}
+                  aria-current={subCategory === null ? 'true' : undefined}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs transition-colors',
+                    subCategory === null
+                      ? 'border-gold-600/60 bg-gold-600/15 font-medium text-gold-300'
+                      : 'border-ink-700 bg-ink-900 text-ink-300 hover:border-gold-600/40 hover:text-white',
+                  )}
+                >
+                  All {activeFilter.label.toLowerCase()}
+                  <span className="tnum text-[0.65rem] text-ink-400">
+                    {items.filter(activeFilter.matches).length}
+                  </span>
+                </Link>
+              </li>
+              {activeFilter.subCategories.map((category) => {
+                const count = items.filter(
+                  (item) => activeFilter.matches(item) && item.category === category,
+                ).length;
+                const active = subCategory === category;
+                return (
+                  <li key={category} className="shrink-0">
+                    <Link
+                      href={hrefWith({ sub: category, page: undefined })}
+                      aria-current={active ? 'true' : undefined}
+                      aria-disabled={count === 0 ? 'true' : undefined}
+                      className={cn(
+                        'flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs transition-colors',
+                        active
+                          ? 'border-gold-600/60 bg-gold-600/15 font-medium text-gold-300'
+                          : count === 0
+                            ? 'pointer-events-none border-ink-800 bg-ink-900 text-ink-600'
+                            : 'border-ink-700 bg-ink-900 text-ink-300 hover:border-gold-600/40 hover:text-white',
+                      )}
+                    >
+                      {CATEGORY_LABELS[category]}
+                      <span className="tnum text-[0.65rem] text-ink-400">{count}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        ) : null}
+
+        <p className="mt-3 text-sm text-ink-400">
+          {subCategory
+            ? `${CATEGORY_LABELS[subCategory]} within ${activeFilter.label.toLowerCase()}.`
+            : activeFilter.description}
+        </p>
 
         {/* --- search, condition, sort ----------------------------------- */}
         <form
@@ -174,8 +253,10 @@ export default async function ShopPage({
           action="/shop"
           className="mt-6 grid gap-3 rounded-lg border border-ink-700 bg-ink-850 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_minmax(0,11rem)_auto]"
         >
-          {/* Carried through so searching does not drop the chosen category. */}
+          {/* Carried through so searching does not drop the chosen category,
+              or the subcategory under it. */}
           <input type="hidden" name="c" value={activeFilter.slug} />
+          {subCategory ? <input type="hidden" name="sub" value={subCategory} /> : null}
 
           <div>
             <label htmlFor="shop-q" className="sr-only">
@@ -245,7 +326,7 @@ export default async function ShopPage({
               </>
             ) : null}
           </p>
-          {query || condition !== 'all' || activeFilter.slug !== 'all' ? (
+          {query || condition !== 'all' || activeFilter.slug !== 'all' || subCategory ? (
             <Link href="/shop" className="text-sm text-gold-400 hover:text-gold-300">
               Clear filters
             </Link>

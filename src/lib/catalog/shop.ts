@@ -150,6 +150,24 @@ export interface ShopFilter {
   label: string;
   description: string;
   matches: (item: ShopItem) => boolean;
+  /**
+   * Database categories to offer as a second row of tiles under this filter.
+   *
+   * Only "PC components" has them, because it is the only tile covering enough
+   * genuinely different products to need splitting — forty-odd parts across nine
+   * categories, where somebody who wants a graphics card has no interest in
+   * power supplies. The other tiles are already one kind of thing, or are small
+   * enough to scan.
+   *
+   * Driven by data rather than an `if (slug === 'components')` in the page, so
+   * giving another tile subcategories later is a line here rather than a branch
+   * in the markup.
+   *
+   * These are REAL categories, unlike the parent tiles, several of which are
+   * saved filters over a property (PoE, 2.5GbE). A subcategory is a straight
+   * `item.category` match, so the counts cannot disagree with the catalogue.
+   */
+  subCategories?: ComponentCategory[];
 }
 
 /** Categories that go into a tower, as opposed to finished units. */
@@ -203,6 +221,10 @@ export const SHOP_FILTERS: ShopFilter[] = [
     label: 'PC components',
     description: 'Parts for a build or an upgrade.',
     matches: (item) => item.category !== null && PART_CATEGORIES.includes(item.category),
+    // In build order rather than alphabetical, matching the configurator. It is
+    // the order somebody specifying a machine thinks in: processor, board,
+    // cooling, memory, graphics, storage, power, case, fans.
+    subCategories: PART_CATEGORIES,
   },
   {
     slug: 'networking',
@@ -275,6 +297,22 @@ export const SHOP_FILTERS: ShopFilter[] = [
 
 export function findShopFilter(slug: string | undefined): ShopFilter {
   return SHOP_FILTERS.find((f) => f.slug === slug) ?? SHOP_FILTERS[0];
+}
+
+/**
+ * Resolves a subcategory from the URL against the active filter.
+ *
+ * Returns null for anything the active filter does not actually offer, so a
+ * hand-edited or stale `?sub=` shows the whole filter rather than an empty grid.
+ * A URL that silently matches nothing reads as "we have none of these", which is
+ * a different and wrong statement.
+ */
+export function findSubCategory(
+  filter: ShopFilter,
+  slug: string | undefined,
+): ComponentCategory | null {
+  if (!slug || !filter.subCategories) return null;
+  return filter.subCategories.find((category) => category === slug) ?? null;
 }
 
 // ---------------------------------------------------------------------------

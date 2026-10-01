@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { SHOP_COLLECTIONS } from '@/lib/catalog/collections';
-import { displayName } from '@/lib/catalog/types';
+import { displayName, stripCost } from '@/lib/catalog/types';
+import {
+  SHOP_FILTERS,
+  findShopFilter,
+  findSubCategory,
+  toShopItem,
+} from '@/lib/catalog/shop';
 import { SAMPLE_COMPONENTS } from '@/lib/catalog/sample-catalog';
 import { adminComponentSchema } from '@/lib/validation/schemas';
 import {
@@ -281,5 +287,75 @@ describe('product naming', () => {
     expect(displayName({ brand: 'Raspberry Pi', model: 'Raspberry Pi 5 / 8GB' })).toBe(
       'Raspberry Pi 5 / 8GB',
     );
+  });
+});
+
+/**
+ * Shop subcategories.
+ *
+ * The PC components tile covers forty-odd parts across nine categories, so it
+ * offers a second row of tiles. The risk with a two-level filter is arithmetic
+ * that does not add up: a parent claiming 43 while its children sum to 38 means
+ * five products are unreachable through the UI, and nothing else would catch it.
+ */
+describe('shop subcategories', () => {
+  const sample = SAMPLE_COMPONENTS.map(stripCost).map(toShopItem);
+
+  it('are offered only where a filter declares them', () => {
+    const withSubs = SHOP_FILTERS.filter((f) => f.subCategories);
+    // Exactly one today. This asserts the count so adding a second is a
+    // deliberate act rather than something that happens by accident.
+    expect(withSubs.map((f) => f.slug)).toEqual(['components']);
+  });
+
+  it('name real categories with real labels', () => {
+    for (const filter of SHOP_FILTERS) {
+      for (const category of filter.subCategories ?? []) {
+        expect(COMPONENT_CATEGORIES, category).toContain(category);
+        expect(CATEGORY_LABELS[category], category).toBeTruthy();
+      }
+    }
+  });
+
+  /**
+   * The arithmetic. Every product under the parent filter must be reachable
+   * through exactly one of its subcategories, so the child counts sum to the
+   * parent's and no product is stranded.
+   */
+  it('account for every product under their parent, exactly once', () => {
+    for (const filter of SHOP_FILTERS) {
+      if (!filter.subCategories) continue;
+
+      const parent = sample.filter(filter.matches);
+      const seen = new Set<string>();
+
+      for (const category of filter.subCategories) {
+        for (const item of parent.filter((i) => i.category === category)) {
+          expect(seen.has(item.id), `${item.id} counted under two subcategories`).toBe(false);
+          seen.add(item.id);
+        }
+      }
+
+      const stranded = parent.filter((item) => !seen.has(item.id));
+      expect(
+        stranded.map((i) => `${i.id} (${i.category})`),
+        `unreachable through any ${filter.slug} subcategory`,
+      ).toEqual([]);
+      expect(seen.size).toBe(parent.length);
+    }
+  });
+
+  it('resolve a subcategory only when the active filter offers it', () => {
+    const components = findShopFilter('components');
+    const everything = findShopFilter('all');
+
+    expect(findSubCategory(components, 'gpu')).toBe('gpu');
+    // Not offered by this filter, so it must not narrow anything.
+    expect(findSubCategory(everything, 'gpu')).toBeNull();
+    // Nonsense from a hand-edited or stale URL falls back to the whole filter
+    // rather than rendering an empty grid, which would read as "we have none".
+    expect(findSubCategory(components, 'networking')).toBeNull();
+    expect(findSubCategory(components, 'not-a-category')).toBeNull();
+    expect(findSubCategory(components, undefined)).toBeNull();
   });
 });
