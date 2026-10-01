@@ -240,6 +240,7 @@ export function SelectedRow({
   onRemove,
   onQuantity,
   allowQuantity,
+  maxQuantity = 4,
 }: {
   category: ComponentCategory;
   component: PublicComponent | null;
@@ -248,6 +249,12 @@ export function SelectedRow({
   onRemove: () => void;
   onQuantity: (qty: number) => void;
   allowQuantity: boolean;
+  /**
+   * Highest selectable quantity. Four suits a memory kit or a pair of drives;
+   * fans need more, because a mid-tower build commonly runs six and some cases
+   * take nine. Set per category by the caller rather than fixed here.
+   */
+  maxQuantity?: number;
 }) {
   if (!component) {
     return (
@@ -302,7 +309,7 @@ export function SelectedRow({
                 onChange={(e) => onQuantity(Number(e.target.value))}
                 className="rounded border border-ink-600 bg-ink-900 px-1.5 py-1 text-xs text-ink-100 focus:border-gold-500 focus:outline-none"
               >
-                {[1, 2, 3, 4].map((n) => (
+                {Array.from({ length: maxQuantity }, (_, i) => i + 1).map((n) => (
                   <option key={n} value={n}>
                     x{n}
                   </option>

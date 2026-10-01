@@ -27,13 +27,44 @@ import {
 import type { SavedBuildItem } from '@/types/domain';
 
 /** Categories where more than one distinct part can be added. */
-// Case fans join storage and accessories here because a build routinely wants
-// three or six of them, and a single-select picker would make somebody choose
-// one fan and then ask us for the rest in the order notes. The quantity control
-// the multi-select path already provides is exactly the right affordance.
-const MULTI_SELECT: ComponentCategory[] = ['storage', 'accessory', 'case-fan'];
-/** Categories where a quantity control makes sense. */
-const QUANTITY_ALLOWED: ComponentCategory[] = ['ram', 'storage', 'accessory'];
+/**
+ * Categories where several DIFFERENT parts can be chosen at once.
+ *
+ * A build can have an NVMe boot drive and a SATA bulk drive, or two different
+ * fan models for intake and exhaust.
+ */
+export const MULTI_SELECT: ComponentCategory[] = ['storage', 'accessory', 'case-fan'];
+
+/**
+ * Categories where a part can be taken MORE THAN ONCE, with a quantity stepper.
+ *
+ * Deliberately a separate list from MULTI_SELECT, because the two answer
+ * different questions. Memory is quantity-only: you take one kit and the
+ * configurator does not invite you to mix two different kits. Storage is both.
+ *
+ * Case fans are both, and omitting them here was the bug: adding `case-fan` to
+ * MULTI_SELECT alone gave an "+ Add another case fan" link but no stepper, so
+ * somebody wanting six of one fan had to add the same fan six times. Six of one
+ * model is the normal case for fans, not the exception — this is the list that
+ * matters for them.
+ */
+export const QUANTITY_ALLOWED: ComponentCategory[] = ['ram', 'storage', 'accessory', 'case-fan'];
+
+/**
+ * Highest quantity the picker offers, per category.
+ *
+ * Four is the default and is right for a memory kit or a couple of drives. Fans
+ * are the exception: three intake and three exhaust is an ordinary mid-tower
+ * layout, and larger cases take more, so capping them at four would be the same
+ * impracticality as not offering a quantity at all.
+ *
+ * Nine rather than unlimited, because beyond that it stops being a dropdown
+ * somebody scans and the order is better discussed than configured.
+ */
+export const QUANTITY_MAX: Partial<Record<ComponentCategory, number>> = {
+  'case-fan': 9,
+};
+export const DEFAULT_QUANTITY_MAX = 4;
 
 const DRAFT_KEY = 'pcbc-builder-draft-v1';
 
@@ -315,6 +346,7 @@ function ConfiguratorInner({
                           component={component}
                           quantity={item.quantity}
                           allowQuantity={QUANTITY_ALLOWED.includes(category)}
+                          maxQuantity={QUANTITY_MAX[category] ?? DEFAULT_QUANTITY_MAX}
                           onOpen={() => setOpenCategory(isOpen ? null : category)}
                           onRemove={() => removeItem(item.component_id)}
                           onQuantity={(qty) => setQuantity(item.component_id, qty)}
