@@ -33,7 +33,7 @@ export default async function PortfolioPage() {
       <PageHeader
         eyebrow="Portfolio"
         title="Completed builds"
-        description="Machines we have built, the parts that went into them, and why those parts and not others."
+        description="A selection of our best builds, the parts that went into them, and why those parts and not others."
       />
 
       <PageShell className="py-12 sm:py-16">
