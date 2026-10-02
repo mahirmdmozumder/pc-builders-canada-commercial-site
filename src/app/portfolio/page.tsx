@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { ButtonLink, Card, EmptyState, PageHeader, PageShell } from '@/components/ui';
 import { listPublishedPortfolio } from '@/lib/cms/repository';
 import { BuildImage } from '@/components/shop/product-image';
@@ -53,16 +54,38 @@ export default async function PortfolioPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             {builds.map((build) => (
               <Card key={build.id} className="group overflow-hidden">
-                <BuildImage
-                  src={build.hero_image_url ?? build.image_urls[0] ?? null}
-                  alt={`${build.title} build`}
-                  galleryCount={Math.max(0, build.image_urls.length - 1)}
-                  className="rounded-none border-0 border-b border-ink-700"
-                />
+                {/* The image links through to the write-up, hidden from
+                    assistive tech and the tab order; the heading below links to
+                    the same place and carries the title. Same pattern as the
+                    shop and pre-built cards, so a card clicks the same way
+                    everywhere on the site.
+
+                    Before this there was no route to link to at all, so clicking
+                    a build did nothing. */}
+                <Link
+                  href={`/portfolio/${build.slug}`}
+                  aria-hidden
+                  tabIndex={-1}
+                  className="block focus:outline-none"
+                >
+                  <BuildImage
+                    src={build.hero_image_url ?? build.image_urls[0] ?? null}
+                    alt={`${build.title} build`}
+                    galleryCount={Math.max(0, build.image_urls.length - 1)}
+                    className="rounded-none border-0 border-b border-ink-700"
+                  />
+                </Link>
 
                 <div className="p-6">
                   <p className="text-xs tracking-wide text-gold-400 uppercase">{build.purpose}</p>
-                  <h2 className="mt-2 text-xl font-semibold text-white">{build.title}</h2>
+                  <h2 className="mt-2 text-xl font-semibold text-white">
+                    <Link
+                      href={`/portfolio/${build.slug}`}
+                      className="rounded transition-colors hover:text-gold-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+                    >
+                      {build.title}
+                    </Link>
+                  </h2>
                   <p className="mt-3 text-sm leading-relaxed text-ink-300">{build.summary}</p>
 
                   {build.component_notes?.length ? (
@@ -84,7 +107,15 @@ export default async function PortfolioPage() {
                     </div>
                   ) : null}
 
-                  <p className="mt-4 text-xs text-ink-500">{formatDate(build.created_at)}</p>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-ink-700 pt-4">
+                    <p className="text-xs text-ink-500">{formatDate(build.created_at)}</p>
+                    <Link
+                      href={`/portfolio/${build.slug}`}
+                      className="text-sm font-medium text-gold-400 hover:text-gold-300"
+                    >
+                      Read the write-up &rarr;
+                    </Link>
+                  </div>
                 </div>
               </Card>
             ))}

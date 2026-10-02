@@ -1,7 +1,11 @@
 import type { MetadataRoute } from 'next';
 import { env } from '@/lib/env';
 import { POLICIES } from '@/content/policies';
-import { listPublishedPresets, listPublishedServices } from '@/lib/cms/repository';
+import {
+  listPublishedPortfolio,
+  listPublishedPresets,
+  listPublishedServices,
+} from '@/lib/cms/repository';
 import { SHOP_COLLECTIONS } from '@/lib/catalog/collections';
 import { listComponents } from '@/lib/catalog/repository';
 import { productHref } from '@/lib/catalog/types';
@@ -121,6 +125,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  /**
+   * One entry per published build write-up.
+   *
+   * These are genuinely strong pages -- a real machine, photographed, with the
+   * reasoning behind its parts -- and until now they had no URL to list. Only
+   * published builds, since an unpublished one 404s.
+   */
+  const portfolio = await listPublishedPortfolio();
+  const portfolioPages: MetadataRoute.Sitemap = portfolio.map((build) => ({
+    url: `${base}/portfolio/${build.slug}`,
+    lastModified: build.updated_at ? new Date(build.updated_at) : now,
+    changeFrequency: 'yearly' as const,
+    // A finished build does not change. It earns its place by being real, not
+    // by being fresh.
+    priority: 0.6,
+  }));
+
   const policies: MetadataRoute.Sitemap = POLICIES.map((policy) => ({
     url: `${base}/legal/${policy.slug}`,
     lastModified: now,
@@ -134,6 +155,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...services,
     ...presets,
     ...productPages,
+    ...portfolioPages,
     ...policies,
   ];
 }

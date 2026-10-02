@@ -44,14 +44,38 @@ export function ProductGallery({
   videoUrl,
   alt,
   category,
+  fit = 'contain',
 }: {
   imageUrl: string | null;
   galleryUrls: string[];
   videoUrl: string | null;
   alt: string;
   category: ComponentCategory;
+  /**
+   * How a photo sits in its frame.
+   *
+   * `contain` over a light panel is right for product photography, which arrives
+   * cut out on white at whatever aspect ratio the manufacturer shot it -- cover
+   * would slice the ends off a graphics card. See the note at the top of
+   * product-image.tsx.
+   *
+   * `cover` over a dark panel is right for photographs of a finished machine.
+   * Those are scenes rather than cut-outs: they fill a frame properly and look
+   * wrong letterboxed, which is the same distinction BuildImage already makes
+   * against ProductImage.
+   *
+   * Defaults to `contain`, so every existing caller renders exactly as before.
+   */
+  fit?: 'contain' | 'cover';
 }) {
   const video = describeVideo(videoUrl);
+
+  // Frame treatment follows the fit: a light panel sits between a cut-out photo
+  // and this site's near-black, while a scene photograph wants the dark one.
+  const frameBackdrop =
+    fit === 'cover' ? 'bg-ink-900' : 'bg-gradient-to-b from-ink-100 to-ink-200';
+  const imageFit = fit === 'cover' ? 'object-cover' : 'object-contain p-4';
+  const thumbFit = fit === 'cover' ? 'object-cover' : 'object-contain p-1.5';
 
   // The primary image first, then the gallery, de-duplicated — an admin who
   // uploads the same file as both the primary and the first gallery slot should
@@ -115,7 +139,10 @@ export function ProductGallery({
             // A single photo is still worth enlarging, so this is always a
             // button rather than only when there are several.
             aria-label={`Enlarge photo ${index + 1} of ${imageCount}`}
-            className="relative block w-full cursor-zoom-in overflow-hidden rounded-lg border border-ink-700 bg-gradient-to-b from-ink-100 to-ink-200 aspect-[4/3] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+            className={cn(
+              'relative block w-full cursor-zoom-in overflow-hidden rounded-lg border border-ink-700 aspect-[4/3] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500',
+              frameBackdrop,
+            )}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -123,7 +150,10 @@ export function ProductGallery({
               alt={`${alt} — photo ${index + 1}`}
               loading={index === 0 ? 'eager' : 'lazy'}
               decoding="async"
-              className="absolute inset-0 size-full object-contain p-4 transition-transform duration-300 group-hover/frame:scale-[1.03]"
+              className={cn(
+                'absolute inset-0 size-full transition-transform duration-300 group-hover/frame:scale-[1.03]',
+                imageFit,
+              )}
             />
           </button>
         )}
@@ -181,14 +211,14 @@ export function ProductGallery({
                     )}
                   </span>
                 ) : (
-                  <span className="block size-full bg-gradient-to-b from-ink-100 to-ink-200">
+                  <span className={cn('block size-full', frameBackdrop)}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.src}
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      className="size-full object-contain p-1.5"
+                      className={cn('size-full', thumbFit)}
                     />
                   </span>
                 )}
