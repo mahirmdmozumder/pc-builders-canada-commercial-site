@@ -76,6 +76,18 @@ export default function ScanPage() {
             subtitle="Configure a machine with live compatibility checks"
             primary
           />
+          {/* Second, directly under the build option.
+              Somebody arriving from a printed card has just met us or picked the
+              card up, and the first thing they want is evidence the work is real.
+              Photographs of finished machines answer that better than anything
+              else on this page, and answering it is what makes the quote option
+              below worth tapping. */}
+          <BigAction
+            href="/portfolio"
+            icon={<GalleryIcon />}
+            title="See our work"
+            subtitle="Photos and write-ups of machines we have built"
+          />
           <BigAction
             href="/quote"
             icon={<TagIcon />}
@@ -471,6 +483,24 @@ function StarIcon() {
   return (
     <svg viewBox="0 0 24 24" className={ICON} fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
       <path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/**
+ * Stacked photographs, for the portfolio.
+ *
+ * Its own icon rather than reusing CameraIcon, which belongs to the Instagram
+ * action. That action is hidden while no profile is configured, but it will not
+ * be forever, and two rows on the same short list sharing a glyph is the kind of
+ * thing nobody notices until it looks sloppy.
+ */
+function GalleryIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className={ICON} fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+      <rect x="3" y="6" width="14" height="12" rx="2.5" />
+      <path d="M7 6V4.8A1.8 1.8 0 0 1 8.8 3h10.4A1.8 1.8 0 0 1 21 4.8v10.4A1.8 1.8 0 0 1 19.2 17H18" />
+      <path d="m5.6 16.4 3.2-3.4 2.2 2.2 2-2 1.6 1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
