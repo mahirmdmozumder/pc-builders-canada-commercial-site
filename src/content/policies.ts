@@ -131,9 +131,27 @@ export const POLICIES: Policy[] = [
         ],
       },
       {
-        heading: 'Availability',
+        heading: 'Pre-orders and payment',
         paragraphs: [
-          'Stock levels shown on the site reflect our records and can be wrong. If a part is unavailable after an order is placed, we will contact you with options: wait, substitute, or refund that part.',
+          'Machines are built to order. We do not hold finished stock of custom configurations, so the parts for your machine are bought after you order it.',
+          'That means payment comes first: the amount shown at checkout is payable in full before we source anything. We cannot commit our own money to parts for a configuration that has not been paid for, and the alternative — part payment, then sourcing, then chasing the balance — is worse for both of us.',
+          'Your order is reviewed by a person before anything is bought. If we cannot build it as specified, we say so and refund you rather than substituting without asking.',
+        ],
+      },
+      {
+        heading: 'Component availability and pricing',
+        paragraphs: [
+          'Stock levels and prices shown on the site reflect our records at the time you look, and both can change before the parts are sourced. Component pricing in particular moves week to week, and availability can disappear without notice.',
+          'The price you pay is the price shown at checkout when you pay. We do not go back to you for more money because a part went up after your order was placed.',
+          'If a part turns out to be unavailable after you have ordered, we contact you with the options rather than deciding for you: wait for it, accept an alternative, or take a refund for that part or the whole order.',
+        ],
+      },
+      {
+        heading: 'Substitutions',
+        paragraphs: [
+          'Any part we propose in place of another will be equal or better in specification and comparable in value. We do not substitute down and keep the difference; if an alternative costs less, you are refunded the difference.',
+          'Where a substitution would materially change the machine — a different processor, a different graphics card, less memory or storage, a different class of part — we ask you first and wait for your answer. Nothing material is swapped on your behalf.',
+          'For something immaterial, such as the same drive in different packaging or an identical part from a different distributor, we may proceed and tell you what was used. The parts list you receive always reflects what is actually in the machine.',
         ],
       },
       {
@@ -158,17 +176,17 @@ export const POLICIES: Policy[] = [
        */
       TAX_REGISTRATION.registered
         ? {
-            heading: 'Sales tax',
+            heading: 'GST/HST',
             paragraphs: [
-              `Sales tax is charged at the rate for your province and shown as a separate line before you pay. Our GST/HST registration number is ${TAX_REGISTRATION.number ?? 'shown on your receipt'}.`,
-              'Tax is calculated on the goods, the assembly labour and the shipping together, which is the normal treatment for a product shipped within Canada.',
+              `Applicable Ontario GST/HST is charged at checkout and shown as a separate line before you pay. Our GST/HST registration number is ${TAX_REGISTRATION.number ?? 'shown on your receipt'}, and it appears on your receipt.`,
+              'Tax is calculated on the goods, the assembly labour and the shipping together, which is the normal treatment for a product shipped within Canada. Customers outside Ontario are charged at the rate for their own province.',
             ],
           }
         : {
-            heading: 'Sales tax',
+            heading: 'GST/HST',
             paragraphs: [
-              'PC Builders Canada is not currently registered to collect GST/HST, so no sales tax is added to your order and the total shown is the total you pay.',
-              'If that changes, tax will appear as a separate line before you pay, and it will never be applied to an order that was already placed.',
+              'Applicable Ontario GST/HST is charged at checkout, shown as a separate line before you pay.',
+              'We are completing our GST/HST registration and are not accepting orders until it is in place, so no order has been taken without the tax it should carry. Tax is never applied retroactively to an order already placed.',
             ],
           },
       {
@@ -201,10 +219,18 @@ export const POLICIES: Policy[] = [
     lastReviewed: REVIEWED,
     sections: [
       {
-        heading: 'Build time comes first',
+        heading: 'Built after you order, not before',
         paragraphs: [
-          'A custom machine is assembled and tested before it ships. The order status shows where it is: confirmed, processing, building, testing, ready, then shipped.',
-          'Build time depends on part availability and current workload. An expected date is confirmed after the order is reviewed.',
+          'Nothing here is a finished machine sitting on a shelf. Your parts are sourced after the order is placed, then assembled, cabled and tested before anything ships. The order status shows exactly where it is: confirmed, processing, building, testing, ready, then shipped.',
+          'Fulfilment time therefore has two parts: how long the parts take to arrive, and how long the build and testing take. The first depends on distributor stock and is the part that varies; the second is measured in days, not weeks.',
+        ],
+      },
+      {
+        heading: 'How long it will take',
+        paragraphs: [
+          'We do not publish a single number, because a figure that covers every build would have to be so cautious as to be useless, and a tighter one would be a promise we do not control. Component availability is the variable, and it is a distributor\'s to determine rather than ours.',
+          'What you get instead is a written estimate for your specific order, confirmed after we review it and before you pay. If that estimate changes because a part is delayed, we tell you when we find out rather than when you ask.',
+          'If a completion date matters to you — a birthday, a deadline, a start date — say so before you pay and we will tell you honestly whether it is achievable. We would rather turn down an order than miss a date you were relying on.',
         ],
       },
       {
@@ -226,10 +252,11 @@ export const POLICIES: Policy[] = [
         ],
       },
       {
-        heading: 'Carrier and transit times',
+        heading: 'Delivery',
         paragraphs: [
-          'Shipping is arranged per order with a national carrier, and you get a tracking number when the machine leaves. We do not publish a transit time, because it depends on the carrier and the destination, and a number printed here would be a promise we do not control.',
-          'If a delivery date matters for your order, tell us before you pay and we will confirm in writing what is achievable.',
+          'Shipping is arranged per order with a national carrier, and you get a tracking number when the machine leaves us.',
+          'Delivery time varies with where you are and which carrier is used — a machine going across the Greater Toronto Area and one going to a rural address in another province are not comparable journeys. Once a parcel is with the carrier its progress is theirs, not ours, and we will not pretend otherwise by printing a number here.',
+          'We pass on the estimate the carrier gives for your address when the order ships, and the tracking number so you can see it for yourself.',
         ],
       },
       {
@@ -250,9 +277,18 @@ export const POLICIES: Policy[] = [
     lastReviewed: REVIEWED,
     sections: [
       {
-        heading: 'Cancelling before assembly',
+        heading: 'Cancelling before we buy the parts',
         paragraphs: [
-          'An order cancelled before assembly begins is refunded in full. Contact us with the order number as soon as possible: the earlier the cancellation, the simpler it is.',
+          'Up to the point where we place orders with our suppliers, you can cancel for any reason and be refunded in full. Nothing has been bought, so there is nothing to recover and no charge to you.',
+          'Contact us with your order number as soon as you know. We tell you in writing when sourcing is about to begin, so you always know which side of that line you are on.',
+        ],
+      },
+      {
+        heading: 'Cancelling after sourcing has started',
+        paragraphs: [
+          'Once the parts for your machine have been bought, a cancellation costs real money, and how much depends on the parts. Some can go back to the distributor, some can go into stock for another build, and some can do neither.',
+          'So a cancellation at this stage is worked out with you case by case. We tell you what can be returned, what cannot, and what the refund comes to, and you decide before anything is deducted. We do not apply a blanket fee.',
+          'Once a machine has been assembled and tested it is covered by the custom-build terms below rather than this section.',
         ],
       },
       {
@@ -311,6 +347,14 @@ export const POLICIES: Policy[] = [
           'Our own work is covered by us for one year. That means the building, the cabling, the configuration, the repair or the servicing: if we made a mistake doing any of it and that mistake causes a fault, we fix it at no charge for twelve months from the date you received the work.',
           'Components carry the warranty offered by their manufacturer, for whatever period that manufacturer sets. That is a separate thing from our one year, and it is not something we can extend or shorten. Our one year is not a manufacturer warranty, and we do not claim that every part carries one.',
           'In practice the distinction rarely costs you anything, because we do the diagnosis either way. If the fault turns out to be a faulty part rather than our work, we tell you whose warranty applies and help you claim under it.',
+        ],
+      },
+      {
+        heading: 'If it arrives faulty',
+        paragraphs: [
+          'A component that is faulty out of the box is our problem to solve, not yours to take up with a manufacturer. Tell us within a few days of delivery, and we diagnose it, replace the part and return the machine to you working, at no cost to you including shipping both ways.',
+          'That is true whether the fault is something we did or a part that left its factory broken. The difference matters for who we claim from afterwards; it should not matter to you.',
+          'If a machine will not power on or will not boot, stop and contact us before trying anything invasive. We would rather talk you through five minutes of checks than have a warranty question complicated by a part that has since been removed.',
         ],
       },
       {

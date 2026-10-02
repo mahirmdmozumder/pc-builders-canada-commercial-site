@@ -175,21 +175,78 @@ describe('policies do not invent terms', () => {
     const terms = POLICIES.find((p) => p.slug === 'terms')!;
     const text = terms.sections.flatMap((s) => s.paragraphs).join(' ');
 
+    // Both branches state that GST/HST is charged at checkout, which is the
+    // customer-facing fact. What must differ is the disclosure of whether
+    // registration is in place yet.
+    expect(text).toContain('GST/HST is charged at checkout');
+
     if (TAX_REGISTRATION.registered) {
-      expect(text).toContain('Sales tax is charged');
-      expect(text).not.toContain('not currently registered');
       // A registrant must show its number where tax is charged.
       expect(TAX_REGISTRATION.number, 'registered with no business number').toBeTruthy();
       expect(text).toContain(TAX_REGISTRATION.number!);
+      expect(text).not.toContain('completing our GST/HST registration');
     } else {
-      expect(text).toContain('not currently registered');
-      expect(text).not.toContain('Sales tax is charged');
+      // The status has to be disclosed rather than glossed over...
+      expect(text).toContain('completing our GST/HST registration');
+      // ...and it must not imply tax was taken on orders already placed, which
+      // is the thing that would actually be a misstatement.
+      expect(text).not.toMatch(/tax (has been|was) (collected|charged)/i);
     }
   });
 
-  it('keeps a Sales tax section whichever way the flag is set', () => {
+  it('keeps exactly one tax section whichever way the flag is set', () => {
     const terms = POLICIES.find((p) => p.slug === 'terms')!;
-    expect(terms.sections.filter((s) => s.heading === 'Sales tax')).toHaveLength(1);
+    expect(terms.sections.filter((s) => s.heading === 'GST/HST')).toHaveLength(1);
+  });
+
+  /**
+   * Pre-order terms. The business builds to order and takes payment before
+   * sourcing, which is a material thing for a customer to know before paying and
+   * the sort of term that gets quietly dropped in a rewrite.
+   */
+  it('states the pre-order terms a customer needs before paying', () => {
+    const terms = POLICIES.find((p) => p.slug === 'terms')!;
+    const text = terms.sections.flatMap((s) => s.paragraphs).join(' ');
+
+    // Payment precedes sourcing, and the price is fixed at checkout.
+    expect(text).toMatch(/payable in full before we source/i);
+    expect(text).toContain('The price you pay is the price shown at checkout');
+
+    // A material substitution needs the customer's agreement.
+    expect(text).toMatch(/equal or better in specification/i);
+    expect(text).toMatch(/we ask you first/i);
+  });
+
+  it('draws the cancellation line at sourcing, both sides of it', () => {
+    const refunds = POLICIES.find((p) => p.slug === 'refunds')!;
+    const headings = refunds.sections.map((s) => s.heading);
+    expect(headings).toContain('Cancelling before we buy the parts');
+    expect(headings).toContain('Cancelling after sourcing has started');
+
+    const text = refunds.sections.flatMap((s) => s.paragraphs).join(' ');
+    expect(text).toMatch(/refunded in full/i);
+    // Still no invented blanket fee on the post-sourcing side.
+    expect(text).toMatch(/case by case/i);
+  });
+
+  it('covers a component that arrives faulty', () => {
+    const warranty = POLICIES.find((p) => p.slug === 'warranty')!;
+    expect(warranty.sections.map((s) => s.heading)).toContain('If it arrives faulty');
+    const text = warranty.sections.flatMap((s) => s.paragraphs).join(' ');
+    expect(text).toMatch(/no cost to you including shipping both ways/i);
+  });
+
+  /**
+   * Fulfilment is promised as a written per-order estimate, never as a published
+   * range. There is no agreed build time to publish, and a number here would be
+   * a commitment nobody made -- which is also why the shipping test below still
+   * forbids numeric day ranges.
+   */
+  it('promises an estimate per order rather than a published build time', () => {
+    const shipping = POLICIES.find((p) => p.slug === 'shipping')!;
+    const text = shipping.sections.flatMap((s) => s.paragraphs).join(' ');
+    expect(text).toMatch(/written estimate for your specific order/i);
+    expect(text).toMatch(/do not publish a single number/i);
   });
 });
 
