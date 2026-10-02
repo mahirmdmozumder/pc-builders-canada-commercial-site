@@ -10,7 +10,7 @@ import {
   isSupabaseConfigured,
   env,
 } from '@/lib/env';
-import { PRICING_CONFIG } from '@/lib/pricing/pricing';
+import { ASSEMBLY_FEE_TIERS, PRICING_CONFIG } from '@/lib/pricing/pricing';
 import { PSU_HEADROOM_MULTIPLIER, SYSTEM_OVERHEAD_WATTS } from '@/lib/power/calculator';
 import { formatMoney } from '@/lib/utils';
 
@@ -111,7 +111,12 @@ export default async function AdminSettingsPage() {
           <DefinitionList
             className="mt-3"
             items={[
-              { term: 'Assembly and testing', value: formatMoney(PRICING_CONFIG.assemblyFeeCents) },
+              // Every band, because showing one number for a tiered fee would
+              // be the settings panel misreporting what customers are charged.
+              ...ASSEMBLY_FEE_TIERS.map((tier) => ({
+                term: `Assembly and testing — ${tier.label}`,
+                value: formatMoney(tier.feeCents),
+              })),
               { term: 'OS installation', value: formatMoney(PRICING_CONFIG.osInstallFeeCents) },
               {
                 term: 'Free shipping above',

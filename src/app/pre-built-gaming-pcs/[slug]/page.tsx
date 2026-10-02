@@ -8,7 +8,7 @@ import { BuildImage } from '@/components/shop/product-image';
 import { listPublishedPresets } from '@/lib/cms/repository';
 import { resolveBuild } from '@/lib/catalog/repository';
 import { checkCompatibility } from '@/lib/compatibility/engine';
-import { priceBuild, PRICING_CONFIG } from '@/lib/pricing/pricing';
+import { assemblyFeeFor, priceBuild } from '@/lib/pricing/pricing';
 import { CATEGORY_LABELS, displayName } from '@/lib/catalog/types';
 import { PRESET_AUDIENCE_LABELS } from '@/lib/cms/types';
 import { REGION_LABEL } from '@/lib/seo/business';
@@ -70,7 +70,7 @@ export async function generateMetadata({
 
   const description =
     preset.seo_description ??
-    `${preset.tagline} ${specs ? `${specs}. ` : ''}Assembled, cabled and tested in ${REGION_LABEL}. From ${formatMoney(price.subtotalCents + PRICING_CONFIG.assemblyFeeCents, { whole: true })}.`;
+    `${preset.tagline} ${specs ? `${specs}. ` : ''}Assembled, cabled and tested in ${REGION_LABEL}. From ${formatMoney(price.subtotalCents + assemblyFeeFor(price.subtotalCents), { whole: true })}.`;
 
   return {
     title,
@@ -92,7 +92,7 @@ export default async function PreBuiltPage({ params }: { params: Promise<{ slug:
   if (!data) notFound();
 
   const { preset, build, price, report, siblings } = data;
-  const totalCents = price.subtotalCents + PRICING_CONFIG.assemblyFeeCents;
+  const totalCents = price.subtotalCents + assemblyFeeFor(price.subtotalCents);
   const inStock = build.every((item) => item.component.stock_quantity >= item.quantity);
 
   return (
@@ -146,7 +146,7 @@ export default async function PreBuiltPage({ params }: { params: Promise<{ slug:
                 </p>
                 <p className="mt-1 text-xs text-ink-400">
                   {formatMoney(price.subtotalCents)} in parts plus{' '}
-                  {formatMoney(PRICING_CONFIG.assemblyFeeCents)} assembly, cabling and testing.
+                  {formatMoney(assemblyFeeFor(price.subtotalCents))} assembly, cabling and testing.
                   Shipping and tax are added at checkout.
                 </p>
               </div>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { priceBuild, priceCart, PRICING_CONFIG } from '@/lib/pricing/pricing';
+import { assemblyFeeFor, ASSEMBLY_FEE_TIERS } from '@/lib/pricing/pricing';
 import {
   calculateTax,
   calculateTaxAtRate,
@@ -131,9 +132,9 @@ describe('build pricing', () => {
     expect(two.subtotalCents).toBe(one.subtotalCents * 2);
   });
 
-  it('adds the assembly fee to a full system', () => {
+  it('adds the assembly fee to a full system, banded on its parts value', () => {
     const price = priceBuild(buildFromIds(COMPATIBLE_AM5_BUILD));
-    expect(price.servicesCents).toBe(PRICING_CONFIG.assemblyFeeCents);
+    expect(price.servicesCents).toBe(assemblyFeeFor(price.subtotalCents));
   });
 
   it('adds an OS installation fee only when an OS is selected', () => {
@@ -221,7 +222,9 @@ describe('cart pricing', () => {
         },
       ],
     });
-    expect(price.servicesCents).toBe(PRICING_CONFIG.assemblyFeeCents * 2);
+    // Two of the same $2,000 build: banded on 200_000 each, not on the 400_000
+    // the cart adds up to.
+    expect(price.servicesCents).toBe(assemblyFeeFor(200_000) * 2);
   });
 
   it('does not charge assembly for loose components', () => {
@@ -254,5 +257,180 @@ describe('cart pricing', () => {
     const price = priceCart({ lines: [] });
     expect(price.totalCents).toBe(0);
     expect(price.shippingCents).toBe(0);
+  });
+});
+
+/**
+ * Tiered assembly fee.
+ *
+ * $129 under $1,500 of parts, $179 up to $3,000, $199 above. A flat fee was
+ * regressive: under 5% of a $4,000 machine and over 20% of a $900 one, which
+ * taxed hardest exactly the build a small shop wins first.
+ */
+describe('assembly fee bands', () => {
+  it('charges the bottom band under $1,500 of parts', () => {
+    expect(assemblyFeeFor(0)).toBe(12_900);
+    expect(assemblyFeeFor(89_900)).toBe(12_900);
+    expect(assemblyFeeFor(149_999)).toBe(12_900);
+  });
+
+  it('charges the middle band from $1,500 to $3,000 inclusive', () => {
+    // $1,500 exactly leaves the bottom band.
+    expect(assemblyFeeFor(150_000)).toBe(17_900);
+    expect(assemblyFeeFor(200_000)).toBe(17_900);
+    // "up to $3,000" includes $3,000.
+    expect(assemblyFeeFor(300_000)).toBe(17_900);
+  });
+
+  it('charges the top band above $3,000, unchanged from the old flat rate', () => {
+    expect(assemblyFeeFor(300_001)).toBe(19_900);
+    expect(assemblyFeeFor(690_691)).toBe(19_900);
+    // The point of the change: the top rate did not move.
+    expect(assemblyFeeFor(1_000_000)).toBe(19_900);
+  });
+
+  it('never returns nothing, whatever it is handed', () => {
+    for (const subtotal of [0, 1, 149_999, 150_000, 300_000, 300_001, 9_999_999]) {
+      const fee = assemblyFeeFor(subtotal);
+      expect(fee, String(subtotal)).toBeGreaterThan(0);
+      expect(Number.isInteger(fee), String(subtotal)).toBe(true);
+    }
+  });
+
+  it('has bands that only ever rise with value', () => {
+    // A cheaper machine must never cost more to assemble than a dearer one, or
+    // somebody is penalised for spending less.
+    const fees = [0, 149_999, 150_000, 300_000, 300_001, 800_000].map(assemblyFeeFor);
+    for (let i = 1; i < fees.length; i++) {
+      expect(fees[i]).toBeGreaterThanOrEqual(fees[i - 1]);
+    }
+    // And the table itself is ordered, with exactly one open-ended band last.
+    const ceilings = ASSEMBLY_FEE_TIERS.map((tier) => tier.maxSubtotalCents);
+    expect(ceilings.filter((c) => c === null)).toHaveLength(1);
+    expect(ceilings[ceilings.length - 1]).toBeNull();
+  });
+
+  /**
+   * The subtlety worth a test of its own. Two modest builds in one basket are
+   * two bottom-band fees, NOT two top-band fees because the basket totals more
+   * than $3,000. Banding on the cart total would punish precisely the customer
+   * the lower bands exist for.
+   */
+  it('bands each build on its own value, not on the cart total', () => {
+    const price = priceCart({
+      lines: [
+        {
+          kind: 'build',
+          name: 'Budget build A',
+          unitPriceCents: 100_000,
+          quantity: 1,
+          includesAssembly: true,
+        },
+        {
+          kind: 'build',
+          name: 'Budget build B',
+          unitPriceCents: 120_000,
+          quantity: 1,
+          includesAssembly: true,
+        },
+      ],
+      province: 'ON',
+    });
+
+    // Cart subtotal is $2,200, which would be the middle band if banded wrongly.
+    expect(price.subtotalCents).toBe(220_000);
+    expect(price.servicesCents).toBe(12_900 * 2);
+  });
+
+  it('bands a mixed basket per build', () => {
+    const price = priceCart({
+      lines: [
+        {
+          kind: 'build',
+          name: 'Budget',
+          unitPriceCents: 100_000,
+          quantity: 1,
+          includesAssembly: true,
+        },
+        {
+          kind: 'build',
+          name: 'Flagship',
+          unitPriceCents: 500_000,
+          quantity: 1,
+          includesAssembly: true,
+        },
+      ],
+      province: 'ON',
+    });
+    expect(price.servicesCents).toBe(12_900 + 19_900);
+  });
+
+  it('charges nothing for a parts-only basket', () => {
+    const price = priceCart({
+      lines: [
+        {
+          kind: 'component',
+          name: 'A graphics card',
+          unitPriceCents: 90_000,
+          quantity: 1,
+          includesAssembly: false,
+        },
+      ],
+      province: 'ON',
+    });
+    expect(price.servicesCents).toBe(0);
+  });
+});
+
+/**
+ * A build with nothing in it.
+ *
+ * priceBuild has always guarded this with `subtotalCents > 0`; priceCart did not,
+ * so a saved build whose components had all been removed from the catalogue was
+ * charged an assembly fee for assembling nothing. Found while tiering the fee —
+ * it was a $199 overcharge before and would have been $129 after.
+ */
+describe('a build with no resolvable parts', () => {
+  it('is not charged an assembly fee by either pricing path', () => {
+    const cart = priceCart({
+      lines: [
+        {
+          kind: 'build',
+          name: 'Every part discontinued',
+          unitPriceCents: 0,
+          quantity: 1,
+          includesAssembly: true,
+        },
+      ],
+      province: 'ON',
+    });
+    expect(cart.servicesCents).toBe(0);
+    expect(cart.subtotalCents).toBe(0);
+
+    // The same input through priceBuild, which already behaved this way.
+    expect(priceBuild([]).servicesCents).toBe(0);
+  });
+
+  it('still charges for the real builds beside it', () => {
+    const cart = priceCart({
+      lines: [
+        {
+          kind: 'build',
+          name: 'Every part discontinued',
+          unitPriceCents: 0,
+          quantity: 1,
+          includesAssembly: true,
+        },
+        {
+          kind: 'build',
+          name: 'A real one',
+          unitPriceCents: 200_000,
+          quantity: 1,
+          includesAssembly: true,
+        },
+      ],
+      province: 'ON',
+    });
+    expect(cart.servicesCents).toBe(17_900);
   });
 });

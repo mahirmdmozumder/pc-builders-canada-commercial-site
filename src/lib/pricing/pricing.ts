@@ -22,8 +22,6 @@ import type { TaxLine } from '@/types/domain';
  */
 
 export const PRICING_CONFIG = {
-  /** Flat assembly, cable management, BIOS setup and burn-in testing charge. */
-  assemblyFeeCents: 19900,
   /** Charged on top of assembly when an OS licence is in the build. */
   osInstallFeeCents: 4900,
   /** Orders at or above this hardware subtotal ship free. */
@@ -33,6 +31,65 @@ export const PRICING_CONFIG = {
   /** Flat shipping for parts-only orders. */
   partsShippingCents: 2900,
 } as const;
+
+/**
+ * Assembly, cable management, BIOS setup and burn-in testing, charged by the
+ * value of the machine it is charged on.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY IT IS NOT FLAT
+ * ---------------------------------------------------------------------------
+ * A flat fee is regressive. $199 is under 5% of a $4,000 machine and over 20%
+ * of a $900 one, so a single rate taxes the budget build hardest -- and the
+ * budget build is the one a small shop competes for and wins first. The labour
+ * genuinely is less on a cheaper machine: fewer parts, simpler cooling, less
+ * cable routing, shorter burn-in.
+ *
+ * The top rate is unchanged. Only the lower bands moved, so the orders that give
+ * anything up are the smallest ones.
+ *
+ * ---------------------------------------------------------------------------
+ * CHARGED PER MACHINE, NEVER PER ORDER
+ * ---------------------------------------------------------------------------
+ * The band is decided by one build's own parts subtotal, not by the cart total.
+ * Two $1,000 builds in one basket are two $129 fees, not two $199 fees because
+ * the basket happens to total $2,000 -- which would penalise exactly the
+ * customer the lower bands exist for. See priceCart.
+ *
+ * Bands are inclusive of their maximum: $1,500 of parts falls in the $179 band,
+ * $3,000 falls in the $179 band, and $3,000.01 is the first to reach $199.
+ */
+export interface AssemblyFeeTier {
+  /** Highest parts subtotal in this band, in cents. Null means no ceiling. */
+  maxSubtotalCents: number | null;
+  feeCents: number;
+  /** Shown in the admin settings panel. */
+  label: string;
+}
+
+export const ASSEMBLY_FEE_TIERS: AssemblyFeeTier[] = [
+  { maxSubtotalCents: 149_999, feeCents: 12_900, label: 'Parts under $1,500' },
+  { maxSubtotalCents: 300_000, feeCents: 17_900, label: 'Parts $1,500 to $3,000' },
+  { maxSubtotalCents: null, feeCents: 19_900, label: 'Parts over $3,000' },
+];
+
+/**
+ * The assembly fee for one machine, from its own parts subtotal.
+ *
+ * The single place this is decided. Every caller -- the configurator, the cart,
+ * checkout, the preset totals and the pre-built pages -- goes through here, so a
+ * change to the bands cannot reach some surfaces and not others.
+ */
+export function assemblyFeeFor(partsSubtotalCents: number): number {
+  for (const tier of ASSEMBLY_FEE_TIERS) {
+    if (tier.maxSubtotalCents === null || partsSubtotalCents <= tier.maxSubtotalCents) {
+      return tier.feeCents;
+    }
+  }
+  // Unreachable while the last tier has a null ceiling. Falling back to the top
+  // rate rather than zero, because a missing fee is a silent giveaway.
+  return ASSEMBLY_FEE_TIERS[ASSEMBLY_FEE_TIERS.length - 1].feeCents;
+}
 
 export interface PriceLine {
   label: string;
@@ -91,7 +148,7 @@ export function priceBuild(build: ResolvedBuild, options: PriceOptions = {}): Pr
   if (isSystem && subtotalCents > 0) {
     serviceLines.push({
       label: 'Assembly, cable management & testing',
-      amount_cents: PRICING_CONFIG.assemblyFeeCents,
+      amount_cents: assemblyFeeFor(subtotalCents),
       note: 'Build, BIOS configuration, thermal and stability testing',
     });
     if (build.some((item) => item.category === 'os')) {
@@ -154,16 +211,29 @@ export function priceCart(input: CartPricingInput): PriceBreakdown {
   const subtotalCents = componentLines.reduce((sum, line) => sum + line.amount_cents, 0);
 
   const serviceLines: PriceLine[] = [];
-  const assemblyUnits = input.lines
-    .filter((l) => l.kind === 'build' && l.includesAssembly)
-    .reduce((sum, l) => sum + l.quantity, 0);
+  // `unitPriceCents > 0` mirrors the guard priceBuild already applies to its own
+  // subtotal, so the two pricing paths agree. Without it a build whose every
+  // component had been removed from the catalogue -- an old saved build, say --
+  // would be charged an assembly fee for assembling nothing.
+  const assemblyLines = input.lines.filter(
+    (l) => l.kind === 'build' && l.includesAssembly && l.unitPriceCents > 0,
+  );
+  const assemblyUnits = assemblyLines.reduce((sum, l) => sum + l.quantity, 0);
   if (assemblyUnits > 0) {
+    // Each build is banded on ITS OWN parts subtotal -- unitPriceCents is that
+    // build's hardware total -- and the results are summed. Banding on the cart
+    // total would charge two modest builds at the top rate because the basket
+    // added up, which is the opposite of what the lower bands are for.
+    const assemblyCents = assemblyLines.reduce(
+      (sum, line) => sum + assemblyFeeFor(line.unitPriceCents) * line.quantity,
+      0,
+    );
     serviceLines.push({
       label:
         assemblyUnits > 1
           ? `Assembly, cable management & testing x${assemblyUnits}`
           : 'Assembly, cable management & testing',
-      amount_cents: PRICING_CONFIG.assemblyFeeCents * assemblyUnits,
+      amount_cents: assemblyCents,
       note: 'Build, BIOS configuration, thermal and stability testing',
     });
   }

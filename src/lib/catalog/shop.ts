@@ -1,6 +1,6 @@
 import { listComponents } from '@/lib/catalog/repository';
 import { listPublishedPresets } from '@/lib/cms/repository';
-import { PRICING_CONFIG } from '@/lib/pricing/pricing';
+import { assemblyFeeFor } from '@/lib/pricing/pricing';
 import {
   CATEGORY_LABELS,
   displayName,
@@ -108,7 +108,7 @@ function presetToShopItem(preset: BuildPresetRecord, parts: Map<string, PublicCo
     // Parts plus assembly: the price of a machine that arrives built and
     // tested, which is what "pre-built" means. Shipping and tax are added at
     // checkout and depend on where it is going.
-    priceCents: partsCents > 0 ? partsCents + PRICING_CONFIG.assemblyFeeCents : 0,
+    priceCents: partsCents > 0 ? partsCents + assemblyFeeFor(partsCents) : 0,
     partsCents,
     imageUrl: preset.hero_image_url ?? preset.gallery_urls?.[0] ?? null,
     galleryCount: Math.max(0, (preset.gallery_urls?.length ?? 0) - 1),

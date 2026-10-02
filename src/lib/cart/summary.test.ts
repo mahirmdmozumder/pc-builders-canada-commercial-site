@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveCart } from '@/lib/cart/summary';
-import { PRICING_CONFIG } from '@/lib/pricing/pricing';
+import { assemblyFeeFor, PRICING_CONFIG } from '@/lib/pricing/pricing';
 import { COMPATIBLE_AM5_BUILD } from '@/lib/catalog/test-helpers';
 import { SAMPLE_COMPONENTS_BY_ID } from '@/lib/catalog/sample-catalog';
 import type { SavedBuildItem } from '@/types/domain';
@@ -43,9 +43,9 @@ describe('cart resolution', () => {
     expect(cart.lines[0].unitPriceCents).toBe(expectedParts);
   });
 
-  it('adds one assembly fee per system', async () => {
+  it('adds one assembly fee per system, banded on that build', async () => {
     const cart = await resolveCart({ lines: [BUILD_LINE], province: 'ON' });
-    expect(cart.price.servicesCents).toBe(PRICING_CONFIG.assemblyFeeCents);
+    expect(cart.price.servicesCents).toBe(assemblyFeeFor(cart.lines[0].unitPriceCents));
   });
 
   it('charges assembly per unit when more than one of the same build is ordered', async () => {
@@ -53,7 +53,7 @@ describe('cart resolution', () => {
       lines: [{ ...BUILD_LINE, quantity: 2 }],
       province: 'ON',
     });
-    expect(cart.price.servicesCents).toBe(PRICING_CONFIG.assemblyFeeCents * 2);
+    expect(cart.price.servicesCents).toBe(assemblyFeeFor(cart.lines[0].unitPriceCents) * 2);
   });
 
   it('reports a compatibility failure as a blocking problem', async () => {
