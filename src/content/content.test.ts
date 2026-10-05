@@ -417,3 +417,77 @@ describe('PBC POS page copy', () => {
     }
   });
 });
+
+/**
+ * Obligations under Canadian consumer and privacy law.
+ *
+ * These are not copy preferences. Each one is a requirement or a protection
+ * that exists whether or not the policy mentions it, and the point of asserting
+ * them is that a future rewrite cannot quietly drop one.
+ *
+ * None of this makes the policies lawyer-reviewed. It checks that the specific
+ * things found missing in the October 2026 pass are still there.
+ */
+describe('Canadian consumer and privacy obligations', () => {
+  const policyText = (slug: string) =>
+    POLICIES.find((p) => p.slug === slug)!.sections.flatMap((s) => s.paragraphs).join(' ');
+
+  /**
+   * The gap that mattered most: the terms had no liability limit of any kind,
+   * so exposure was uncapped.
+   */
+  it('limits liability, and carves out what cannot lawfully be limited', () => {
+    const text = policyText('terms');
+    expect(text).toMatch(/limited to the amount you paid/i);
+    expect(text).toMatch(/indirect or consequential/i);
+    // Attempting to exclude liability for personal injury from negligence is
+    // both unenforceable and a bad look. It must stay carved out.
+    expect(text).toMatch(/death or personal injury caused by negligence/i);
+    expect(text).toMatch(/fraud/i);
+  });
+
+  it('never claims to exclude the statutory warranties', () => {
+    const text = `${policyText('terms')} ${policyText('warranty')}`;
+    // Implied warranties in a consumer sale cannot be contracted out of in
+    // Ontario, so the policies must acknowledge rather than disclaim them.
+    expect(text).toMatch(/Sale of Goods Act/i);
+    expect(text).not.toMatch(/no warranties of any kind|all warranties are excluded|as is, with no/i);
+  });
+
+  it('names the person the contract is actually with', () => {
+    const text = policyText('terms');
+    expect(text).toMatch(/trading name of/i);
+    expect(text).toMatch(/sole proprietor/i);
+  });
+
+  /**
+   * PIPEDA has required breach reporting since 2018. The privacy policy said
+   * nothing about it, which did not remove the obligation.
+   */
+  it('commits to breach notification', () => {
+    const text = policyText('privacy');
+    expect(text).toMatch(/real risk of significant harm/i);
+    expect(text).toMatch(/Privacy Commissioner of Canada/i);
+  });
+
+  /**
+   * The right that bites a build-to-order seller hardest: a customer can cancel
+   * a delivery more than thirty days late. Worth stating, because the honest
+   * version of this policy is what keeps it from being a surprise.
+   */
+  it('states the late-delivery cancellation right in both places a buyer looks', () => {
+    for (const slug of ['shipping', 'refunds']) {
+      expect(policyText(slug).toLowerCase(), slug).toContain('thirty days');
+    }
+  });
+
+  it('keeps provincial law paramount on every policy that makes a promise', () => {
+    for (const slug of ['terms', 'refunds', 'warranty']) {
+      const text = policyText(slug).toLowerCase();
+      expect(
+        /provincial law|consumer protection legislation|legislation applies/.test(text),
+        slug,
+      ).toBe(true);
+    }
+  });
+});

@@ -80,9 +80,12 @@ export default async function PolicyPage({ params }: { params: Promise<{ slug: s
             </div>
 
             <p className="mt-12 border-t border-ink-700 pt-6 text-sm text-ink-500">
-              Last reviewed {policy.lastReviewed}. Having these reviewed by a Canadian lawyer
-              before relying on them as formal legal documents remains sensible; nothing here is
-              legal advice.
+              {/* A date and nothing else. The note that used to sit here asked
+                  the READER to consider having the policies reviewed, which was
+                  a note-to-self that had ended up on a customer-facing page —
+                  it read as "we have not finished this", which is not something
+                  a policy page should say to somebody about to buy. */}
+              Last updated {policy.lastReviewed}.
             </p>
           </article>
 

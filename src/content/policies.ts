@@ -29,7 +29,7 @@ import { TAX_REGISTRATION } from '@/lib/pricing/tax';
  * here, so a changed address changes on every page at once.
  */
 
-const REVIEWED = '30 September 2026';
+const REVIEWED = '5 October 2026';
 
 export interface PolicySection {
   heading: string;
@@ -92,6 +92,13 @@ export const POLICIES: Policy[] = [
         heading: 'How long we keep it',
         paragraphs: [
           'Order records are kept as long as required for tax and warranty purposes. Quote and contact messages are kept while they are useful for supporting the customer, and can be deleted on request.',
+        ],
+      },
+      {
+        heading: 'If something goes wrong',
+        paragraphs: [
+          'If personal information we hold is lost or exposed and there is a real risk of significant harm to you, we will tell you, and we will report it to the Office of the Privacy Commissioner of Canada. That is what federal privacy law requires, and it is what we would want told to us.',
+          'We keep a record of any such incident whether or not it meets that threshold.',
         ],
       },
       {
@@ -192,7 +199,8 @@ export const POLICIES: Policy[] = [
       {
         heading: 'Who you are dealing with',
         paragraphs: [
-          'PC Builders Canada is a small independent business operating from Ontario, Canada, which sells and services computer hardware. It trades under that name. Contact details are on our contact page.',
+          'PC Builders Canada is the trading name of Mahir Mohammed Mozumder, a sole proprietor operating from Ontario, Canada, selling and servicing computer hardware. Your agreement is with that person trading under that name.',
+          `You can reach us by email at ${CONTACT}${CHANNELS.phoneDisplay ? `, or by phone or text on ${CHANNELS.phoneDisplay}` : ''}. We answer during the hours published on our contact page.`,
         ],
       },
       {
@@ -203,9 +211,18 @@ export const POLICIES: Policy[] = [
         ],
       },
       {
-        heading: 'Limitation',
+        heading: 'What we are responsible for',
+        paragraphs: [
+          'If we get something wrong, our responsibility is to put it right: repair it, replace it, or refund it. Where money is owed beyond that, what we can be liable for in connection with an order is limited to the amount you paid for that order.',
+          'We are not liable for indirect or consequential losses — lost profit, lost business, lost time, or the cost of a replacement obtained elsewhere while we put something right. Nor for lost data: keep backups, because no repair or warranty can restore what was not backed up.',
+          'None of this applies to anything that cannot lawfully be limited, including liability for death or personal injury caused by negligence, or for fraud. Those are excluded from the limits above, not covered by them.',
+        ],
+      },
+      {
+        heading: 'Your rights under provincial law',
         paragraphs: [
           'Nothing in these terms limits rights you have under applicable consumer protection legislation. Where a term conflicts with that legislation, the legislation applies.',
+          'In Ontario, that includes warranties implied by the Sale of Goods Act, which apply to consumer transactions and cannot be contracted out of. If you are buying as a consumer elsewhere in Canada, your own province\'s legislation applies to you in the same way.',
         ],
       },
     ],
@@ -257,6 +274,14 @@ export const POLICIES: Policy[] = [
           'Shipping is arranged per order with a national carrier, and you get a tracking number when the machine leaves us.',
           'Delivery time varies with where you are and which carrier is used — a machine going across the Greater Toronto Area and one going to a rural address in another province are not comparable journeys. Once a parcel is with the carrier its progress is theirs, not ours, and we will not pretend otherwise by printing a number here.',
           'We pass on the estimate the carrier gives for your address when the order ships, and the tracking number so you can see it for yourself.',
+        ],
+      },
+      {
+        heading: 'If we are late',
+        paragraphs: [
+          'Ontario consumer protection law gives you a right we would rather you knew about than discovered: where goods bought online are not delivered within thirty days of the delivery date agreed — or of the order itself, where no date was given — you may cancel and be refunded.',
+          'This is exactly why we confirm a date in writing before you pay and tell you the moment a part is delayed. If a hold-up means we will miss it, you decide what happens next: wait, change the configuration for something available, or cancel. We would rather have that conversation early than have you waiting without news.',
+          'If you agree to wait, that right is not lost by waiting — it ends only when the order arrives.',
         ],
       },
       {
@@ -328,6 +353,7 @@ export const POLICIES: Policy[] = [
         heading: 'Your rights under provincial law',
         paragraphs: [
           'Consumer protection legislation in your province may give you rights beyond this policy, and nothing here reduces them. Where this policy and that legislation disagree, the legislation applies.',
+          'For purchases made online, Ontario law gives additional cancellation rights in certain circumstances — including where the information required before you commit was not given to you, and where delivery is more than thirty days late. Those rights sit alongside this policy rather than being replaced by it, and you do not have to rely on our goodwill to use them.',
         ],
       },
     ],
