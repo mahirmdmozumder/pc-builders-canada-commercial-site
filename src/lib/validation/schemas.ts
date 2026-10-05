@@ -388,6 +388,40 @@ export type ReviewInput = z.infer<typeof reviewSchema>;
 export type ReviewEditInput = z.infer<typeof reviewEditSchema>;
 
 export type SaveBuildInput = z.infer<typeof saveBuildSchema>;
+/**
+ * A restaurant registering interest in PBC POS.
+ *
+ * Stored as a row in `quotes`, deliberately. It is the same thing a PC quote
+ * is — somebody asking to be contacted about something they might buy — and it
+ * belongs in the same inbox rather than behind a second screen that would need
+ * its own table, its own admin page and its own status flow.
+ *
+ * `items` is empty and `estimated_total_cents` is zero, both of which the
+ * quotes table already allows: a quote can be a description rather than a
+ * configuration. What the restaurant tells us goes into `customer_notes`, and
+ * `build_name` carries the POS marker so the list distinguishes one at a glance.
+ *
+ * Nothing here asks for a budget. The product has no price yet, and asking what
+ * somebody will pay for a thing that does not exist would be collecting a
+ * number neither side can stand behind.
+ */
+export const posInterestSchema = z.object({
+  customer_name: z.string().trim().min(2, 'Tell us your name.').max(120),
+  restaurant_name: z.string().trim().min(2, 'Which restaurant?').max(120),
+  customer_email: z.email('Enter a valid email address.').max(160),
+  customer_phone: z.string().trim().max(40).nullable().optional(),
+  preferred_contact: z.enum(['email', 'phone']).default('email'),
+  /**
+   * Free text, not a number. "Two, maybe three if the patio opens" is a more
+   * useful answer than a figure forced into an integer field.
+   */
+  till_count: z.string().trim().max(60).nullable().optional(),
+  current_system: z.string().trim().max(120).nullable().optional(),
+  customer_notes: z.string().trim().max(2000).nullable().optional(),
+});
+
+export type PosInterestInput = z.infer<typeof posInterestSchema>;
+
 export type QuoteInput = z.infer<typeof quoteSchema>;
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type TicketInput = z.infer<typeof ticketSchema>;

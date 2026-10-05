@@ -30,28 +30,59 @@ import { buttonClass } from '@/components/ui';
  * a menu whose only job was to choose between those routes had nothing left to
  * do.
  *
- * The flat bar appears at XL rather than LG. "Pre-built Gaming PCs" is a long
- * label and eight items plus the logo and the two buttons do not fit on a
- * 1024px laptop without shrinking the type to the point of being hard to read.
- * Below XL the same links are in the menu, in full, with nothing hidden.
+ * ---------------------------------------------------------------------------
+ * FOUR ITEMS, NOT EIGHT
+ * ---------------------------------------------------------------------------
+ * Eight links plus a logo and two buttons did not fit a 1024px laptop without
+ * shrinking the type, and eight is past the point where a bar is scanned rather
+ * than read.
+ *
+ * What moved and why:
+ *
+ *   Pre-built Gaming PCs, Workstations  -> the shop section list. Both are
+ *     already reachable from /shop under the Pre-built filter, and both keep
+ *     their own URLs, pages and sitemap entries. Nothing redirects.
+ *
+ *   Portfolio, About, Contact           -> the footer, where two of the three
+ *     already appeared. None is a buying step; a visitor looks for them
+ *     deliberately, and the footer is where people look.
+ *
+ * Services STAYS in the bar. It fronts thirteen service pages written to rank
+ * for things like "PC repair Toronto", and burying it would cut the internal
+ * link path those depend on.
+ *
+ * POS Systems is its own item rather than folded into Services, because a
+ * restaurant owner looking for a till and a homeowner with a dead PC are
+ * different people who do not use each other's words.
  */
 const NAV = [
   { href: '/build', label: 'Build your PC' },
   { href: '/shop', label: 'Shop' },
-  { href: '/gaming-pcs', label: 'Pre-built Gaming PCs' },
-  { href: '/workstations', label: 'Workstations' },
   { href: '/services', label: 'Services' },
-  { href: '/portfolio', label: 'Portfolio' },
-  { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/pos', label: 'POS Systems' },
 ];
 
 /** Shown in the mobile menu under Shop, so the sections stay discoverable. */
 const SHOP_SECTIONS = [
+  { href: '/gaming-pcs', label: 'Pre-built gaming PCs' },
+  { href: '/workstations', label: 'Workstations' },
   { href: '/networking', label: 'Networking & switches' },
   { href: '/nas', label: 'NAS & storage' },
   { href: '/mini-pcs', label: 'Mini PCs & Pi' },
   { href: '/refurbished', label: 'Open box & refurbished' },
+];
+
+/**
+ * Secondary pages, listed in the mobile menu under the shop sections.
+ *
+ * They are in the footer on every page too. Repeating them here is for the
+ * phone, where the footer is a long scroll away and the menu is already open.
+ */
+const COMPANY_LINKS = [
+  { href: '/portfolio', label: 'Portfolio' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/faq', label: 'FAQ' },
 ];
 
 export function SiteHeader() {
@@ -156,6 +187,13 @@ export function SiteHeader() {
               Shop sections
             </p>
             {SHOP_SECTIONS.map((item) => (
+              <MobileLink key={item.href} href={item.href} label={item.label} />
+            ))}
+
+            <p className="px-3 pt-3 pb-1 text-[0.65rem] font-semibold tracking-[0.16em] text-ink-400 uppercase">
+              Company
+            </p>
+            {COMPANY_LINKS.map((item) => (
               <MobileLink key={item.href} href={item.href} label={item.label} />
             ))}
 

@@ -26,6 +26,7 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
     heading: 'Services',
     links: [
       { href: '/services', label: 'All services' },
+      { href: '/pos', label: 'POS for restaurants' },
       { href: '/services#upgrades', label: 'PC upgrades' },
       { href: '/services#diagnostics', label: 'Hardware diagnostics' },
       { href: '/services#windows', label: 'Windows installation' },

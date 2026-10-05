@@ -23,6 +23,11 @@ import { productHref } from '@/lib/catalog/types';
  * sort URLs on /shop are excluded for the same reason: they are the same
  * products in a different order, and indexing them splits the signal.
  *
+ * /pos is excluded while the product is in development. It carries
+ * `robots: { index: false, follow: true }` of its own, and listing a page in the
+ * sitemap while asking crawlers not to index it is a contradiction. It joins the
+ * list on the day it is indexable.
+ *
  * /scan is excluded too, for a different reason: it is the QR landing page
  * from printed cards, and almost every line on it links to a page that says
  * the same thing at greater length. Indexing it would enter it into

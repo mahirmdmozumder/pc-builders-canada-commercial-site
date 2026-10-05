@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_FAQS, FAQ_GROUPS } from '@/content/faqs';
 import { POLICIES } from '@/content/policies';
+import { POS_AUDIENCE, POS_PILLARS, POS_STATUS } from '@/content/pos';
 import {
   CHANNELS,
   HOURS,
@@ -348,5 +349,71 @@ describe('business hours', () => {
     expect(summary.length).toBeLessThan(7);
     expect(summary.some((g) => g.hours === 'Closed')).toBe(true);
     expect(HOURS_PUBLISHED).toBe(true);
+  });
+});
+
+/**
+ * PBC POS copy.
+ *
+ * The product does not exist yet: nothing is built, nothing is installed, and
+ * no restaurant is using it. The page exists to say it is coming and to collect
+ * interest, which is honest. What would not be honest is any of the things a
+ * "coming soon" page drifts into saying when somebody edits it in a hurry.
+ */
+describe('PBC POS page copy', () => {
+  const text = [
+    POS_STATUS,
+    ...POS_AUDIENCE,
+    ...POS_PILLARS.flatMap((p) => [p.title, p.body]),
+  ].join('\n');
+
+  it('says plainly that it is not for sale yet', () => {
+    expect(POS_STATUS).toMatch(/not available to buy yet/i);
+    expect(POS_STATUS).toMatch(/no price list/i);
+  });
+
+  /**
+   * The specific claim to guard. No pilot is running, so the page must not
+   * mention one -- not a restaurant using it, not a trial, not a first
+   * customer. This becomes a strong line the day it is true, and a liability
+   * every day before that.
+   */
+  it('claims no pilot, customer or installation', () => {
+    for (const phrase of [
+      'pilot',
+      'already running',
+      'in use at',
+      'our first customer',
+      'restaurants using',
+      'trusted by',
+      'live in',
+    ]) {
+      expect(text.toLowerCase(), `POS copy mentions "${phrase}"`).not.toContain(phrase);
+    }
+  });
+
+  it('promises no date and no price', () => {
+    // A release date is the other thing a coming-soon page invents.
+    expect(text).not.toMatch(/\b(20\d\d|Q[1-4]|spring|summer|autumn|fall|winter)\b/i);
+    expect(text).not.toMatch(/\$\s?\d/);
+    expect(text).not.toMatch(/\bper month\b|\bmonthly fee\b|\bstarting at\b/i);
+  });
+
+  it('keeps the four pillars from the product artwork, in order', () => {
+    expect(POS_PILLARS.map((p) => p.title)).toEqual(['POS', 'Kitchen', 'Inventory', 'Cloud']);
+    for (const pillar of POS_PILLARS) {
+      // Each one says something, rather than being a heading with a slogan.
+      expect(pillar.body.length, pillar.title).toBeGreaterThan(80);
+    }
+  });
+
+  it('carries no unfinished-page language of its own', () => {
+    const haystack = text.toLowerCase();
+    for (const phrase of UNFINISHED) {
+      // "coming soon" is the one exception: it is the accurate status here,
+      // and it lives in the page heading rather than in this copy.
+      if (phrase === 'coming soon') continue;
+      expect(haystack, `POS copy contains "${phrase}"`).not.toContain(phrase);
+    }
   });
 });

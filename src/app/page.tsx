@@ -129,8 +129,12 @@ function Hero({ fromCents }: { fromCents: number | null }) {
               <ButtonLink href="/shop" variant="secondary" size="lg" className="justify-center">
                 Shop
               </ButtonLink>
-              <ButtonLink href="/quote" variant="secondary" size="lg" className="justify-center">
-                Get a quote
+              {/* Was "Get a quote". That action already has a permanent button
+                  in the header on every page, and a hero holds two or three
+                  choices before it stops being a choice. POS earns the slot
+                  because it is the one offering with no other route in. */}
+              <ButtonLink href="/pos" variant="secondary" size="lg" className="justify-center">
+                POS Systems
               </ButtonLink>
             </div>
           </div>
@@ -203,6 +207,14 @@ const PILLARS: NavCardItem[] = [
     image: '/home/repairs-it-support.webp',
   },
 ];
+
+/**
+ * The POS product, given its own row rather than a fifth pillar tile.
+ *
+ * It sells to restaurants, not to the people the four tiles above are written
+ * for, and a fifth tile would both break the four-column grid and bury a
+ * different business inside a consumer row.
+ */
 
 function Pillars() {
   return (
