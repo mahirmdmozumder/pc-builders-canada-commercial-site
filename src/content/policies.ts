@@ -1,4 +1,4 @@
-import { CHANNELS } from '@/content/business';
+import { CHANNELS, formatAddress } from '@/content/business';
 import { TAX_REGISTRATION } from '@/lib/pricing/tax';
 
 /**
@@ -53,6 +53,9 @@ export interface Policy {
  * policy can never instruct somebody to write to "null".
  */
 const CONTACT = CHANNELS.email ?? 'the address on our contact page';
+
+/** Null until a postal address is configured, and then one line of it. */
+const POSTAL_ADDRESS_LINE = formatAddress();
 
 export const POLICIES: Policy[] = [
   {
@@ -201,6 +204,8 @@ export const POLICIES: Policy[] = [
         paragraphs: [
           'PC Builders Canada is the trading name of Mahir Mohammed Mozumder, a sole proprietor operating from Ontario, Canada, selling and servicing computer hardware. Your agreement is with that person trading under that name.',
           `You can reach us by email at ${CONTACT}${CHANNELS.phoneDisplay ? `, or by phone or text on ${CHANNELS.phoneDisplay}` : ''}. We answer during the hours published on our contact page.`,
+          // Appears only once an address is configured. See POSTAL_ADDRESS.
+          ...(POSTAL_ADDRESS_LINE ? [`Our address for correspondence is ${POSTAL_ADDRESS_LINE}.`] : []),
         ],
       },
       {

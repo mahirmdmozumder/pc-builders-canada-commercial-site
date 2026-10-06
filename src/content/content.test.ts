@@ -4,6 +4,8 @@ import { POLICIES } from '@/content/policies';
 import { POS_AUDIENCE, POS_PILLARS, POS_STATUS } from '@/content/pos';
 import {
   CHANNELS,
+  formatAddress,
+  POSTAL_ADDRESS,
   HOURS,
   HOURS_PUBLISHED,
   IN_PERSON,
@@ -115,11 +117,24 @@ describe('policies do not invent terms', () => {
   });
 
   /**
-   * No street address anywhere. There is no storefront, and a policy page is
-   * exactly where an invented one would get written to look legitimate.
+   * No street address anywhere EXCEPT one deliberately configured.
+   *
+   * The rule has always been that an address must not be INVENTED to make a
+   * policy page look legitimate — not that an address is forbidden. Once
+   * POSTAL_ADDRESS is set it is a real place that receives mail, and consumer
+   * law wants a buyer told it before they commit.
+   *
+   * So the configured line is removed before the check and anything else that
+   * looks like an address still fails. Written this way because the original
+   * version failed the moment a genuine address was added, which would have
+   * looked like a broken suite rather than a rule doing its job.
    */
-  it('publishes no postal address', () => {
-    const haystack = `${policyText()}\n${faqText()}`;
+  it('publishes no postal address beyond the one configured', () => {
+    const configured = formatAddress();
+    const haystack = `${policyText()}\n${faqText()}`
+      // \u0000 never occurs, so with no address configured this splits nothing.
+      .split(configured ?? '\u0000')
+      .join(' ');
     // A unit/street-number pattern, e.g. "123 Main St" or "Unit 4, 55 King".
     expect(haystack).not.toMatch(/\b\d{1,5}\s+[A-Z][a-z]+\s+(Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Boulevard|Blvd|Way|Court|Crt)\b/);
     expect(haystack).not.toMatch(/\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/); // Canadian postal code
@@ -489,5 +504,48 @@ describe('Canadian consumer and privacy obligations', () => {
         slug,
       ).toBe(true);
     }
+  });
+});
+
+/**
+ * Postal address.
+ *
+ * Ontario's online-agreement rules require the buyer to be told who they are
+ * contracting with, address included, before they commit. There is no address
+ * yet, so the terms page says nothing rather than inventing one — an address
+ * that does not receive mail is worse for a customer than none, because they
+ * would send something to it.
+ */
+describe('business address', () => {
+  it('formats to nothing while none is configured', () => {
+    if (POSTAL_ADDRESS === null) {
+      expect(formatAddress()).toBeNull();
+    } else {
+      expect(formatAddress()).toBeTruthy();
+    }
+  });
+
+  it('never appears in the terms unless it exists', () => {
+    const terms = POLICIES.find((p) => p.slug === 'terms')!;
+    const text = terms.sections.flatMap((s) => s.paragraphs).join(' ');
+    const line = formatAddress();
+
+    if (line) {
+      expect(text).toContain(line);
+    } else {
+      // No half-written address line left behind when there is nothing to put
+      // in it, which is how "Our address for correspondence is ." happens.
+      expect(text).not.toMatch(/address for correspondence/i);
+    }
+  });
+
+  it('still identifies the supplier even without one', () => {
+    // The address is missing; the identity is not. A buyer can still tell who
+    // they are dealing with and how to reach them.
+    const text = POLICIES.find((p) => p.slug === 'terms')!.sections
+      .flatMap((s) => s.paragraphs)
+      .join(' ');
+    expect(text).toMatch(/trading name of/i);
+    if (CHANNELS.email) expect(text).toContain(CHANNELS.email);
   });
 });

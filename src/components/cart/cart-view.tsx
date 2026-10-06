@@ -256,6 +256,19 @@ function CartViewInner() {
                 No sales tax is charged on this order.
               </p>
             ) : null}
+            {/* A pointer rather than the full disclosure, which belongs at
+                checkout where the buyer actually commits. Here it is so nobody
+                reaches the payment step having never seen that the policies
+                exist. */}
+            <p className="pt-3 text-xs leading-relaxed text-ink-500">
+              <Link href="/legal/refunds" className="text-gold-400 hover:text-gold-300">
+                Cancellations and refunds
+              </Link>
+              {' · '}
+              <Link href="/legal/shipping" className="text-gold-400 hover:text-gold-300">
+                Delivery
+              </Link>
+            </p>
           </dl>
         ) : (
           <p className="px-5 py-4 text-sm text-ink-400">

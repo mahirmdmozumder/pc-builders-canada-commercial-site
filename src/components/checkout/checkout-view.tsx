@@ -215,6 +215,49 @@ function CheckoutViewInner({ paymentsConfigured, testMode }: CheckoutViewProps) 
               You will be taken to Stripe to pay. Card details are entered on Stripe&apos;s systems
               and never reach ours. We store only the order and Stripe&apos;s reference for it.
             </p>
+
+            {/* ---------------------------------------------------------------
+                Disclosure, before the money moves.
+                ---------------------------------------------------------------
+                Ontario's rules for consumer agreements made online require the
+                terms, the cancellation and refund position and the delivery
+                arrangements to be given to the buyer BEFORE they commit — not
+                findable later in a footer. None of it was linked anywhere in the
+                cart or checkout, so a customer could pay having been shown the
+                price and nothing else.
+
+                Links rather than reprinted text: the policies are the canonical
+                wording, and a summary here would be a second copy to drift.
+            --------------------------------------------------------------- */}
+            <div className="mt-4 border-t border-ink-700 pt-4">
+              <p className="text-xs leading-relaxed text-ink-400">
+                Prices are in Canadian dollars. Placing this order means you accept our{' '}
+                <Link href="/legal/terms" className="text-gold-400 hover:text-gold-300">
+                  terms of service
+                </Link>
+                , and that you have read how{' '}
+                <Link href="/legal/shipping" className="text-gold-400 hover:text-gold-300">
+                  delivery
+                </Link>{' '}
+                and{' '}
+                <Link href="/legal/refunds" className="text-gold-400 hover:text-gold-300">
+                  cancellations and refunds
+                </Link>{' '}
+                work. Machines are built after you order, so your parts are sourced once payment
+                clears &mdash; we confirm a date in writing before anything is bought.
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-ink-500">
+                What we do with your details is set out in our{' '}
+                <Link href="/legal/privacy" className="text-gold-400 hover:text-gold-300">
+                  privacy policy
+                </Link>
+                , and what is covered if something goes wrong is in the{' '}
+                <Link href="/legal/warranty" className="text-gold-400 hover:text-gold-300">
+                  warranty policy
+                </Link>
+                .
+              </p>
+            </div>
           </div>
         </form>
       </Card>

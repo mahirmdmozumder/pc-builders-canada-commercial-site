@@ -43,6 +43,49 @@ export interface BusinessChannels {
   googleProfileUrl: string | null;
 }
 
+/**
+ * Postal address for consumer-law disclosure.
+ *
+ * Ontario's rules for agreements made online require a buyer to be told who
+ * they are contracting with, including an address, BEFORE they commit. There is
+ * no storefront here, and a workspace is not somewhere to send the public — but
+ * the requirement is about identifying the supplier, not about inviting a visit.
+ * A mailbox service or a registered business address satisfies it.
+ *
+ * Null until one exists, and every consumer renders it only when set, exactly
+ * like the phone number did. Nothing invents one: an address that does not
+ * receive mail is worse for a customer than an honest absence, because they
+ * would send something to it.
+ *
+ * Fill this in and it appears in the terms of service and in the LocalBusiness
+ * structured data. Nothing else needs changing.
+ */
+export interface PostalAddress {
+  line1: string;
+  line2: string | null;
+  city: string;
+  province: string;
+  postalCode: string;
+  country: string;
+}
+
+export const POSTAL_ADDRESS: PostalAddress | null = null;
+
+/** One line, for the terms page. Null when no address is configured. */
+export function formatAddress(): string | null {
+  if (!POSTAL_ADDRESS) return null;
+  return [
+    POSTAL_ADDRESS.line1,
+    POSTAL_ADDRESS.line2,
+    POSTAL_ADDRESS.city,
+    POSTAL_ADDRESS.province,
+    POSTAL_ADDRESS.postalCode,
+    POSTAL_ADDRESS.country,
+  ]
+    .filter(Boolean)
+    .join(', ');
+}
+
 export const CHANNELS: BusinessChannels = {
   phone: '+17788773823',
   phoneDisplay: '+1 778-877-3823',
