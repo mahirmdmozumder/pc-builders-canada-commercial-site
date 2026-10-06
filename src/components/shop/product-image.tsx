@@ -1,6 +1,6 @@
 import { CategoryGlyph } from '@/components/configurator/component-thumb';
 import { cn } from '@/lib/utils';
-import type { ComponentCategory } from '@/lib/catalog/types';
+import { CATEGORY_LABELS, type ComponentCategory } from '@/lib/catalog/types';
 
 /**
  * The image frame on a product card.
@@ -25,14 +25,26 @@ import type { ComponentCategory } from '@/lib/catalog/types';
  * anything loads, so the row does not reflow as images arrive. That is what
  * stops a listing jumping under the cursor mid-click.
  *
- * AN HONEST EMPTY STATE. No photo means the frame says so, with the category
- * glyph for context. It never borrows a stock photo of a part we do not have a
- * picture of, which would be a small lie about what is in the box.
+ * AN HONEST EMPTY STATE, BUT NOT AN APOLOGETIC ONE. No photo means the frame
+ * says so. It never borrows a stock photo of a part we do not have a picture
+ * of, which would be a small lie about what is in the box.
+ *
+ * What changed, and why: the frame used to lead with the words "No photo
+ * available". That is honest but it draws the eye to an absence, and a grid of
+ * cards where some rows apologise reads as a half-finished shop rather than a
+ * catalogue that is still being photographed. So the tile now leads with the
+ * BRAND, set large, with the category underneath. Same information, same
+ * honesty — nobody could mistake it for a photograph — but it presents as a
+ * deliberate placeholder instead of a missing asset.
+ *
+ * The brand is optional. Without it the tile falls back to the category label,
+ * which is what the old empty state effectively showed.
  */
 export function ProductImage({
   src,
   alt,
   category,
+  brand,
   galleryCount = 0,
   className,
   ratio = 'wide',
@@ -41,6 +53,8 @@ export function ProductImage({
   src: string | null | undefined;
   alt: string;
   category: ComponentCategory;
+  /** Drawn large on the placeholder tile when there is no photograph. */
+  brand?: string | null;
   /** Extra images beyond the primary, shown as a count badge. */
   galleryCount?: number;
   className?: string;
@@ -67,12 +81,17 @@ export function ProductImage({
           aria-hidden
           className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,var(--color-ink-400)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-ink-400)_1px,transparent_1px)] [background-size:22px_22px]"
         />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          <span className="flex size-12 items-center justify-center rounded-full border border-ink-700 bg-ink-900">
-            <CategoryGlyph category={category} className="size-6 text-ink-500" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center">
+          <span className="flex size-10 items-center justify-center rounded-full border border-ink-700 bg-ink-900">
+            <CategoryGlyph category={category} className="size-5 text-ink-500" />
           </span>
+          {brand ? (
+            <span className="line-clamp-2 text-sm font-semibold tracking-wide text-ink-300 uppercase sm:text-base">
+              {brand}
+            </span>
+          ) : null}
           <span className="text-[0.7rem] tracking-wide text-ink-500 uppercase">
-            No photo available
+            {CATEGORY_LABELS[category]}
           </span>
         </div>
       </div>

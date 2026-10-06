@@ -57,6 +57,24 @@ const CHECKED_UNITS = '2026-09-27';
 const GPUS_ADDED = '2026-10-05T00:00:00.000Z';
 const CHECKED_GPUS = '2026-10-05';
 
+/**
+ * Processors added on 2026-10-06.
+ *
+ * Prices are the Canada Computers REGULAR price, with any sale seen on the day
+ * recorded in specs.sale_price_observed. That follows the convention the
+ * networking rows set: the regular price is the one that survives the week, and
+ * listing a sale price as if it were the standing price means honouring it
+ * after the sale ends.
+ *
+ * Socket and TDP came from the retailer's own product title where it states
+ * them, and from the Zen 5 specification table where it does not. Neither was
+ * written from memory, because the socket figure is what the compatibility
+ * engine matches against the motherboard and a wrong one would pass a build
+ * that cannot be assembled.
+ */
+const CPUS_ADDED = '2026-10-06T00:00:00.000Z';
+const CHECKED_CPUS = '2026-10-06';
+
 function component(seed: ComponentSeed): ComponentRecord {
   return {
     slug: seed.id,
@@ -258,6 +276,168 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
       integrated_graphics: true,
       chipset_support: 'B860, H810, H870, Z890',
       price_checked: CHECKED,
+    },
+  }),
+
+  // The six rows below were added on 2026-10-06, deepening the two platforms
+  // already sold here rather than opening a third. A new socket is not a row,
+  // it is a row plus a motherboard plus memory: adding an LGA1700 processor
+  // without an LGA1700 board would put a part in the configurator that cannot
+  // reach a complete build, which is worse than not listing it.
+  //
+  // An AM4 Ryzen 7 5700X was written and then removed, which is the same rule
+  // applied to itself. scripts/verify-catalog-builds.ts reported it stranded:
+  // this catalogue has no AM4 motherboard, so the part was selectable with no
+  // route to a finished machine. Completing AM4 needs a board whose M.2 and
+  // SATA counts are confirmed, because the storage check counts drives against
+  // them, and a guessed count fails quietly rather than loudly. AM4 is worth a
+  // batch of its own: processor, board and a DDR4 kit, verified together.
+  component({
+    id: 'cpu-amd-ryzen-5-9600x',
+    sku: 'CPU-AMD-R59600X',
+    category: 'cpu',
+    brand: 'AMD',
+    model: 'Ryzen 5 9600X',
+    description:
+      'Six-core Zen 5 processor and the sensible floor for a new AM5 build. 65 W, so a modest cooler is enough.',
+    price_cents: 39900,
+    socket: 'AM5',
+    memory_type: 'ddr5',
+    tdp_watts: 65,
+    pcie_version: 5,
+    created_at: CPUS_ADDED,
+    updated_at: CPUS_ADDED,
+    specs: {
+      cores: 6,
+      threads: 12,
+      integrated_graphics: true,
+      source: 'Canada Computers',
+      sale_price_observed: '$279.98 on 2026-10-06',
+      price_checked: CHECKED_CPUS,
+    },
+  }),
+  component({
+    id: 'cpu-amd-ryzen-7-9700x',
+    sku: 'CPU-AMD-R79700X',
+    category: 'cpu',
+    brand: 'AMD',
+    model: 'Ryzen 7 9700X',
+    description:
+      'Eight-core Zen 5 processor at 65 W. The all-round choice when the build is as much work as it is games.',
+    price_cents: 51900,
+    socket: 'AM5',
+    memory_type: 'ddr5',
+    tdp_watts: 65,
+    pcie_version: 5,
+    created_at: CPUS_ADDED,
+    updated_at: CPUS_ADDED,
+    specs: {
+      cores: 8,
+      threads: 16,
+      integrated_graphics: true,
+      source: 'Canada Computers',
+      price_checked: CHECKED_CPUS,
+    },
+  }),
+  component({
+    id: 'cpu-amd-ryzen-9-9900x',
+    sku: 'CPU-AMD-R99900X',
+    category: 'cpu',
+    brand: 'AMD',
+    model: 'Ryzen 9 9900X',
+    description:
+      'Twelve cores for rendering, compiling and anything that scales past eight. 120 W, so plan the cooler around it.',
+    price_cents: 64900,
+    socket: 'AM5',
+    memory_type: 'ddr5',
+    tdp_watts: 120,
+    pcie_version: 5,
+    created_at: CPUS_ADDED,
+    updated_at: CPUS_ADDED,
+    specs: {
+      cores: 12,
+      threads: 24,
+      integrated_graphics: true,
+      source: 'Canada Computers',
+      sale_price_observed: '$519.99 on 2026-10-06',
+      price_checked: CHECKED_CPUS,
+    },
+  }),
+  component({
+    id: 'cpu-amd-ryzen-9-9900x3d',
+    sku: 'CPU-AMD-R99900X3D',
+    category: 'cpu',
+    brand: 'AMD',
+    model: 'Ryzen 9 9900X3D',
+    description:
+      'Twelve cores with 3D V-Cache: gaming performance close to the 9800X3D without giving up the core count for work.',
+    price_cents: 84900,
+    socket: 'AM5',
+    memory_type: 'ddr5',
+    tdp_watts: 120,
+    pcie_version: 5,
+    created_at: CPUS_ADDED,
+    updated_at: CPUS_ADDED,
+    specs: {
+      cores: 12,
+      threads: 24,
+      cache: '140 MB total',
+      integrated_graphics: true,
+      source: 'Canada Computers',
+      sale_price_observed: '$799.99 on 2026-10-06',
+      price_checked: CHECKED_CPUS,
+    },
+  }),
+  component({
+    id: 'cpu-amd-ryzen-9-9950x3d',
+    sku: 'CPU-AMD-R99950X3D',
+    category: 'cpu',
+    brand: 'AMD',
+    model: 'Ryzen 9 9950X3D',
+    description:
+      'Sixteen cores with 3D V-Cache. The one to pick when the same machine has to game and earn its keep. 170 W.',
+    price_cents: 99900,
+    socket: 'AM5',
+    memory_type: 'ddr5',
+    tdp_watts: 170,
+    pcie_version: 5,
+    created_at: CPUS_ADDED,
+    updated_at: CPUS_ADDED,
+    specs: {
+      cores: 16,
+      threads: 32,
+      cache: '144 MB total',
+      integrated_graphics: true,
+      source: 'Canada Computers',
+      sale_price_observed: '$929.98 on 2026-10-06',
+      price_checked: CHECKED_CPUS,
+    },
+  }),
+  component({
+    id: 'cpu-intel-core-ultra-7-265kf',
+    sku: 'CPU-INT-U7265KF',
+    category: 'cpu',
+    brand: 'Intel',
+    model: 'Core Ultra 7 265KF',
+    description:
+      'Twenty cores on LGA1851. The KF has no integrated graphics, which is a saving if a graphics card is going in anyway.',
+    price_cents: 41999,
+    socket: 'LGA1851',
+    memory_type: 'ddr5',
+    tdp_watts: 125,
+    pcie_version: 5,
+    created_at: CPUS_ADDED,
+    updated_at: CPUS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      cores: '20 (8P + 12E)',
+      integrated_graphics: false,
+      chipset_support: 'B860, H810, H870, Z890',
+      source: 'Canada Computers',
+      sale_price_observed: '$339.99 on 2026-10-06',
+      unverified:
+        'Base power is the Intel figure for the Core Ultra 7 265K/KF; the retailer listing states the socket and core layout but not the wattage.',
+      price_checked: CHECKED_CPUS,
     },
   }),
 

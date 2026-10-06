@@ -53,6 +53,7 @@ export function ProductCard({
           src={component.image_url}
           alt={name}
           category={component.category}
+          brand={component.brand}
           galleryCount={component.gallery_urls?.length ?? 0}
         />
       </Link>

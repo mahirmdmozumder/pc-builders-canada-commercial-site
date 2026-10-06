@@ -46,6 +46,7 @@ export function ShopCard({ item, orderable = true }: { item: ShopItem; orderable
           src={item.imageUrl}
           alt={item.name}
           category={item.category ?? 'case'}
+          brand={item.brand}
           galleryCount={item.galleryCount}
         />
       </Link>
