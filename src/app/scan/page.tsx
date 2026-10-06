@@ -93,14 +93,18 @@ export default function ScanPage() {
               here spent a row on something already one tap away.
 
               POS earns the row instead, because it is the reason the same card
-              can be handed to a restaurant owner. The subtitle says the product
-              is still being built rather than implying it can be bought — the
-              page it leads to says the same. */}
+              can be handed to a restaurant owner.
+
+              The subtitle describes what the product IS rather than what stage
+              it is at. A row on a menu exists to say where it leads, and
+              "in development" there just stops the tap — while the page behind
+              it opens by saying plainly that it is not for sale yet, which is
+              where that belongs. No row here claims it can be bought. */}
           <BigAction
             href="/pos"
             icon={<TerminalIcon />}
             title="POS for restaurants"
-            subtitle="PBC POS — in development. See what it does and register interest"
+            subtitle="One system for the till, the kitchen and the stock"
           />
           <BigAction
             href="/contact"
