@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:seed:generate": "vite-node scripts/generate-seed.ts"
+    "db:seed:generate": "vite-node scripts/generate-seed.ts",
+    "verify:catalog": "vite-node --config vitest.config.mts scripts/verify-catalog-builds.ts"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.16.0",
