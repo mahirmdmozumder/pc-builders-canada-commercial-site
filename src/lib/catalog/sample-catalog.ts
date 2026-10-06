@@ -590,6 +590,34 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     },
   }),
 
+  component({
+    id: 'mb-asus-tuf-b650e-plus-wifi',
+    sku: 'MB-ASU-B650EPLUS',
+    category: 'motherboard',
+    brand: 'ASUS',
+    model: 'TUF GAMING B650E-PLUS WIFI',
+    description:
+      'AM5 board with four DIMM slots and three M.2 slots, which is the practical middle of the range: room to add storage later without paying for an X870E.',
+    price_cents: 27999,
+    socket: 'AM5',
+    chipset: 'B650',
+    form_factor: 'atx',
+    memory_type: 'ddr5',
+    memory_slots: 4,
+    max_memory_gb: 256,
+    m2_slots: 3,
+    sata_ports: 4,
+    pcie_version: 5,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      wifi: 'Wi-Fi 6E',
+      cpu_support: 'Ryzen 9000, 8000 and 7000 series',
+      source: 'Canada Computers (price), ASUS techspec (specifications)',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+
   // -------------------------------------------------------------------------
   // CPU coolers
   // -------------------------------------------------------------------------
@@ -636,6 +664,43 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
       fan_rpm: '200-1800',
       unverified: 'Socket bracket list not stated by the retailer',
       price_checked: CHECKED,
+    },
+  }),
+
+  component({
+    id: 'cool-deepcool-ak400-digital-se',
+    sku: 'COOL-DC-AK400DSE',
+    category: 'cooler',
+    brand: 'DeepCool',
+    model: 'AK400 DIGITAL SE',
+    description:
+      'Single-tower air cooler with a temperature display on the cap. The budget end of the range, and enough for any 65 W processor here.',
+    price_cents: 3999,
+    supported_sockets: [
+      'AM5',
+      'AM4',
+      'LGA1851',
+      'LGA1700',
+      'LGA1200',
+      'LGA1151',
+      'LGA1150',
+      'LGA1155',
+    ],
+    cooler_type: 'air',
+    cooler_height_mm: 157,
+    tdp_watts: 3,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      fan: '120 mm FDB, 500-1850 RPM',
+      heat_pipes: 4,
+      display: 'CPU temperature and load',
+      dimensions_mm: '126 x 97 x 157',
+      source: 'Canada Computers (price), DeepCool product page (specifications)',
+      unverified:
+        'DeepCool publishes no TDP rating for this cooler, so none is recorded and the engine does not compare it against a processor. Height and socket support are the manufacturer figures.',
+      price_checked: CHECKED_PARTS,
     },
   }),
 
@@ -1345,6 +1410,135 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
       psu_clearance_mm: 220,
       unverified: 'Full motherboard form factor list not stated by the retailer',
       price_checked: CHECKED,
+    },
+  }),
+
+  component({
+    id: 'case-asus-proart-pa602',
+    sku: 'CASE-ASU-PA602',
+    category: 'case',
+    brand: 'ASUS',
+    model: 'ProArt PA602 E-ATX',
+    description:
+      'Large workstation case. Takes E-ATX boards, a 440 mm card and a 420 mm radiator, and ships with two 200 mm front fans.',
+    price_cents: 37999,
+    supported_form_factors: ['e-atx', 'atx', 'micro-atx', 'mini-itx'],
+    max_gpu_length_mm: 440,
+    max_cooler_height_mm: 185,
+    radiator_support_mm: [120, 140, 240, 280, 360, 420],
+    psu_form_factor: 'atx',
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      included_fans: '2 x 200 mm front, 1 x 140 mm rear',
+      psu_clearance_mm: 190,
+      radiator_detail: 'Up to 420 mm',
+      board_support: 'Mini-DTX, DTX, Mini-ITX, Micro-ATX, ATX, E-ATX up to 12 x 10.9 in',
+      source: 'Canada Computers (price), ASUS techspec (clearances)',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'case-asus-tuf-gt302-argb',
+    sku: 'CASE-ASU-GT302',
+    category: 'case',
+    brand: 'ASUS',
+    model: 'TUF Gaming GT302 ARGB',
+    description:
+      'Mid-tower with four 140 mm ARGB fans fitted. Takes a 407 mm card, but the 165 mm cooler limit rules out the tallest air towers.',
+    price_cents: 20999,
+    supported_form_factors: ['e-atx', 'atx', 'micro-atx', 'mini-itx'],
+    max_gpu_length_mm: 407,
+    max_cooler_height_mm: 165,
+    radiator_support_mm: [120, 140, 240, 280, 360],
+    psu_form_factor: 'atx',
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      included_fans: '3 x 140 mm ARGB front, 1 x 140 mm ARGB rear',
+      psu_clearance_mm: 220,
+      radiator_detail: 'Top up to 360 mm, front up to 280 mm, rear 140 mm',
+      source: 'Canada Computers (price), ASUS techspec (clearances)',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+
+  // -------------------------------------------------------------------------
+  // Case fans
+  // -------------------------------------------------------------------------
+  // These are THREE-PACKS, and the model name says so, because the quantity
+  // stepper in the configurator counts units of sale rather than fans. Picking
+  // quantity 2 of a three-pack is six fans, and somebody reading "2" has to be
+  // able to tell which it means.
+  //
+  // tdp_watts is 6 rather than the 2 W the power calculator assumes per fan,
+  // for the same reason: the row is three fans, so it draws three fans' worth,
+  // and the calculator multiplies by the quantity chosen.
+  //
+  // No compatibility rule reads anything else here. A fan has nothing to check
+  // against the rest of a build, which is why these rows carry no clearance or
+  // socket fields at all.
+  component({
+    id: 'fan-bequiet-light-wings-lx-120-3pack',
+    sku: 'FAN-BQ-LWLX120X3',
+    category: 'case-fan',
+    brand: 'be quiet!',
+    model: 'Light Wings LX 120mm PWM ARGB, 3-pack',
+    description:
+      'Three 120 mm ARGB fans from a brand that builds its reputation on noise. The usual choice when the machine sits on the desk rather than under it.',
+    price_cents: 7499,
+    tdp_watts: 6,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      size_mm: 120,
+      pack_quantity: 3,
+      lighting: 'ARGB',
+      control: 'PWM',
+      source: 'Canada Computers',
+      sale_price_observed: '$39.99 on 2026-10-06',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'fan-asus-tuf-tf120-argb-3pack',
+    sku: 'FAN-ASU-TF120X3',
+    category: 'case-fan',
+    brand: 'ASUS',
+    model: 'TUF Gaming TF120 ARGB 3-in-1, 3-pack',
+    description: 'Three 120 mm ARGB fans with daisy-chained cabling, which keeps the back of the case tidier than three separate runs.',
+    price_cents: 8999,
+    tdp_watts: 6,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      size_mm: 120,
+      pack_quantity: 3,
+      lighting: 'ARGB',
+      control: 'PWM',
+      source: 'Canada Computers',
+      sale_price_observed: '$64.99 on 2026-10-06',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'fan-corsair-rs360-ii-argb-3pack',
+    sku: 'FAN-COR-RS360X3',
+    category: 'case-fan',
+    brand: 'Corsair',
+    model: 'RS360 II ARGB 120mm, 3-pack',
+    description: 'Three 120 mm ARGB fans. A straightforward set for filling the front of a mid-tower.',
+    price_cents: 7499,
+    tdp_watts: 6,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      size_mm: 120,
+      pack_quantity: 3,
+      lighting: 'ARGB',
+      control: 'PWM',
+      source: 'Canada Computers',
+      price_checked: CHECKED_PARTS,
     },
   }),
 

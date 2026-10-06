@@ -241,6 +241,34 @@ function checkCoolerCase(index: BuildIndex): CompatibilityCheck {
       };
     }
     const margin = pcCase.max_cooler_height_mm - cooler.cooler_height_mm;
+
+    /**
+     * A near miss is reported, the way a near miss on card length already was.
+     *
+     * The graphics card rule has warned below 15 mm of clearance since it was
+     * written. The cooler rule did not, and the gap showed up the moment the
+     * catalogue gained a case with a 165 mm limit alongside a 164 mm tower: one
+     * millimetre of margin passed silently, as "Fits with 1 mm of headroom",
+     * which is a true sentence and useless advice.
+     *
+     * A manufacturer's stated maximum assumes a flat side panel and no cable
+     * routed across the top of the cooler. Neither is reliable at a millimetre,
+     * and the person who finds out is holding a machine that will not close.
+     *
+     * 10 mm rather than the card rule's 15 mm because the quantities differ in
+     * scale: card lengths run 200-450 mm where cooler heights run 120-190 mm, so
+     * 10 mm is the same proportion of the measurement.
+     */
+    if (margin < 10) {
+      return {
+        id,
+        title,
+        status: 'warning',
+        message: `Only ${margin} mm of cooler clearance — a tight fit.`,
+        detail: `${displayName(cooler)} is ${cooler.cooler_height_mm} mm and ${displayName(pcCase)} is rated for ${pcCase.max_cooler_height_mm} mm. A stated maximum assumes nothing is routed over the top of the cooler, so confirm before ordering.`,
+      };
+    }
+
     return {
       id,
       title,

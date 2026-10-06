@@ -402,3 +402,57 @@ describe('compatibility engine', () => {
     });
   });
 });
+
+describe('cooler clearance near misses', () => {
+  // The graphics card rule has always warned on a near miss. The cooler rule did
+  // not, and a 164 mm tower in a case rated for 165 mm reported "Fits with 1 mm
+  // of headroom" as a plain pass. A stated maximum assumes a flat side panel and
+  // nothing routed over the cooler, so a millimetre is not clearance, it is luck.
+  function check(coolerHeight: number, caseLimit: number) {
+    const build: ResolvedBuild = [
+      {
+        category: 'cooler',
+        quantity: 1,
+        component: fakeComponent({
+          id: 'cool-clearance-test',
+          category: 'cooler',
+          cooler_type: 'air',
+          cooler_height_mm: coolerHeight,
+          supported_sockets: ['AM5'],
+        }),
+      },
+      {
+        category: 'case',
+        quantity: 1,
+        component: fakeComponent({
+          id: 'case-clearance-test',
+          category: 'case',
+          max_cooler_height_mm: caseLimit,
+          supported_form_factors: ['atx'],
+        }),
+      },
+    ];
+    const result = checkCompatibility(build).checks.find((c) => c.id === 'cooler-case');
+    if (!result) throw new Error('cooler-case check missing');
+    return result;
+  }
+
+  it('warns when the margin is a single millimetre', () => {
+    const result = check(164, 165);
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('1 mm');
+  });
+
+  it('still fails outright when it does not fit', () => {
+    expect(check(170, 165).status).toBe('fail');
+  });
+
+  it('passes without a warning once there is real headroom', () => {
+    expect(check(157, 185).status).toBe('pass');
+  });
+
+  it('treats 10 mm as the boundary', () => {
+    expect(check(155, 165).status).toBe('pass');
+    expect(check(156, 165).status).toBe('warning');
+  });
+});
