@@ -1131,6 +1131,9 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     low_stock_threshold: 0,
     specs: {
       note: 'The system is still tested before shipping, using our own bootable media.',
+      // No price_checked: this option costs nothing, so there is no price to
+      // check against the market. See the zero-price exemption in
+      // price-freshness.test.ts.
     },
   }),
   component({
@@ -1140,15 +1143,17 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     brand: 'Microsoft',
     model: 'Windows 11 Home',
     description: 'Windows 11 Home licence, installed and updated before the system ships.',
-    price_cents: 15900,
+    price_cents: 17999,
     stock_quantity: 999,
     low_stock_threshold: 10,
     data_confidence: 'sample',
     specs: {
       edition: 'Home',
       delivery: 'Pre-installed and activated',
+      source: 'Canada Computers',
       unverified:
-        'Price is a placeholder. OEM licence cost depends on your Microsoft reseller account, not retail.',
+        'This is the retail licence price, not an OEM price. OEM cost depends on a Microsoft reseller account; until there is one, retail is the figure that can actually be honoured.',
+      price_checked: CHECKED_CPUS,
     },
   }),
   component({
@@ -1159,15 +1164,17 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     model: 'Windows 11 Pro',
     description:
       'Windows 11 Pro licence. Adds BitLocker, Remote Desktop host and domain join, the usual requirements for a work machine.',
-    price_cents: 23900,
+    price_cents: 23999,
     stock_quantity: 999,
     low_stock_threshold: 10,
     data_confidence: 'sample',
     specs: {
       edition: 'Pro',
       delivery: 'Pre-installed and activated',
+      source: 'Canada Computers',
       unverified:
-        'Price is a placeholder. OEM licence cost depends on your Microsoft reseller account, not retail.',
+        'This is the retail licence price, not an OEM price. OEM cost depends on a Microsoft reseller account; until there is one, retail is the figure that can actually be honoured.',
+      price_checked: CHECKED_CPUS,
     },
   }),
 

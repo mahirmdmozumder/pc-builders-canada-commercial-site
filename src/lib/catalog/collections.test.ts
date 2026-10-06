@@ -232,12 +232,26 @@ describe('catalogue provenance', () => {
     expect(missing.map((r) => r.id)).toEqual([]);
   });
 
-  it('marks priced OS licences as unverified rather than inventing a source', () => {
+  /**
+   * An OS licence row carries a RETAIL price, and has to say so.
+   *
+   * This used to require the word "placeholder", from when the two Windows rows
+   * held a made-up figure. They now hold the retail price read from a retailer
+   * listing, which is a real number that can actually be honoured — the old
+   * figures were $21 and $1 under retail, so an order lost money.
+   *
+   * The caveat that matters was never "placeholder" though: it is that retail
+   * is not OEM. OEM licence cost depends on a Microsoft reseller account, and
+   * once there is one these prices change. So the assertion is on that, which
+   * is the thing a customer and a future maintainer both need to know, rather
+   * than on a word describing how provisional the number used to be.
+   */
+  it('marks priced OS licences as retail rather than OEM pricing', () => {
     const priced = SAMPLE_COMPONENTS.filter((row) => row.category === 'os' && row.price_cents > 0);
     expect(priced.length).toBeGreaterThan(0);
     for (const row of priced) {
       expect(row.data_confidence).toBe('sample');
-      expect(String(row.specs.unverified)).toMatch(/placeholder/i);
+      expect(String(row.specs.unverified)).toMatch(/oem/i);
     }
   });
 

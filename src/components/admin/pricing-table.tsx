@@ -11,10 +11,35 @@ import {
   type ComponentCategory,
   type ComponentRecord,
 } from '@/lib/catalog/types';
+import {
+  PRICE_STALE_DAYS,
+  PRICE_STALE_DAYS_FAST,
+  describePriceCheck,
+  priceCheckSortWeight,
+  readPriceCheck,
+  summarisePriceChecks,
+  type PriceCheck,
+  type PriceFreshness,
+} from '@/lib/catalog/price-freshness';
 import type { ContentStatus } from '@/lib/cms/types';
 
 type StatusFilter = 'all' | ContentStatus;
-type SortKey = 'price-desc' | 'price-asc' | 'name' | 'category' | 'margin';
+type SortKey = 'price-desc' | 'price-asc' | 'name' | 'category' | 'margin' | 'checked';
+
+/**
+ * How a price-check age is coloured.
+ *
+ * `unknown` gets the same treatment as `stale` rather than a muted "no data"
+ * grey. A row nobody has ever checked is not a gap in the reporting, it is a
+ * price with nothing behind it, and greying it out would file the worst rows
+ * under "not applicable".
+ */
+const FRESHNESS_STYLE: Record<PriceFreshness, string> = {
+  fresh: 'text-ink-400',
+  ageing: 'text-warn-400',
+  stale: 'text-danger-400',
+  unknown: 'text-danger-400',
+};
 
 /**
  * Repricing view.
@@ -55,6 +80,25 @@ export function PricingTable({ components }: { components: ComponentRecord[] }) 
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null);
 
+  const checks = useMemo(() => {
+    // One clock for the whole pass, so two rows evaluated a millisecond apart
+    // cannot be described differently. Created inside the memo rather than
+    // beside it: a separate `new Date()` memo keyed on `components` is what it
+    // has to be keyed on to stay in step, and that reads as a mistake to both
+    // eslint and the next person.
+    const now = new Date();
+    const map = new Map<string, PriceCheck>();
+    for (const component of components) {
+      map.set(component.id, readPriceCheck(component.specs, now, component.category));
+    }
+    return map;
+  }, [components]);
+
+  const freshness = useMemo(
+    () => summarisePriceChecks([...checks.values()]),
+    [checks],
+  );
+
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = components.filter((component) => {
@@ -75,6 +119,14 @@ export function PricingTable({ components }: { components: ComponentRecord[] }) 
           return a.price_cents - b.price_cents;
         case 'name':
           return `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`);
+        case 'checked':
+          // Descending, because the score rises with staleness. See the note on
+          // priceCheckSortWeight: the direction is the part that is easy to get
+          // backwards, and getting it backwards hides exactly what this sort
+          // exists to show.
+          return (
+            priceCheckSortWeight(checks.get(b.id)!) - priceCheckSortWeight(checks.get(a.id)!)
+          );
         case 'margin':
           // Rows with no cost recorded sink to the bottom rather than reading as
           // zero margin, which would be a claim about a number nobody has.
@@ -86,7 +138,7 @@ export function PricingTable({ components }: { components: ComponentRecord[] }) 
           );
       }
     });
-  }, [components, query, category, status, sort]);
+  }, [components, query, category, status, sort, checks]);
 
   const pending = Object.entries(drafts).filter(([, value]) => value !== '').length;
   const withCost = components.filter((c) => c.cost_cents && c.cost_cents > 0).length;
@@ -186,6 +238,45 @@ export function PricingTable({ components }: { components: ComponentRecord[] }) 
 
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
+      {/*
+        Why this sits above the table rather than in it.
+
+        Parts are sourced after an order is paid, so a listed price is a promise
+        to supply at that number settled before the cost of supplying it is
+        known. A price that has drifted below retail is a sale at a loss or an
+        order cancelled after the card was charged.
+
+        That is not hypothetical: a graphics card sat $149 under retail for
+        eighteen days and a Windows licence $21 under, and both were found by
+        chance. Neither would have been visible on this screen, because nothing
+        here read the date that would have said so. A count that cannot be
+        scrolled past is the point.
+      */}
+      {freshness.dueRecheck > 0 ? (
+        <Alert
+          tone={freshness.needsAttention > 0 ? 'danger' : 'warn'}
+          title={`${freshness.dueRecheck} of ${freshness.total} prices are due a re-check`}
+        >
+          <p>
+            Re-check windows are {PRICE_STALE_DAYS_FAST} days for graphics, memory and storage,
+            which move monthly, and {PRICE_STALE_DAYS} days for everything else.
+            {freshness.needsAttention > 0
+              ? ` ${freshness.needsAttention} ${freshness.needsAttention === 1 ? 'is' : 'are'} past that window entirely or have no recorded check, so ${freshness.needsAttention === 1 ? 'its price' : 'those prices'} cannot be relied on.`
+              : ''}
+          </p>
+          <p className="mt-2">
+            Stock is sourced per order, so anything below current retail is sold at a loss.
+          </p>
+          <button
+            type="button"
+            onClick={() => setSort('checked')}
+            className="mt-2 font-medium text-gold-400 underline-offset-2 hover:text-gold-300 hover:underline"
+          >
+            Show the oldest first
+          </button>
+        </Alert>
+      ) : null}
+
       <Card className="p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <Input
@@ -231,6 +322,7 @@ export function PricingTable({ components }: { components: ComponentRecord[] }) 
             <option value="price-asc">Price, low to high</option>
             <option value="name">Name A&ndash;Z</option>
             <option value="margin">Thinnest margin first</option>
+            <option value="checked">Least recently checked first</option>
           </Select>
           <Input
             value={reason}
@@ -253,6 +345,7 @@ export function PricingTable({ components }: { components: ComponentRecord[] }) 
                 <th scope="col" className="px-4 py-3 text-right font-medium">Cost</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">Price</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">Margin</th>
+                <th scope="col" className="px-4 py-3 font-medium">Checked</th>
                 <th scope="col" className="px-4 py-3 font-medium">Status</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">New price</th>
               </tr>
@@ -299,6 +392,23 @@ export function PricingTable({ components }: { components: ComponentRecord[] }) 
                           </span>
                         </span>
                       )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {(() => {
+                        const check = checks.get(component.id)!;
+                        return (
+                          <span
+                            className={FRESHNESS_STYLE[check.freshness]}
+                            title={
+                              check.checkedOn
+                                ? `Price last read from a retailer or manufacturer listing on ${check.checkedOn}`
+                                : 'No price check has ever been recorded for this product'
+                            }
+                          >
+                            {describePriceCheck(check)}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       {component.status === 'published' ? (
