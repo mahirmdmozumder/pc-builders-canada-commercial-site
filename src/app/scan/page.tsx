@@ -72,27 +72,35 @@ export default function ScanPage() {
           <BigAction
             href="/build"
             icon={<DesktopIcon />}
-            title="View custom PC builds"
-            subtitle="Configure a machine with live compatibility checks"
+            title="Build your custom PC"
+            subtitle="Pick every part, with compatibility and power checked as you go"
             primary
           />
           {/* Second, directly under the build option.
               Somebody arriving from a printed card has just met us or picked the
               card up, and the first thing they want is evidence the work is real.
               Photographs of finished machines answer that better than anything
-              else on this page, and answering it is what makes the quote option
-              below worth tapping. */}
+              else on this page. */}
           <BigAction
             href="/portfolio"
             icon={<GalleryIcon />}
             title="See our work"
             subtitle="Photos and write-ups of machines we have built"
           />
+          {/* Where "Get a quote" used to be.
+              That action has a permanent button in the header, which is on this
+              page too and visible on both phone and desktop, so repeating it
+              here spent a row on something already one tap away.
+
+              POS earns the row instead, because it is the reason the same card
+              can be handed to a restaurant owner. The subtitle says the product
+              is still being built rather than implying it can be bought — the
+              page it leads to says the same. */}
           <BigAction
-            href="/quote"
-            icon={<TagIcon />}
-            title="Get a quote"
-            subtitle="Tell us the job and the budget, get a parts list back"
+            href="/pos"
+            icon={<TerminalIcon />}
+            title="POS for restaurants"
+            subtitle="PBC POS — in development. See what it does and register interest"
           />
           <BigAction
             href="/contact"
@@ -495,6 +503,24 @@ function StarIcon() {
  * be forever, and two rows on the same short list sharing a glyph is the kind of
  * thing nobody notices until it looks sloppy.
  */
+/**
+ * A till: screen on a pedestal, as it sits on a counter.
+ *
+ * Its own glyph rather than reusing DesktopIcon, which belongs to the build
+ * row. Two rows on a five-item list sharing a shape is the kind of thing
+ * nobody notices until it looks careless.
+ */
+function TerminalIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className={ICON} fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+      <rect x="3" y="4" width="18" height="12" rx="2.2" />
+      <path d="M12 16v3" strokeLinecap="round" />
+      <path d="M8 21h8" strokeLinecap="round" />
+      <path d="M7 8.5h7M7 11.5h4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function GalleryIcon() {
   return (
     <svg viewBox="0 0 24 24" className={ICON} fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
