@@ -44,6 +44,19 @@ const CHECKED = '2026-09-18';
 const UNITS_ADDED = '2026-09-27T00:00:00.000Z';
 const CHECKED_UNITS = '2026-09-27';
 
+/**
+ * Graphics cards added on 2026-10-05, with their own check date for the same
+ * reason the whole-unit rows carry one. GPU pricing moves monthly, and sharing
+ * an older constant would back-date prices that were never checked then.
+ *
+ * Every price below was read from the Canada Computers product listing on that
+ * date, not from a price-aggregator summary. Three separate aggregator figures
+ * were checked against the retailer page first and all three were wrong, by
+ * $40, $130 and $150 — so the retailer page is the only source used here.
+ */
+const GPUS_ADDED = '2026-10-05T00:00:00.000Z';
+const CHECKED_GPUS = '2026-10-05';
+
 function component(seed: ComponentSeed): ComponentRecord {
   return {
     slug: seed.id,
@@ -544,7 +557,7 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     model: 'PULSE Radeon RX 9070 XT 16GB',
     description:
       'AMD 1440p and 4K card with 16 GB of memory and a triple-fan cooler. The value choice at this tier.',
-    price_cents: 124999,
+    price_cents: 139900,
     gpu_length_mm: 320,
     tdp_watts: 304,
     recommended_psu_watts: 850,
@@ -556,7 +569,8 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
       stream_processors: 4096,
       dimensions_mm: '320 x 120.25 x 61.6',
       unverified: 'Board power taken from the AMD reference figure',
-      price_checked: CHECKED,
+      source: 'Canada Computers',
+      price_checked: CHECKED_GPUS,
     },
   }),
   component({
@@ -580,6 +594,142 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
       cooling: 'WINDFORCE triple fan',
       unverified: 'Board power taken from the NVIDIA reference figure',
       price_checked: CHECKED,
+    },
+  }),
+
+  // The five rows below were added on 2026-10-05. Board power is the chipset
+  // reference figure in each case, which is why they carry data_confidence
+  // 'sample' and name that in specs.unverified, exactly as the earlier cards
+  // do. Prices and card lengths are per-variant and retailer-confirmed.
+  component({
+    id: 'gpu-asus-prime-rtx-5070-oc',
+    sku: 'GPU-ASU-5070POC',
+    category: 'gpu',
+    brand: 'ASUS',
+    model: 'Prime GeForce RTX 5070 OC Edition 12GB',
+    description:
+      '1440p card with 12 GB of GDDR7. A 304 mm board, so check it against the case clearance before ordering.',
+    price_cents: 129999,
+    gpu_length_mm: 304,
+    tdp_watts: 250,
+    pcie_version: 5,
+    created_at: GPUS_ADDED,
+    updated_at: GPUS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      vram_gb: 12,
+      memory: 'GDDR7 192-bit, 28 Gbps',
+      power_connectors: '1x 16-pin',
+      source: 'Canada Computers',
+      unverified:
+        'Board power is the NVIDIA reference figure for the RTX 5070, not an ASUS figure for this card. No recommended PSU wattage was stated by the retailer, so none is recorded.',
+      price_checked: CHECKED_GPUS,
+    },
+  }),
+  component({
+    id: 'gpu-sapphire-pulse-rx-9060-xt-16gb',
+    sku: 'GPU-SAP-9060XT16',
+    category: 'gpu',
+    brand: 'SAPPHIRE',
+    model: 'PULSE Radeon RX 9060 XT Gaming OC 16GB',
+    description:
+      '1080p and 1440p card with 16 GB of memory, which ages better than raw speed in newer titles. 285 mm, so it fits more cases than the larger cards above it.',
+    price_cents: 84999,
+    gpu_length_mm: 285,
+    tdp_watts: 160,
+    recommended_psu_watts: 650,
+    pcie_version: 5,
+    created_at: GPUS_ADDED,
+    updated_at: GPUS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      vram_gb: 16,
+      memory: 'GDDR6 128-bit',
+      power_connectors: '1x 8-pin',
+      source: 'Canada Computers',
+      unverified:
+        'Board power is the AMD reference figure for the RX 9060 XT. The recommended 650 W is the retailer-stated figure for this card.',
+      price_checked: CHECKED_GPUS,
+    },
+  }),
+  component({
+    id: 'gpu-gigabyte-rx-9070-xt-gaming-oc',
+    sku: 'GPU-GIG-9070XTG',
+    category: 'gpu',
+    brand: 'Gigabyte',
+    model: 'Radeon RX 9070 XT GAMING OC 16GB',
+    description:
+      '1440p and 4K card with 16 GB of memory. At 288 mm it is the shortest of the 9070 XT boards listed here, which matters in a compact case.',
+    price_cents: 149900,
+    gpu_length_mm: 288,
+    tdp_watts: 304,
+    recommended_psu_watts: 850,
+    pcie_version: 5,
+    created_at: GPUS_ADDED,
+    updated_at: GPUS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      vram_gb: 16,
+      memory: 'GDDR6 256-bit',
+      power_connectors: '2x 8-pin',
+      source: 'Canada Computers',
+      sale_price_observed: '$1,049.00 on 2026-10-05',
+      unverified:
+        'Board power and the recommended 850 W are the AMD reference figures for the RX 9070 XT, not Gigabyte figures for this card.',
+      price_checked: CHECKED_GPUS,
+    },
+  }),
+  component({
+    id: 'gpu-asus-prime-rx-9070-xt-oc',
+    sku: 'GPU-ASU-9070XTP',
+    category: 'gpu',
+    brand: 'ASUS',
+    model: 'Prime Radeon RX 9070 XT OC Edition 16GB',
+    description:
+      '1440p and 4K card with 16 GB of memory and a triple-fan cooler. 312 mm long.',
+    price_cents: 153999,
+    gpu_length_mm: 312,
+    tdp_watts: 304,
+    recommended_psu_watts: 850,
+    pcie_version: 5,
+    created_at: GPUS_ADDED,
+    updated_at: GPUS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      vram_gb: 16,
+      memory: 'GDDR6 256-bit',
+      power_connectors: '2x 8-pin',
+      source: 'Canada Computers',
+      unverified:
+        'Board power and the recommended 850 W are the AMD reference figures for the RX 9070 XT, not ASUS figures for this card.',
+      price_checked: CHECKED_GPUS,
+    },
+  }),
+  component({
+    id: 'gpu-sapphire-pure-rx-9070-xt',
+    sku: 'GPU-SAP-9070XTPU',
+    category: 'gpu',
+    brand: 'SAPPHIRE',
+    model: 'PURE Radeon RX 9070 XT 16GB',
+    description:
+      'The white-shroud 9070 XT, for a build where the parts are meant to match. Same 16 GB and the same 320 mm length as the PULSE.',
+    price_cents: 144900,
+    gpu_length_mm: 320,
+    tdp_watts: 304,
+    recommended_psu_watts: 850,
+    pcie_version: 5,
+    created_at: GPUS_ADDED,
+    updated_at: GPUS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      vram_gb: 16,
+      memory: 'GDDR6 256-bit',
+      power_connectors: '2x 8-pin',
+      colour: 'White',
+      source: 'Canada Computers',
+      unverified:
+        'Board power and the recommended 850 W are the AMD reference figures for the RX 9070 XT, not SAPPHIRE figures for this card.',
+      price_checked: CHECKED_GPUS,
     },
   }),
 

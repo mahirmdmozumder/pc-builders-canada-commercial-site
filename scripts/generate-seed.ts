@@ -288,3 +288,78 @@ console.log(
   `Wrote ${SAMPLE_COMPONENTS.length} components, ${COMPONENT_CATEGORIES.length} categories, ` +
     `${SERVICE_CONTENT.length} services and ${BUILD_PRESETS.length} presets to supabase/seed/seed.sql`,
 );
+
+// ---------------------------------------------------------------------------
+// Optional: an ADDITIVE-ONLY file for a batch of new rows
+// ---------------------------------------------------------------------------
+// Why this exists, and why it is a separate file rather than a flag on the
+// seed:
+//
+// seed.sql ends in `on conflict (id) do update set ...` across nearly every
+// column, image_url among them. Every row in the source catalogue carries
+// `image_url: null`, because there is no product photography in the reference
+// data. So re-running seed.sql against a live database does not just reset
+// prices and stock to their nominal seed values — it NULLS the product photos
+// an operator uploaded through the admin, for every row the seed knows about.
+//
+// That makes seed.sql safe for a fresh database and unsafe for this one. It is
+// not a bug in the seed; "reset to a known state" is exactly what a seed is
+// for. It is simply the wrong tool for adding rows to a database somebody has
+// since done real work in.
+//
+// So adding parts to a live catalogue uses this instead: the same generated
+// column list and the same value serialisation, restricted to the ids asked
+// for, ending in `do nothing`. An id that already exists is left exactly as it
+// is — photo, price, stock and all.
+//
+//   SEED_ONLY_IDS=gpu-a,gpu-b npm run db:seed:generate
+//
+// writes supabase/seed/additions.sql and leaves seed.sql untouched in content.
+const onlyIds = process.env.SEED_ONLY_IDS?.split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+if (onlyIds?.length) {
+  const wanted = new Set(onlyIds);
+  const rows = SAMPLE_COMPONENTS.filter((c) => wanted.has(c.id));
+
+  const missing = onlyIds.filter((id) => !rows.some((r) => r.id === id));
+  if (missing.length) {
+    throw new Error(
+      `SEED_ONLY_IDS named ${missing.length} id(s) that are not in the source ` +
+        `catalogue: ${missing.join(', ')}. Nothing was written.`,
+    );
+  }
+
+  const additionsHeader = `-- ===========================================================================
+-- PC Builders Canada - catalogue additions
+-- ===========================================================================
+-- GENERATED FILE - do not edit by hand.
+-- Source: src/lib/catalog/sample-catalog.ts
+-- Regenerate with: SEED_ONLY_IDS=<ids> npm run db:seed:generate
+--
+-- ADDITIVE ONLY. This ends in \`on conflict (id) do nothing\`, so running it
+-- against a database that already holds one of these ids changes NOTHING about
+-- that row: its price, stock, status and uploaded product photo are left as
+-- they are.
+--
+-- Use this rather than seed.sql to add parts to a catalogue that is already in
+-- service. seed.sql overwrites image_url with null for every row it knows
+-- about, which erases uploaded photography.
+--
+-- Rows: ${rows.length}
+-- ===========================================================================
+
+insert into components (
+${COLUMNS.map((c) => `  ${c}`).join(',\n')}
+) values
+`;
+
+  const additionsPath = resolve(process.cwd(), 'supabase/seed/additions.sql');
+  writeFileSync(
+    additionsPath,
+    additionsHeader + rows.map(rowValues).join(',\n') + '\non conflict (id) do nothing;\n',
+    'utf8',
+  );
+  console.log(`Wrote ${rows.length} additive component rows to supabase/seed/additions.sql`);
+}
