@@ -315,20 +315,40 @@ console.log(
 //   SEED_ONLY_IDS=gpu-a,gpu-b npm run db:seed:generate
 //
 // writes supabase/seed/additions.sql and leaves seed.sql untouched in content.
+// SEED_ONLY_SINCE is the one to reach for in practice. Rows carry a created_at
+// per batch, so a date selects a batch without anybody maintaining a list of
+// twenty ids by hand -- which is a list that goes wrong silently, by omitting
+// one row, and the omission looks exactly like a row that imported fine.
+const onlySince = process.env.SEED_ONLY_SINCE?.trim();
 const onlyIds = process.env.SEED_ONLY_IDS?.split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
-if (onlyIds?.length) {
-  const wanted = new Set(onlyIds);
-  const rows = SAMPLE_COMPONENTS.filter((c) => wanted.has(c.id));
+if (onlySince && onlyIds?.length) {
+  throw new Error('Pass SEED_ONLY_SINCE or SEED_ONLY_IDS, not both. Nothing was written.');
+}
 
-  const missing = onlyIds.filter((id) => !rows.some((r) => r.id === id));
-  if (missing.length) {
-    throw new Error(
-      `SEED_ONLY_IDS named ${missing.length} id(s) that are not in the source ` +
-        `catalogue: ${missing.join(', ')}. Nothing was written.`,
-    );
+if (onlySince && !/^\d{4}-\d{2}-\d{2}$/.test(onlySince)) {
+  throw new Error(`SEED_ONLY_SINCE must be YYYY-MM-DD, got "${onlySince}".`);
+}
+
+if (onlySince || onlyIds?.length) {
+  const rows = onlySince
+    ? SAMPLE_COMPONENTS.filter((c) => c.created_at.slice(0, 10) >= onlySince)
+    : SAMPLE_COMPONENTS.filter((c) => new Set(onlyIds).has(c.id));
+
+  if (onlyIds?.length) {
+    const missing = onlyIds.filter((id) => !rows.some((r) => r.id === id));
+    if (missing.length) {
+      throw new Error(
+        `SEED_ONLY_IDS named ${missing.length} id(s) that are not in the source ` +
+          `catalogue: ${missing.join(', ')}. Nothing was written.`,
+      );
+    }
+  }
+
+  if (rows.length === 0) {
+    throw new Error('Nothing matched, so no additions file was written.');
   }
 
   const additionsHeader = `-- ===========================================================================
@@ -336,7 +356,7 @@ if (onlyIds?.length) {
 -- ===========================================================================
 -- GENERATED FILE - do not edit by hand.
 -- Source: src/lib/catalog/sample-catalog.ts
--- Regenerate with: SEED_ONLY_IDS=<ids> npm run db:seed:generate
+-- Regenerate with: SEED_ONLY_SINCE=<YYYY-MM-DD> npm run db:seed:generate
 --
 -- ADDITIVE ONLY. This ends in \`on conflict (id) do nothing\`, so running it
 -- against a database that already holds one of these ids changes NOTHING about

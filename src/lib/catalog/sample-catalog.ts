@@ -75,6 +75,15 @@ const CHECKED_GPUS = '2026-10-05';
 const CPUS_ADDED = '2026-10-06T00:00:00.000Z';
 const CHECKED_CPUS = '2026-10-06';
 
+/**
+ * Storage, power supplies and memory checked the same day as the processors.
+ *
+ * Aliases rather than repeated literals, so the date cannot be updated in one
+ * place and missed in another.
+ */
+const PARTS_ADDED = CPUS_ADDED;
+const CHECKED_PARTS = CHECKED_CPUS;
+
 function component(seed: ComponentSeed): ComponentRecord {
   return {
     slug: seed.id,
@@ -913,6 +922,98 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     },
   }),
 
+  component({
+    id: 'ram-corsair-vengeance-rgb-32gb-ddr5-6000',
+    sku: 'RAM-COR-32G6000',
+    category: 'ram',
+    brand: 'Corsair',
+    model: 'VENGEANCE RGB 32GB (2x16GB) DDR5-6000 CL30',
+    description:
+      'The common 32 GB sweet spot for a gaming build, at the CL30 timing AM5 prefers.',
+    price_cents: 88699,
+    memory_type: 'ddr5',
+    memory_capacity_gb: 32,
+    memory_modules: 2,
+    memory_speed_mts: 6000,
+    tdp_watts: 8,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      cas_latency: 'CL30',
+      form: 'UDIMM',
+      source: 'Canada Computers',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'ram-corsair-vengeance-rgb-64gb-ddr5-6000',
+    sku: 'RAM-COR-64G6000',
+    category: 'ram',
+    brand: 'Corsair',
+    model: 'VENGEANCE RGB 64GB (2x32GB) DDR5-6000 CL30',
+    description:
+      'Two sticks rather than four for 64 GB, which is the configuration AM5 runs at full speed more reliably.',
+    price_cents: 177999,
+    memory_type: 'ddr5',
+    memory_capacity_gb: 64,
+    memory_modules: 2,
+    memory_speed_mts: 6000,
+    tdp_watts: 10,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      cas_latency: 'CL30',
+      form: 'UDIMM',
+      source: 'Canada Computers',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'ram-gskill-trident-z5-neo-32gb-ddr5-6000',
+    sku: 'RAM-GSK-32G6000',
+    category: 'ram',
+    brand: 'G.SKILL',
+    model: 'Trident Z5 Neo RGB 32GB (2x16GB) DDR5-6000 CL30',
+    description:
+      'EXPO-tuned 32 GB kit aimed at Ryzen. The Neo line is the AMD-profile version of the Trident Z5.',
+    price_cents: 108999,
+    memory_type: 'ddr5',
+    memory_capacity_gb: 32,
+    memory_modules: 2,
+    memory_speed_mts: 6000,
+    tdp_watts: 8,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      cas_latency: 'CL30',
+      form: 'UDIMM',
+      source: 'Canada Computers',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'ram-kingston-fury-beast-64gb-ddr5-6000',
+    sku: 'RAM-KIN-64G6000',
+    category: 'ram',
+    brand: 'Kingston',
+    model: 'FURY Beast 64GB (2x32GB) DDR5-6000 CL30',
+    description: '64 GB for rendering, virtual machines and large datasets.',
+    price_cents: 188999,
+    memory_type: 'ddr5',
+    memory_capacity_gb: 64,
+    memory_modules: 2,
+    memory_speed_mts: 6000,
+    tdp_watts: 10,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      cas_latency: 'CL30',
+      form: 'UDIMM',
+      source: 'Canada Computers',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+
   // -------------------------------------------------------------------------
   // Storage
   // -------------------------------------------------------------------------
@@ -973,6 +1074,94 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     tdp_watts: 7,
     pcie_version: 4,
     specs: { form_factor: 'M.2 2280', price_checked: CHECKED },
+  }),
+
+  component({
+    id: 'ssd-samsung-990-pro-1tb',
+    sku: 'SSD-SAM-990P1T',
+    category: 'storage',
+    brand: 'Samsung',
+    model: '990 Pro 1TB NVMe',
+    description:
+      'Gen4 drive with a DRAM cache. A safe boot drive where sustained write speed matters more than a benchmark number.',
+    price_cents: 43999,
+    storage_interface: 'nvme-m2',
+    storage_capacity_gb: 1000,
+    tdp_watts: 7,
+    pcie_version: 4,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      form_factor: 'M.2 2280',
+      dram_cache: true,
+      source: 'Canada Computers',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'ssd-samsung-9100-pro-1tb',
+    sku: 'SSD-SAM-9100P1T',
+    category: 'storage',
+    brand: 'Samsung',
+    model: '9100 PRO 1TB PCIe Gen5 NVMe',
+    description:
+      'PCIe Gen5 drive. Worth it on a Gen5 M.2 slot and wasted on a Gen4 one, where it runs at Gen4 speed.',
+    price_cents: 46499,
+    storage_interface: 'nvme-m2',
+    storage_capacity_gb: 1000,
+    tdp_watts: 7,
+    pcie_version: 5,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      form_factor: 'M.2 2280',
+      source: 'Canada Computers',
+      sale_price_observed: '$249.99 on 2026-10-06',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'ssd-samsung-9100-pro-2tb',
+    sku: 'SSD-SAM-9100P2T',
+    category: 'storage',
+    brand: 'Samsung',
+    model: '9100 PRO 2TB PCIe Gen5 NVMe',
+    description: 'PCIe Gen5 drive at the capacity most single-drive builds actually want.',
+    price_cents: 92499,
+    storage_interface: 'nvme-m2',
+    storage_capacity_gb: 2000,
+    tdp_watts: 7,
+    pcie_version: 5,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      form_factor: 'M.2 2280',
+      source: 'Canada Computers',
+      sale_price_observed: '$489.99 on 2026-10-06',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'ssd-wd-black-sn850x-4tb',
+    sku: 'SSD-WD-SN850X4T',
+    category: 'storage',
+    brand: 'Western Digital',
+    model: 'WD_BLACK SN850X 4TB NVMe',
+    description: 'The 4 TB SN850X, for a single-drive machine with a large game library.',
+    price_cents: 151999,
+    storage_interface: 'nvme-m2',
+    storage_capacity_gb: 4000,
+    tdp_watts: 7,
+    pcie_version: 4,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      form_factor: 'M.2 2280',
+      dram_cache: true,
+      source: 'Canada Computers',
+      sale_price_observed: '$949.99 on 2026-10-06',
+      price_checked: CHECKED_PARTS,
+    },
   }),
 
   // -------------------------------------------------------------------------
@@ -1045,6 +1234,50 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     psu_efficiency: '80 PLUS Gold',
     psu_form_factor: 'atx',
     specs: { modular: 'Fully modular', price_checked: CHECKED },
+  }),
+
+  component({
+    id: 'psu-fsp-vita-750w',
+    sku: 'PSU-FSP-VITA750',
+    category: 'psu',
+    brand: 'FSP',
+    model: 'VITA 750W 80 PLUS Gold',
+    description: '750 W Gold unit, enough for a single mid-range card with headroom to spare.',
+    price_cents: 13999,
+    psu_wattage: 750,
+    psu_efficiency: '80 PLUS Gold',
+    psu_form_factor: 'atx',
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      source: 'Canada Computers',
+      unverified:
+        'Modularity and connector counts are not stated in the retailer listing. Confirm before quoting a build that needs two 8-pin PCIe connectors.',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'psu-fsp-vita-1000w',
+    sku: 'PSU-FSP-VITA1000',
+    category: 'psu',
+    brand: 'FSP',
+    model: 'VITA 1000W 80 PLUS Gold',
+    description:
+      '1000 W Gold unit for a high-draw card, or for a build meant to take a bigger one later.',
+    price_cents: 19999,
+    psu_wattage: 1000,
+    psu_efficiency: '80 PLUS Gold',
+    psu_form_factor: 'atx',
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      source: 'Canada Computers',
+      unverified:
+        'Modularity and connector counts are not stated in the retailer listing. Confirm before quoting a build that needs a 12V-2x6 connector.',
+      price_checked: CHECKED_PARTS,
+    },
   }),
 
   // -------------------------------------------------------------------------
