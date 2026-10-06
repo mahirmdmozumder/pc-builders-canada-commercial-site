@@ -178,7 +178,10 @@ export function PricingTable({ components }: { components: ComponentRecord[] }) 
       return;
     }
 
-    const data = (await response.json().catch(() => ({}))) as { changed?: boolean };
+    const data = (await response.json().catch(() => ({}))) as {
+      changed?: boolean;
+      checkedOn?: string;
+    };
 
     setDrafts((current) => {
       const next = { ...current };
@@ -188,9 +191,14 @@ export function PricingTable({ components }: { components: ComponentRecord[] }) 
 
     setMessage({
       tone: 'ok',
+      // "Already at that price" read as nothing having happened, which was
+      // misleading once saving the same number became a recorded confirmation.
+      // Re-entering the current price is how you clear a re-check flag on a
+      // price that turned out to be correct, so the message has to say that the
+      // check was logged.
       text: data.changed === false
-        ? `${component.brand} ${component.model} was already at that price.`
-        : `${component.brand} ${component.model} is now ${formatMoney(priceCents)}. Live on the site.`,
+        ? `${component.brand} ${component.model} was already at that price. Logged as checked today.`
+        : `${component.brand} ${component.model} is now ${formatMoney(priceCents)}. Live on the site, and logged as checked today.`,
     });
     router.refresh();
   }

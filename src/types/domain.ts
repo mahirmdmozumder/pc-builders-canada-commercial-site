@@ -278,6 +278,16 @@ export type ActivityAction =
    * March" is a question that gets asked.
    */
   | 'price.changed'
+  /**
+   * A price looked at and found to be already correct.
+   *
+   * Separate from `price.changed` so a confirmation cannot be mistaken for a
+   * repricing when reading the log back, and so the log is not padded with
+   * "price 149.99 -> 149.99" entries. It is still worth recording: it is the
+   * evidence behind the price-check date the Pricing screen reports, and the
+   * most common outcome of actually checking a price is that it has not moved.
+   */
+  | 'price.confirmed'
   | 'quote.status_changed'
   | 'quote.note_added'
   | 'ticket.status_changed'
