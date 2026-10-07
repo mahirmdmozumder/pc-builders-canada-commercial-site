@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCart } from '@/lib/cart/store';
 import { useClientSession } from '@/lib/auth/use-session';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
@@ -19,16 +19,35 @@ import { buttonClass } from '@/components/ui';
  *
  * The group is a CLICK disclosure, not a hover menu. Hover menus cannot be
  * operated by touch or keyboard without extra scaffolding, and they open by
- * accident when a pointer crosses them on the way somewhere else.
+ * accident when a pointer crosses them on the way somewhere else. A laptop with
+ * a touchscreen is the case that settles it: there is no hover state to rely on.
  */
 
 /**
  * Main navigation.
  *
- * The Shop group used to be a dropdown. It is a plain link now, because the
- * shop became one page listing everything rather than six category routes, and
- * a menu whose only job was to choose between those routes had nothing left to
- * do.
+ * ---------------------------------------------------------------------------
+ * SHOP IS A DISCLOSURE AGAIN, AND WHY THE ARGUMENT FOR REMOVING IT WAS WRONG
+ * ---------------------------------------------------------------------------
+ * It was a dropdown, then a plain link, and is a disclosure again. The reason
+ * for flattening it was recorded here as: the shop became one page listing
+ * everything, so a menu whose only job was choosing between category routes had
+ * nothing left to do.
+ *
+ * That contained a mistake. The category routes are not duplicates of /shop.
+ * /shop lists PRODUCTS; /workstations explains what a render node, a compile
+ * machine and a simulation box each want, and /gaming-pcs explains what
+ * actually changes frame rate. None of that is on /shop and none of it is
+ * reachable from a product filter.
+ *
+ * Worse, the same note said those pages had "moved to the shop section list" —
+ * and that list renders only inside the mobile drawer. So from 1280px up, six
+ * category pages and four company pages were reachable only from the footer.
+ * The phone had better navigation than the desktop, which is backwards.
+ *
+ * So the disclosure is back, with /shop itself as its first item so the flat
+ * link is not lost. It is fed by the same SHOP_SECTIONS array the drawer uses,
+ * because two hand-kept copies of a menu is how one of them goes stale.
  *
  * ---------------------------------------------------------------------------
  * FOUR ITEMS, NOT EIGHT
@@ -39,9 +58,9 @@ import { buttonClass } from '@/components/ui';
  *
  * What moved and why:
  *
- *   Pre-built Gaming PCs, Workstations  -> the shop section list. Both are
- *     already reachable from /shop under the Pre-built filter, and both keep
- *     their own URLs, pages and sitemap entries. Nothing redirects.
+ *   Pre-built Gaming PCs, Workstations  -> the Shop disclosure. They were
+ *     sent to the drawer-only section list, which is the bug described above.
+ *     Both keep their own URLs, pages and sitemap entries; nothing redirects.
  *
  *   Portfolio, About, Contact           -> the footer, where two of the three
  *     already appeared. None is a buying step; a visitor looks for them
@@ -71,6 +90,20 @@ const SHOP_SECTIONS = [
   { href: '/mini-pcs', label: 'Mini PCs & Pi' },
   { href: '/refurbished', label: 'Open box & refurbished' },
 ];
+
+/**
+ * Whether a path belongs under Shop, so the bar item stays marked.
+ *
+ * Exported and pure so it can be tested, because the cases that matter are the
+ * ones easiest to get wrong by hand: a DETAIL page three levels in
+ * (/workstations/creator-workstation) has to count, and a path that merely
+ * starts with the same letters (/shopping, /nascar) must not. The second kind
+ * is what a naive startsWith check gets wrong.
+ */
+export function isShopPath(pathname: string): boolean {
+  const paths = ['/shop', ...SHOP_SECTIONS.map((section) => section.href)];
+  return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
 
 /**
  * Secondary pages, listed in the mobile menu under the shop sections.
@@ -126,9 +159,13 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden flex-1 items-center gap-0.5 xl:flex" aria-label="Main">
-          {NAV.map((item) => (
-            <NavLink key={item.href} item={item} pathname={pathname} />
-          ))}
+          {NAV.map((item) =>
+            item.href === '/shop' ? (
+              <ShopMenu key={item.href} pathname={pathname} />
+            ) : (
+              <NavLink key={item.href} item={item} pathname={pathname} />
+            ),
+          )}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -212,6 +249,116 @@ export function SiteHeader() {
         </nav>
       ) : null}
     </header>
+  );
+}
+
+/**
+ * The Shop disclosure in the desktop bar.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY "SHOP" IS A BUTTON AND /shop IS THE FIRST ITEM
+ * ---------------------------------------------------------------------------
+ * One control cannot both navigate and open a panel without one of the two
+ * being a guess about intent. Making the bar item a button and putting "All
+ * products" at the top of the panel keeps /shop exactly one click away while
+ * giving the categories somewhere to live. The alternative — a link with a
+ * separate chevron beside it — puts two targets a few pixels apart in a bar,
+ * which is the layout people miss on a trackpad.
+ *
+ * CLOSING. Three ways out, because a panel that traps you is worse than no
+ * panel: Escape, a pointer down anywhere outside it, and clicking any link in
+ * it. The last is handled on the panel rather than per link, the same way the
+ * mobile drawer does it.
+ *
+ * It deliberately does NOT close on navigation via an effect. Setting state in
+ * an effect is what react-hooks/set-state-in-effect exists to catch, and the
+ * three handlers above already cover every way a visitor actually leaves: they
+ * either click something in the panel, click outside it, or press Escape.
+ */
+function ShopMenu({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const container = useRef<HTMLDivElement>(null);
+
+  // Any shop page keeps the bar item marked, so somebody three levels into a
+  // category still sees where they are. See isShopPath.
+  const active = isShopPath(pathname);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onPointerDown(event: PointerEvent) {
+      if (!container.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={container} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="shop-menu"
+        aria-current={active ? 'page' : undefined}
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'flex items-center gap-1 rounded-md px-3 py-2 text-sm whitespace-nowrap transition-colors',
+          active || open ? 'text-white' : 'text-ink-300 hover:text-white',
+        )}
+      >
+        Shop
+        <ChevronIcon open={open} />
+      </button>
+
+      {open ? (
+        <div
+          id="shop-menu"
+          // One handler for every link in the panel, rather than one per link.
+          onClick={() => setOpen(false)}
+          className="absolute top-full left-0 z-50 mt-1 w-64 overflow-hidden rounded-lg border border-ink-700 bg-ink-850 py-1.5 shadow-xl shadow-black/50"
+        >
+          <MenuLink href="/shop" label="All products" />
+          <div className="my-1.5 border-t border-ink-700" />
+          {SHOP_SECTIONS.map((section) => (
+            <MenuLink key={section.href} href={section.href} label={section.label} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MenuLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="block px-3 py-2 text-sm text-ink-200 transition-colors hover:bg-ink-800 hover:text-white"
+    >
+      {label}
+    </Link>
+  );
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={cn('size-3.5 transition-transform', open && 'rotate-180')}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      aria-hidden
+    >
+      <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
