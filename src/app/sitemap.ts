@@ -6,6 +6,7 @@ import {
   listPublishedPresets,
   listPublishedServices,
 } from '@/lib/cms/repository';
+import { presetHref } from '@/lib/cms/types';
 import { SHOP_COLLECTIONS } from '@/lib/catalog/collections';
 import { listComponents } from '@/lib/catalog/repository';
 import { productHref } from '@/lib/catalog/types';
@@ -83,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // land on, and a sitemap entry for it would be a broken promise to a crawler.
   const { rows: publishedPresets } = await listPublishedPresets();
   const presets: MetadataRoute.Sitemap = publishedPresets.map((preset) => ({
-    url: `${base}/pre-built-gaming-pcs/${preset.slug}`,
+    url: `${base}${presetHref(preset)}`,
     lastModified: preset.updated_at ? new Date(preset.updated_at) : now,
     changeFrequency: 'weekly' as const,
     priority: 0.8,

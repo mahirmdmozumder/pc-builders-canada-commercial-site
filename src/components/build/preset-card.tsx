@@ -3,7 +3,7 @@ import { Badge, Card } from '@/components/ui';
 import { formatMoney } from '@/lib/utils';
 import { CATEGORY_LABELS, type ComponentCategory } from '@/lib/catalog/types';
 import type { BuildPreset } from '@/lib/catalog/presets';
-import type { BuildPresetRecord } from '@/lib/cms/types';
+import { presetHref, type BuildPresetRecord } from '@/lib/cms/types';
 import { BuildImage } from '@/components/shop/product-image';
 
 export interface PresetSummary {
@@ -52,7 +52,7 @@ export function PresetCard({ summary }: { summary: PresetSummary }) {
           is deliberately NOT a link: it holds a second link to the
           configurator, and nesting anchors is invalid HTML. */}
       <Link
-        href={`/pre-built-gaming-pcs/${preset.slug}`}
+        href={presetHref(preset)}
         aria-hidden
         tabIndex={-1}
         className="block focus:outline-none"
@@ -74,7 +74,7 @@ export function PresetCard({ summary }: { summary: PresetSummary }) {
                   classes as ShopCard's title, including the focus ring, since
                   this is the keyboard-reachable link for the card. */}
               <Link
-                href={`/pre-built-gaming-pcs/${preset.slug}`}
+                href={presetHref(preset)}
                 className="rounded transition-colors hover:text-gold-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
               >
                 {preset.name}

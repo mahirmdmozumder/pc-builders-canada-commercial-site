@@ -106,6 +106,47 @@ export const PRESET_AUDIENCE_LABELS: Record<PresetAudience, string> = {
   workstation: 'Workstations',
 };
 
+/** Where each audience's machines live. */
+export const PRESET_AUDIENCE_PATHS: Record<PresetAudience, string> = {
+  gaming: '/pre-built-gaming-pcs',
+  workstation: '/workstations',
+};
+
+/**
+ * The canonical address of a preset's page.
+ *
+ * ---------------------------------------------------------------------------
+ * ONE FUNCTION, FOR THE REASON productHref() IS ONE FUNCTION
+ * ---------------------------------------------------------------------------
+ * This address was hand-built in six places: both list pages, the sitemap,
+ * the preset card twice, and the shop item mapper. That was survivable while
+ * every preset shared a path. It stops being survivable now that the path
+ * depends on the preset's audience, because six independent copies of an
+ * audience check will not stay in agreement.
+ *
+ * The note on productHref() makes the same argument for components, and this
+ * codebase has already paid for that lesson three times over: the
+ * finished-machine predicate lived in three places and two of them went stale,
+ * the stock label lived in five, and a card was made clickable in one place and
+ * not another.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY WORKSTATIONS MOVED
+ * ---------------------------------------------------------------------------
+ * Every preset used to live under /pre-built-gaming-pcs/, workstations
+ * included — so /pre-built-gaming-pcs/creator-workstation was a page whose own
+ * title read "Workstation PC". A customer sharing that link sent something that
+ * contradicted itself, and a search engine was offered a gaming URL for a
+ * workstation product, which is the higher-value search of the two.
+ *
+ * The gaming path is kept for gaming machines rather than replaced with
+ * something neutral, because "pre-built gaming pcs" is the phrase people
+ * actually search and there is no reason to give it up.
+ */
+export function presetHref(preset: Pick<BuildPresetRecord, 'slug' | 'audience'>): string {
+  return `${PRESET_AUDIENCE_PATHS[preset.audience]}/${preset.slug}`;
+}
+
 /**
  * A starting configuration.
  *

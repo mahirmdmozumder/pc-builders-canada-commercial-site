@@ -9,7 +9,7 @@ import {
   type ComponentCondition,
   type PublicComponent,
 } from '@/lib/catalog/types';
-import type { BuildPresetRecord } from '@/lib/cms/types';
+import { presetHref, type BuildPresetRecord } from '@/lib/cms/types';
 
 /**
  * The unified shop catalogue.
@@ -119,12 +119,18 @@ function presetToShopItem(preset: BuildPresetRecord, parts: Map<string, PublicCo
     lowStockThreshold: 0,
     // The machine's own page, not the configurator.
     //
+    // presetHref() decides this, because a workstation preset lives under
+    // /workstations/[slug] and a gaming one under /pre-built-gaming-pcs/[slug].
+    // Building it here by hand was how the shop could have linked a workstation
+    // to a gaming address while the page itself said otherwise.
+    //
+    // The original note, still true of the gaming path:
     // /pre-built-gaming-pcs/[slug] already existed and is what the sitemap
     // lists; the card pointed past it into /build?preset=, so the one indexable
     // page for each machine was the one nothing linked to. The configurator is
     // still one click away from there, which is the right order: read the
     // specification, then change it.
-    href: `/pre-built-gaming-pcs/${preset.slug}`,
+    href: presetHref(preset),
     specs: {},
   };
 }

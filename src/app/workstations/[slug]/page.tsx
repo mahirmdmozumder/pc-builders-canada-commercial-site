@@ -5,7 +5,7 @@ import { listPublishedPresets } from '@/lib/cms/repository';
 import { presetHref } from '@/lib/cms/types';
 
 /**
- * Pre-built gaming PCs. Workstations live at /workstations/[slug].
+ * Workstations. Gaming machines live at /pre-built-gaming-pcs/[slug].
  *
  * The page itself is shared with the other audience's route — see
  * components/build/preset-detail.tsx. This file decides two things only: which
@@ -20,7 +20,7 @@ import { presetHref } from '@/lib/cms/types';
 export const revalidate = 60;
 
 export async function generateStaticParams() {
-  const { rows } = await listPublishedPresets('gaming');
+  const { rows } = await listPublishedPresets('workstation');
   return rows.map((preset) => ({ slug: preset.slug }));
 }
 
@@ -40,7 +40,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   // own address, and serving it here would reintroduce the duplicate URL this
   // split exists to remove.
   const data = await loadPreset(slug);
-  if (data && data.preset.audience !== 'gaming') {
+  if (data && data.preset.audience !== 'workstation') {
     permanentRedirect(presetHref(data.preset));
   }
 

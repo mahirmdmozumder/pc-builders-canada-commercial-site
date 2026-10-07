@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ButtonLink, Card, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { PresetCard } from '@/components/build/preset-card';
 import { listPublishedPresets } from '@/lib/cms/repository';
+import { presetHref } from '@/lib/cms/types';
 import { summarisePresets } from '@/lib/catalog/preset-summary';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { ItemListJsonLd } from '@/components/seo/structured-data';
@@ -59,7 +60,7 @@ export default async function WorkstationsPage() {
         name="Workstations"
         items={summaries.map((s) => ({
           name: s.preset.name,
-          url: `/pre-built-gaming-pcs/${s.preset.slug}`,
+          url: presetHref(s.preset),
         }))}
       />
       <PageShell className="py-12 sm:py-16">

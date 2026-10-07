@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ButtonLink, PageHeader, PageShell, SectionHeading } from '@/components/ui';
 import { PresetCard } from '@/components/build/preset-card';
 import { listPublishedPresets } from '@/lib/cms/repository';
+import { presetHref } from '@/lib/cms/types';
 import { isOrderable, listComponentsWithSource } from '@/lib/catalog/repository';
 import { toShopItem } from '@/lib/catalog/shop';
 import { ShopCard } from '@/components/shop/shop-card';
@@ -76,7 +77,7 @@ export default async function GamingPcsPage() {
           ...stocked.map((item) => ({ name: item.name, url: item.href })),
           ...summaries.map((s) => ({
             name: s.preset.name,
-            url: `/pre-built-gaming-pcs/${s.preset.slug}`,
+            url: presetHref(s.preset),
           })),
         ]}
       />
