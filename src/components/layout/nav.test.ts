@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isShopPath } from '@/components/layout/site-header';
+import { isCompanyPath, isShopPath } from '@/components/layout/site-header';
 
 /**
  * Which paths light up the Shop item in the bar.
@@ -47,6 +47,48 @@ describe('isShopPath', () => {
   it('does not mark the other top-level destinations', () => {
     for (const path of ['/', '/build', '/services', '/pos', '/cart', '/about', '/contact']) {
       expect(isShopPath(path)).toBe(false);
+    }
+  });
+});
+
+describe('isCompanyPath', () => {
+  /**
+   * Portfolio, About, Contact and FAQ were reachable on a desktop only from the
+   * footer. Portfolio is the one that made it matter: photographs of machines
+   * actually built and delivered are the strongest thing on this site for
+   * somebody deciding whether to trust it, and it sat below the fold on every
+   * page.
+   */
+  it('marks every company page', () => {
+    for (const path of ['/portfolio', '/about', '/contact', '/faq']) {
+      expect(isCompanyPath(path)).toBe(true);
+    }
+  });
+
+  it('marks a portfolio build page one level deeper', () => {
+    expect(isCompanyPath('/portfolio/some-build')).toBe(true);
+  });
+
+  // /about is the most exposed of the four to a bare startsWith, because
+  // "/aboutus" and "/about-us" are both plausible routes somebody might add.
+  it('does not match a path that merely shares a prefix', () => {
+    for (const path of ['/aboutus', '/about-us', '/contacts', '/faqs', '/portfolios']) {
+      expect(isCompanyPath(path)).toBe(false);
+    }
+  });
+
+  it('does not overlap with the shop pages', () => {
+    for (const path of ['/shop', '/workstations', '/gaming-pcs', '/nas']) {
+      expect(isCompanyPath(path)).toBe(false);
+    }
+    for (const path of ['/portfolio', '/about', '/contact', '/faq']) {
+      expect(isShopPath(path)).toBe(false);
+    }
+  });
+
+  it('does not mark the top-level destinations', () => {
+    for (const path of ['/', '/build', '/services', '/pos', '/cart']) {
+      expect(isCompanyPath(path)).toBe(false);
     }
   });
 });

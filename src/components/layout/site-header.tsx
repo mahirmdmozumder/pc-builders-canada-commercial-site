@@ -101,15 +101,33 @@ const SHOP_SECTIONS = [
  * is what a naive startsWith check gets wrong.
  */
 export function isShopPath(pathname: string): boolean {
-  const paths = ['/shop', ...SHOP_SECTIONS.map((section) => section.href)];
+  return matchesAny(pathname, ['/shop', ...SHOP_SECTIONS.map((section) => section.href)]);
+}
+
+/**
+ * Exact match, or a path one or more levels below it.
+ *
+ * The trailing slash is the whole point. A bare startsWith would mark Shop
+ * active on /shopping and Company active on /aboutus, because those share a
+ * prefix with /shop and /about without being under them.
+ */
+function matchesAny(pathname: string, paths: string[]): boolean {
   return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 /**
- * Secondary pages, listed in the mobile menu under the shop sections.
+ * Secondary pages, in the Company menu and the mobile drawer.
  *
- * They are in the footer on every page too. Repeating them here is for the
- * phone, where the footer is a long scroll away and the menu is already open.
+ * They are in the footer on every page too, and the footer was ONCE the whole
+ * desktop answer for them. That was wrong for the same reason it was wrong for
+ * the shop sections: a visitor should not have to scroll past a full page of
+ * content to find out whether a business has any work to show.
+ *
+ * Portfolio is the one that makes this matter rather than a tidiness point. It
+ * is photographs of real machines actually built and delivered, which is the
+ * strongest thing on this site for somebody deciding whether to trust it with
+ * two thousand dollars. Burying it below the fold on every desktop page was
+ * hiding the best argument the shop has.
  */
 const COMPANY_LINKS = [
   { href: '/portfolio', label: 'Portfolio' },
@@ -117,6 +135,17 @@ const COMPANY_LINKS = [
   { href: '/contact', label: 'Contact' },
   { href: '/faq', label: 'FAQ' },
 ];
+
+/**
+ * Whether a path belongs under Company, so that bar item stays marked.
+ *
+ * Shares its implementation with isShopPath for the reason given there: a
+ * detail page one level deeper (/portfolio/some-build) has to count, and a path
+ * that merely shares a prefix must not.
+ */
+export function isCompanyPath(pathname: string): boolean {
+  return matchesAny(pathname, COMPANY_LINKS.map((link) => link.href));
+}
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -161,11 +190,29 @@ export function SiteHeader() {
         <nav className="hidden flex-1 items-center gap-0.5 xl:flex" aria-label="Main">
           {NAV.map((item) =>
             item.href === '/shop' ? (
-              <ShopMenu key={item.href} pathname={pathname} />
+              <NavMenu
+                key={item.href}
+                id="shop-menu"
+                label="Shop"
+                active={isShopPath(pathname)}
+                lead={{ href: '/shop', label: 'All products' }}
+                items={SHOP_SECTIONS}
+              />
             ) : (
               <NavLink key={item.href} item={item} pathname={pathname} />
             ),
           )}
+
+          {/* Company is a disclosure rather than four more links in the bar.
+              Portfolio, About, Contact and FAQ were reachable on a desktop only
+              from the footer, which is what this fixes; none of them is a buying
+              step, so none earns a slot of its own in the bar. */}
+          <NavMenu
+            id="company-menu"
+            label="Company"
+            active={isCompanyPath(pathname)}
+            items={COMPANY_LINKS}
+          />
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -253,17 +300,19 @@ export function SiteHeader() {
 }
 
 /**
- * The Shop disclosure in the desktop bar.
+ * A disclosure in the desktop bar. Shop and Company both use it.
  *
  * ---------------------------------------------------------------------------
- * WHY "SHOP" IS A BUTTON AND /shop IS THE FIRST ITEM
+ * WHY THE BAR ITEM IS A BUTTON, AND WHAT `lead` IS FOR
  * ---------------------------------------------------------------------------
  * One control cannot both navigate and open a panel without one of the two
- * being a guess about intent. Making the bar item a button and putting "All
- * products" at the top of the panel keeps /shop exactly one click away while
- * giving the categories somewhere to live. The alternative — a link with a
- * separate chevron beside it — puts two targets a few pixels apart in a bar,
- * which is the layout people miss on a trackpad.
+ * being a guess about intent. So the bar item is a button, and a group that
+ * also has a page of its own passes it as `lead` — Shop puts "All products" at
+ * the top of its panel, keeping /shop exactly one click away. Company has no
+ * page of its own, so it passes none.
+ *
+ * The alternative — a link with a separate chevron beside it — puts two targets
+ * a few pixels apart in a bar, which is the layout people miss on a trackpad.
  *
  * CLOSING. Three ways out, because a panel that traps you is worse than no
  * panel: Escape, a pointer down anywhere outside it, and clicking any link in
@@ -274,14 +323,28 @@ export function SiteHeader() {
  * an effect is what react-hooks/set-state-in-effect exists to catch, and the
  * three handlers above already cover every way a visitor actually leaves: they
  * either click something in the panel, click outside it, or press Escape.
+ *
+ * ONE COMPONENT, TWO MENUS. Written for Shop and generalised when Company
+ * needed the same thing, rather than copied. A second copy of a disclosure is a
+ * second set of keyboard handlers to keep in step, and this codebase has
+ * already paid for duplicated behaviour more than once.
  */
-function ShopMenu({ pathname }: { pathname: string }) {
+function NavMenu({
+  id,
+  label,
+  active,
+  items,
+  lead,
+}: {
+  id: string;
+  label: string;
+  active: boolean;
+  items: { href: string; label: string }[];
+  /** A page for the group itself, placed above a divider. */
+  lead?: { href: string; label: string };
+}) {
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
-
-  // Any shop page keeps the bar item marked, so somebody three levels into a
-  // category still sees where they are. See isShopPath.
-  const active = isShopPath(pathname);
 
   useEffect(() => {
     if (!open) return;
@@ -306,7 +369,7 @@ function ShopMenu({ pathname }: { pathname: string }) {
       <button
         type="button"
         aria-expanded={open}
-        aria-controls="shop-menu"
+        aria-controls={id}
         aria-current={active ? 'page' : undefined}
         onClick={() => setOpen((v) => !v)}
         className={cn(
@@ -314,21 +377,25 @@ function ShopMenu({ pathname }: { pathname: string }) {
           active || open ? 'text-white' : 'text-ink-300 hover:text-white',
         )}
       >
-        Shop
+        {label}
         <ChevronIcon open={open} />
       </button>
 
       {open ? (
         <div
-          id="shop-menu"
+          id={id}
           // One handler for every link in the panel, rather than one per link.
           onClick={() => setOpen(false)}
           className="absolute top-full left-0 z-50 mt-1 w-64 overflow-hidden rounded-lg border border-ink-700 bg-ink-850 py-1.5 shadow-xl shadow-black/50"
         >
-          <MenuLink href="/shop" label="All products" />
-          <div className="my-1.5 border-t border-ink-700" />
-          {SHOP_SECTIONS.map((section) => (
-            <MenuLink key={section.href} href={section.href} label={section.label} />
+          {lead ? (
+            <>
+              <MenuLink href={lead.href} label={lead.label} />
+              <div className="my-1.5 border-t border-ink-700" />
+            </>
+          ) : null}
+          {items.map((item) => (
+            <MenuLink key={item.href} href={item.href} label={item.label} />
           ))}
         </div>
       ) : null}
