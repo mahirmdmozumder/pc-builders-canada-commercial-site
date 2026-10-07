@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Alert, PageHeader, PageShell } from '@/components/ui';
+import { Alert, ButtonLink, PageHeader, PageShell } from '@/components/ui';
 import { Configurator } from '@/components/configurator/configurator';
 import {
   getComponentsByIds,
@@ -107,6 +107,36 @@ export default async function BuildPage({
     <>
       <PageHeader
         eyebrow="Configurator"
+        /**
+         * The way out, for somebody who would rather not choose parts.
+         *
+         * On a desktop the header shows four links and nothing else: every
+         * category page -- workstations, gaming PCs, networking, NAS, mini PCs,
+         * refurbished -- is reachable only from the footer. So a visitor who
+         * opens the configurator, finds it more involved than they wanted and
+         * would happily buy a finished machine has no visible route to one
+         * without scrolling to the bottom of the page.
+         *
+         * This is the highest-intent moment to offer it: they have already said
+         * they want a PC and are now deciding how much of it to specify
+         * themselves.
+         *
+         * BOTH audiences are offered, not just workstations. /build serves a
+         * gamer and a professional equally, and naming only one would tell half
+         * the visitors that the page they wanted does not exist. It also mirrors
+         * what those two pages already do -- each offers "Start from scratch"
+         * back to here.
+         */
+        actions={
+          <>
+            <ButtonLink href="/gaming-pcs" variant="secondary">
+              Pre-built gaming PCs
+            </ButtonLink>
+            <ButtonLink href="/workstations" variant="secondary">
+              Pre-built workstations
+            </ButtonLink>
+          </>
+        }
         title={saved ? saved.name : preset ? `Start from ${preset.name}` : 'Build your PC'}
         description={
           saved
