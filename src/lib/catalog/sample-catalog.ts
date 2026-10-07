@@ -450,6 +450,148 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     },
   }),
 
+  // AM4, completed 2026-10-06. This processor was written once before and taken
+  // back out the same day, because scripts/verify-catalog-builds.ts reported it
+  // stranded: there was no AM4 motherboard here. There is one now, immediately
+  // below, so the platform closes and the processor can stay.
+  component({
+    id: 'cpu-amd-ryzen-7-5700x',
+    sku: 'CPU-AMD-R75700X',
+    category: 'cpu',
+    brand: 'AMD',
+    model: 'Ryzen 7 5700X',
+    description:
+      'Eight-core AM4 processor at 65 W. The cheapest route to eight cores, and the sensible upgrade for an existing AM4 machine.',
+    price_cents: 38999,
+    socket: 'AM4',
+    memory_type: 'ddr4',
+    tdp_watts: 65,
+    pcie_version: 4,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      cores: 8,
+      threads: 16,
+      integrated_graphics: false,
+      source: 'Canada Computers',
+      sale_price_observed: '$289.99 on 2026-10-06',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+
+  // ---------------------------------------------------------------------------
+  // LGA1700, added 2026-10-06 alongside the motherboard import
+  // ---------------------------------------------------------------------------
+  // A third socket, opened deliberately rather than by accident. The imported
+  // sheet holds 46 LGA1700 boards; without a processor every one of them would
+  // be a part somebody could select and then get stuck on.
+  //
+  // Sockets and core layouts are the retailer's own product titles, which state
+  // them. Base power is the Intel figure and says so, because the titles do not.
+  // memory_type is deliberately NULL: LGA1700 processors run DDR4 or DDR5 and
+  // the BOARD decides, so a value here would be a claim about the wrong part.
+  // No compatibility rule reads a processor's memory_type — the memory check
+  // compares the kit against the motherboard — so null costs nothing.
+  component({
+    id: 'cpu-intel-core-i5-14400',
+    sku: 'CPU-INT-I514400',
+    category: 'cpu',
+    brand: 'Intel',
+    model: 'Core i5-14400',
+    description:
+      'Ten-core LGA1700 processor at 65 W. The budget entry to a platform where boards and DDR4 memory are cheap.',
+    price_cents: 25900,
+    socket: 'LGA1700',
+    tdp_watts: 65,
+    pcie_version: 5,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      cores: '10 (6P + 4E)',
+      integrated_graphics: true,
+      memory_support: 'DDR4 or DDR5, depending on the motherboard',
+      source: 'Canada Computers',
+      unverified:
+        'Base power is the Intel figure for the i5-14400; the retailer listing states the socket and core layout but not the wattage.',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'cpu-intel-core-i5-14600k',
+    sku: 'CPU-INT-I514600K',
+    category: 'cpu',
+    brand: 'Intel',
+    model: 'Core i5-14600K',
+    description: 'Fourteen cores, unlocked. The mid-range LGA1700 gaming choice.',
+    price_cents: 47999,
+    socket: 'LGA1700',
+    tdp_watts: 125,
+    pcie_version: 5,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      cores: '14 (6P + 8E)',
+      integrated_graphics: true,
+      memory_support: 'DDR4 or DDR5, depending on the motherboard',
+      source: 'Canada Computers',
+      sale_price_observed: '$349.99 on 2026-10-06',
+      unverified: 'Base power is the Intel figure; the retailer listing does not state wattage.',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'cpu-intel-core-i7-14700k',
+    sku: 'CPU-INT-I714700K',
+    category: 'cpu',
+    brand: 'Intel',
+    model: 'Core i7-14700K',
+    description:
+      'Twenty cores, unlocked. Strong at both games and heavily threaded work, and the reason LGA1700 is still worth building on.',
+    price_cents: 61999,
+    socket: 'LGA1700',
+    tdp_watts: 125,
+    pcie_version: 5,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      cores: '20 (8P + 12E)',
+      integrated_graphics: true,
+      memory_support: 'DDR4 or DDR5, depending on the motherboard',
+      source: 'Canada Computers',
+      sale_price_observed: '$539.99 on 2026-10-06',
+      unverified: 'Base power is the Intel figure; the retailer listing does not state wattage.',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'cpu-intel-core-i9-14900k',
+    sku: 'CPU-INT-I914900K',
+    category: 'cpu',
+    brand: 'Intel',
+    model: 'Core i9-14900K',
+    description:
+      'Twenty-four cores, unlocked. Plan the cooling around it rather than after it.',
+    price_cents: 74999,
+    socket: 'LGA1700',
+    tdp_watts: 125,
+    pcie_version: 5,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    data_confidence: 'sample',
+    specs: {
+      cores: '24 (8P + 16E)',
+      integrated_graphics: true,
+      memory_support: 'DDR4 or DDR5, depending on the motherboard',
+      source: 'Canada Computers',
+      sale_price_observed: '$549.99 on 2026-10-06',
+      unverified: 'Base power is the Intel figure; the retailer listing does not state wattage.',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+
   // -------------------------------------------------------------------------
   // Motherboards
   // -------------------------------------------------------------------------
@@ -614,6 +756,61 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
       wifi: 'Wi-Fi 6E',
       cpu_support: 'Ryzen 9000, 8000 and 7000 series',
       source: 'Canada Computers (price), ASUS techspec (specifications)',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+
+  component({
+    id: 'mb-asus-prime-b550-plus-ac-hes',
+    sku: 'MB-ASU-B550PLUSAC',
+    category: 'motherboard',
+    brand: 'ASUS',
+    model: 'PRIME B550-PLUS AC-HES',
+    description:
+      'AM4 board with six SATA ports, which is more than most current boards offer and the reason this platform is still good for a storage-heavy build.',
+    price_cents: 15999,
+    socket: 'AM4',
+    chipset: 'B550',
+    form_factor: 'atx',
+    memory_type: 'ddr4',
+    memory_slots: 4,
+    max_memory_gb: 128,
+    m2_slots: 2,
+    sata_ports: 6,
+    pcie_version: 4,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      wifi: 'Wi-Fi 5 (AC)',
+      cpu_support: 'Ryzen 5000 and 3000 series',
+      source: 'PBC catalogue sheet (price, slots, max memory), ASUS techspec (chipset, form factor, M.2, SATA, PCIe)',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
+  component({
+    id: 'mb-asus-tuf-z790-plus-wifi-d4',
+    sku: 'MB-ASU-Z790PLUSD4',
+    category: 'motherboard',
+    brand: 'ASUS',
+    model: 'TUF GAMING Z790-PLUS WIFI D4',
+    description:
+      'LGA1700 board that takes DDR4, which is what makes this platform cheap to build on. Four M.2 slots is generous at the price.',
+    price_cents: 27999,
+    socket: 'LGA1700',
+    chipset: 'Z790',
+    form_factor: 'atx',
+    memory_type: 'ddr4',
+    memory_slots: 4,
+    max_memory_gb: 128,
+    m2_slots: 4,
+    sata_ports: 4,
+    pcie_version: 5,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      wifi: 'Wi-Fi 6',
+      cpu_support: 'Intel 12th, 13th and 14th generation',
+      source: 'PBC catalogue sheet (price), ASUS techspec (specifications)',
       price_checked: CHECKED_PARTS,
     },
   }),
@@ -987,6 +1184,37 @@ export const SAMPLE_COMPONENTS: ComponentRecord[] = [
     },
   }),
 
+  // The only DDR4 kit here, and it is not optional.
+  //
+  // verify-catalog-builds.ts reported five processors stranded the moment AM4
+  // and LGA1700 opened: an AM4 board and a DDR4 LGA1700 board both need DDR4
+  // memory, and every kit in this catalogue was DDR5. Five processors with a
+  // board, a cooler, a card, a drive, a case and a power supply, and nothing to
+  // put in the memory slots.
+  component({
+    id: 'ram-corsair-vengeance-lpx-32gb-ddr4-3200',
+    sku: 'RAM-COR-32G3200D4',
+    category: 'ram',
+    brand: 'Corsair',
+    model: 'VENGEANCE LPX 32GB (2x16GB) DDR4-3200 CL16',
+    description:
+      'DDR4 for an AM4 or DDR4 LGA1700 build. Low-profile heatspreaders, so it clears a tall air cooler.',
+    price_cents: 43599,
+    memory_type: 'ddr4',
+    memory_capacity_gb: 32,
+    memory_modules: 2,
+    memory_speed_mts: 3200,
+    tdp_watts: 6,
+    created_at: PARTS_ADDED,
+    updated_at: PARTS_ADDED,
+    specs: {
+      cas_latency: 'CL16',
+      form: 'UDIMM',
+      source: 'Canada Computers',
+      sale_price_observed: '$349.99 on 2026-10-06',
+      price_checked: CHECKED_PARTS,
+    },
+  }),
   component({
     id: 'ram-corsair-vengeance-rgb-32gb-ddr5-6000',
     sku: 'RAM-COR-32G6000',
