@@ -65,6 +65,19 @@ export interface CatalogResult {
   components: PublicComponent[];
   /** Where these particular rows actually came from. */
   source: CatalogSource;
+  /**
+   * True when the database holds MORE matching rows than were returned.
+   *
+   * PostgREST caps every response at its configured `max_rows`, which defaults
+   * to 1000. Cross that line with no explicit limit and the query succeeds, the
+   * rows come back, `error` is null and the catalogue is quietly incomplete —
+   * the single worst failure mode available here, because `source` still reads
+   * 'database' and no banner appears anywhere.
+   *
+   * So the count is requested alongside the rows and compared. A caller that
+   * cares can say so; one that does not at least gets a loud server log.
+   */
+  truncated: boolean;
 }
 
 export interface ListComponentsOptions {
@@ -138,11 +151,13 @@ export async function listComponentsWithSource(
 ): Promise<CatalogResult> {
   const supabase = getSupabasePublicClient();
   if (!supabase) {
-    return { components: filterSample(options).map(stripCost), source: 'sample' };
+    return { components: filterSample(options).map(stripCost), source: 'sample', truncated: false };
   }
 
+  // `count: 'exact'` is what makes silent truncation detectable: it reports how
+  // many rows MATCH, independently of how many were returned.
   // The view is already filtered to active rows.
-  let query = supabase.from('components_public').select('*');
+  let query = supabase.from('components_public').select('*', { count: 'exact' });
   if (options.category) query = query.eq('category', options.category);
   if (options.categories?.length) query = query.in('category', options.categories);
   if (options.inStockOnly) query = query.gt('stock_quantity', 0);
@@ -162,14 +177,27 @@ export async function listComponentsWithSource(
   query = query.order('price_cents', { ascending: true });
   if (options.limit) query = query.limit(options.limit);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error || !data) {
     // A database outage should not take the site down. Falling back keeps the
     // site usable; reporting 'sample' keeps it honest about what it is showing.
     console.error('[catalog] component query failed, using sample catalogue', error?.message);
-    return { components: filterSample(options).map(stripCost), source: 'sample' };
+    return { components: filterSample(options).map(stripCost), source: 'sample', truncated: false };
   }
-  return { components: data as unknown as PublicComponent[], source: 'database' };
+
+  const truncated = typeof count === 'number' && count > data.length;
+  if (truncated) {
+    // Loud, because the alternative is a storefront that is missing products
+    // and cannot tell. Raising the project's max_rows or paging the callers are
+    // the two real fixes; this is how anybody finds out either is needed.
+    console.error(
+      `[catalog] TRUNCATED: ${count} rows match but only ${data.length} were returned. ` +
+        `The catalogue being served is incomplete. Raise the PostgREST max_rows ` +
+        `setting or page this query.`,
+    );
+  }
+
+  return { components: data as unknown as PublicComponent[], source: 'database', truncated };
 }
 
 /** Rows only, for callers that do not display a provenance banner. */

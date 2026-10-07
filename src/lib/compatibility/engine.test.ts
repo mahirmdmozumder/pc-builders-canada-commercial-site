@@ -456,3 +456,77 @@ describe('cooler clearance near misses', () => {
     expect(check(156, 165).status).toBe('warning');
   });
 });
+
+describe('storage against a board whose slot counts are unknown', () => {
+  /**
+   * A retail motherboard listing publishes socket, form factor and memory
+   * slots. It does not publish M.2 or SATA counts. So a board imported from one
+   * arrives with those columns null, and that is the normal case rather than an
+   * edge case.
+   *
+   * The rule used to answer `pass` and render the count as a question mark:
+   * "3 M.2 of ? slots used." Three drives do not fit the two slots most
+   * mid-range boards have, so that was a green tick on an unperformed check.
+   */
+  function board(over: { m2?: number | null; sata?: number | null }) {
+    return fakeComponent({
+      id: 'mb-slots-test',
+      category: 'motherboard',
+      socket: 'AM5',
+      form_factor: 'atx',
+      memory_type: 'ddr5',
+      memory_slots: 4,
+      m2_slots: over.m2 ?? null,
+      sata_ports: over.sata ?? null,
+    });
+  }
+
+  function drive(id: string, iface: 'nvme-m2' | 'sata') {
+    return fakeComponent({ id, category: 'storage', storage_interface: iface });
+  }
+
+  function check(
+    over: { m2?: number | null; sata?: number | null },
+    drives: [string, 'nvme-m2' | 'sata', number][],
+  ) {
+    const build: ResolvedBuild = [
+      { category: 'motherboard', component: board(over), quantity: 1 },
+      ...drives.map(([id, iface, qty]) => ({
+        category: 'storage' as const,
+        component: drive(id, iface),
+        quantity: qty,
+      })),
+    ];
+    const result = checkCompatibility(build).checks.find((c) => c.id === 'storage-motherboard');
+    if (!result) throw new Error('storage-motherboard check missing');
+    return result;
+  }
+
+  it('reports unknown rather than pass when the M.2 count is absent', () => {
+    const result = check({ m2: null }, [['ssd-a', 'nvme-m2', 3]]);
+    expect(result.status).toBe('unknown');
+    expect(result.status).not.toBe('pass');
+  });
+
+  it('reports unknown rather than pass when the SATA count is absent', () => {
+    expect(check({ sata: null }, [['hdd-a', 'sata', 2]]).status).toBe('unknown');
+  });
+
+  // The absent count only matters for an interface actually in the build. A
+  // board with no SATA figure and no SATA drives has nothing unverifiable.
+  it('still passes when the absent count is for an interface not in use', () => {
+    const result = check({ m2: 3, sata: null }, [['ssd-a', 'nvme-m2', 2]]);
+    expect(result.status).toBe('pass');
+    expect(result.message).toContain('2 M.2 of 3 slots');
+  });
+
+  it('never prints a question mark in place of a count', () => {
+    const result = check({ m2: 2, sata: 4 }, [['ssd-a', 'nvme-m2', 1], ['hdd-a', 'sata', 1]]);
+    expect(result.status).toBe('pass');
+    expect(result.message).not.toContain('?');
+  });
+
+  it('still fails outright when a known count is exceeded', () => {
+    expect(check({ m2: 2 }, [['ssd-a', 'nvme-m2', 3]]).status).toBe('fail');
+  });
+});

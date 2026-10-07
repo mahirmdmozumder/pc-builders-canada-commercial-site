@@ -430,6 +430,39 @@ function checkStorageMotherboard(index: BuildIndex): CompatibilityCheck {
     return unknown(id, title, 'Drive interface is not recorded.');
   }
 
+  /**
+   * A board with no recorded slot count cannot be checked, and says so.
+   *
+   * This used to report `pass` with the count rendered as a question mark:
+   * "3 M.2 of ? slots used." A green tick on a check that verified nothing, and
+   * three drives do not fit the two slots most mid-range boards actually have.
+   *
+   * It never showed while every board in the catalogue had its counts filled in
+   * by hand. It became the common case the moment a 300-row spreadsheet of
+   * motherboards arrived carrying socket, form factor and memory slots but
+   * neither M.2 nor SATA counts — which is what a retail listing publishes.
+   *
+   * `unknown` is the honest answer and it is the answer the socket, clearance
+   * and radiator rules already give when their data is missing. The whole
+   * premise of this module is in its header: a silent "compatible" on missing
+   * data is worse than no check at all.
+   */
+  if (nvme > 0 && board.m2_slots === null) {
+    return unknown(
+      id,
+      title,
+      `M.2 slot count is not recorded for ${displayName(board)}, so the ${nvme} NVMe drive${nvme === 1 ? '' : 's'} selected cannot be counted against it. Check the board's specification before ordering.`,
+    );
+  }
+
+  if (sata > 0 && board.sata_ports === null) {
+    return unknown(
+      id,
+      title,
+      `SATA port count is not recorded for ${displayName(board)}, so the ${sata} SATA drive${sata === 1 ? '' : 's'} selected cannot be counted against it. Check the board's specification before ordering.`,
+    );
+  }
+
   if (board.m2_slots !== null && nvme > board.m2_slots) {
     return {
       id,
@@ -448,9 +481,12 @@ function checkStorageMotherboard(index: BuildIndex): CompatibilityCheck {
     };
   }
 
+  // No `?? '?'` here any more: reaching this point means the count for every
+  // interface actually present in the build is known, because the two guards
+  // above returned `unknown` otherwise.
   const parts: string[] = [];
-  if (nvme > 0) parts.push(`${nvme} M.2 of ${board.m2_slots ?? '?'} slots`);
-  if (sata > 0) parts.push(`${sata} SATA of ${board.sata_ports ?? '?'} ports`);
+  if (nvme > 0) parts.push(`${nvme} M.2 of ${board.m2_slots} slots`);
+  if (sata > 0) parts.push(`${sata} SATA of ${board.sata_ports} ports`);
 
   return {
     id,

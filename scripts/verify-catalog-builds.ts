@@ -129,10 +129,55 @@ console.log(
     `from parts in the catalogue.`,
 );
 
-if (broken > 0) {
+// ---------------------------------------------------------------------------
+// The other direction: a board nobody can put a processor in
+// ---------------------------------------------------------------------------
+// The loop above walks processors, so it catches a socket with no motherboard.
+// It is blind to the reverse, and the reverse is what a bulk import produces: a
+// spreadsheet of 300 boards spans fifteen sockets, eleven of which have no
+// processor here and most of which have no processor on sale anywhere.
+//
+// A customer reaching an orphan board does not conclude the shop is still
+// stocking up. They conclude the configurator is broken, which is the same
+// outcome as a stranded processor and costs the same sale.
+const cpuSockets = new Set(
+  byCategory('cpu')
+    .map((c) => c.socket?.toLowerCase())
+    .filter((s): s is string => Boolean(s)),
+);
+
+const orphanBoards = byCategory('motherboard').filter(
+  (b) => !b.socket || !cpuSockets.has(b.socket.toLowerCase()),
+);
+
+const boardCount = byCategory('motherboard').length;
+console.log(
+  `${boardCount - orphanBoards.length}/${boardCount} motherboards have a processor ` +
+    `in the catalogue that fits them.`,
+);
+
+if (orphanBoards.length > 0) {
+  const bySocket = new Map<string, number>();
+  for (const b of orphanBoards) {
+    const key = b.socket ?? '(no socket recorded)';
+    bySocket.set(key, (bySocket.get(key) ?? 0) + 1);
+  }
+  console.error(`\n${orphanBoards.length} motherboard(s) have no processor that fits:`);
+  for (const [socket, n] of [...bySocket].sort((a, b) => b[1] - a[1])) {
+    console.error(`        ${socket}: ${n} board(s)`);
+  }
   console.error(
-    `\n${broken} processor(s) are stranded: selectable in the configurator but with no path ` +
-      `to a finished machine. Either list the missing part or withdraw the processor.`,
+    `      Either list a processor for those sockets or keep the boards as drafts, ` +
+      `so they are not selectable.`,
   );
+}
+
+if (broken > 0 || orphanBoards.length > 0) {
+  if (broken > 0) {
+    console.error(
+      `\n${broken} processor(s) are stranded: selectable in the configurator but with no path ` +
+        `to a finished machine. Either list the missing part or withdraw the processor.`,
+    );
+  }
   process.exit(1);
 }
