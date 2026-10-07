@@ -177,10 +177,11 @@ export const FAQ_GROUPS: FaqGroup[] = [
         ],
       },
       {
-        question: 'How do I know whether something is in stock?',
+        question: 'Do you hold stock, or is everything ordered in?',
         answer: [
-          'Each product page shows its current availability: in stock, low stock with the number remaining, or out of stock. Those come from live inventory rather than a static label.',
-          'Stock records can still be wrong. If a part turns out to be unavailable after you order, we contact you with the options: wait, substitute, or refund that part.',
+          'Everything is ordered in. We do not hold a warehouse of parts: each product page says either "Available to order" or "Not available right now", and "available to order" means we can source it for you once the order is placed, not that it is sitting on a shelf.',
+          'That is why you will not see a countdown of units remaining anywhere on this site. There is no shelf to count, and a number implying one would be inventing urgency.',
+          'Sourcing can still go wrong. If a part turns out to be unavailable after you order, we contact you with the options: wait, substitute, or refund that part. Our pre-order terms set out how that works.',
         ],
       },
       {

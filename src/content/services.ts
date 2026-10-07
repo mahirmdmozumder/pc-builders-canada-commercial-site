@@ -60,7 +60,7 @@ export const SERVICE_CONTENT: ServiceContent[] = [
       {
         question: 'How long does a custom build take?',
         answer:
-          'It depends on whether every part is in stock. Once the parts are here the assembly is the shorter half of the job; BIOS configuration and the thermal and stability testing take longer than bolting it together. We give a date when the parts are confirmed rather than guessing up front.',
+          'It depends on how quickly every part can be sourced, since parts are ordered in once your build is confirmed rather than taken off a shelf. Once the parts are here the assembly is the shorter half of the job; BIOS configuration and the thermal and stability testing take longer than bolting it together. We give a date when the parts are confirmed rather than guessing up front.',
       },
       {
         question: 'Do you test the machine before I get it?',

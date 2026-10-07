@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import {
   CONDITION_LABELS,
+  describeAvailability,
   displayName,
-  isLowStock,
   productHref,
   type PublicComponent,
 } from '@/lib/catalog/types';
@@ -136,15 +136,10 @@ export function ProductCard({
 }
 
 function StockLine({ component }: { component: PublicComponent }) {
-  if (component.stock_quantity <= 0) {
-    return <p className="mt-0.5 text-xs text-ink-400">Out of stock &mdash; ask for an ETA</p>;
-  }
-  if (isLowStock(component)) {
-    return (
-      <p className="tnum mt-0.5 text-xs text-warn-400">
-        Only {component.stock_quantity} left
-      </p>
-    );
-  }
-  return <p className="mt-0.5 text-xs text-ok-400">In stock</p>;
+  const { state, label } = describeAvailability(component);
+  return (
+    <p className={`mt-0.5 text-xs ${state === 'orderable' ? 'text-ok-400' : 'text-ink-400'}`}>
+      {label}
+    </p>
+  );
 }

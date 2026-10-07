@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui';
 import { formatMoney } from '@/lib/utils';
-import { CONDITION_DESCRIPTIONS, CONDITION_LABELS } from '@/lib/catalog/types';
+import {
+  CONDITION_DESCRIPTIONS,
+  CONDITION_LABELS,
+  describeAvailability,
+} from '@/lib/catalog/types';
 import type { ShopItem } from '@/lib/catalog/shop';
 import { ProductImage } from '@/components/shop/product-image';
 import { AddToCart } from '@/components/shop/add-to-cart';
@@ -119,10 +123,14 @@ export function ShopCard({ item, orderable = true }: { item: ShopItem; orderable
 }
 
 function StockLine({ item }: { item: ShopItem }) {
-  const stock = item.stockQuantity ?? 0;
-  if (stock <= 0) return <p className="mt-0.5 text-xs text-ink-400">Out of stock</p>;
-  if (stock <= item.lowStockThreshold) {
-    return <p className="tnum mt-0.5 text-xs text-warn-400">Only {stock} left</p>;
-  }
-  return <p className="mt-0.5 text-xs text-ok-400">In stock</p>;
+  // A resold machine (category 'prebuilt') reaches here and is labelled like
+  // any other product, because it is bought in exactly like any other product.
+  // Only a preset we assemble ourselves says "Assembled & tested", and that is
+  // decided by `kind` above rather than here.
+  const { state, label } = describeAvailability({ stock_quantity: item.stockQuantity ?? 0 });
+  return (
+    <p className={`mt-0.5 text-xs ${state === 'orderable' ? 'text-ok-400' : 'text-ink-400'}`}>
+      {label}
+    </p>
+  );
 }

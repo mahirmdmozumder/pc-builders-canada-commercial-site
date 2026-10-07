@@ -91,24 +91,31 @@ export default async function GamingPcsPage() {
         </div>
 
         {/* ---------------------------------------------------------------
-            In stock now, listed FIRST.
+            Complete machines, listed FIRST.
             ---------------------------------------------------------------
-            These can be bought today at the price shown, so they go above the
-            configurations, which have to be built. Somebody who wants a machine
-            this week should not have to scroll past six things that take a week
-            to find the one that does not.
+            These are sold as a finished machine at a fixed price, so they go
+            above the configurations, which are a parts list the customer can
+            change. Somebody who does not want to choose parts should not have
+            to scroll past six things that ask them to.
+
+            This section used to be headed "In stock" and described as machines
+            "we hold in stock" that go out "as they are". Neither was true. No
+            inventory is held here — a machine is bought in once the order is
+            placed, then checked over and rebranded before it ships. The price
+            being fixed is what distinguishes these from the configurations; it
+            was never that they were sitting on a shelf.
 
             Rendered with the normal ShopCard rather than PresetCard, because
-            that is what they are: catalogue products with a stock count and an
-            Add to cart button. PresetCard shows a parts breakdown and a
-            "View build" link, neither of which applies to a sealed machine.
+            that is what they are: catalogue products with an Add to cart
+            button. PresetCard shows a parts breakdown and a "View build" link,
+            neither of which applies to a sealed machine.
         --------------------------------------------------------------- */}
         {stocked.length > 0 ? (
           <section className="mb-14">
             <SectionHeading
-              eyebrow="In stock"
-              title="Ready to ship"
-              description="Complete machines we hold in stock, at the price shown. No build time — these go out as they are."
+              eyebrow="Complete machines"
+              title="Sold as built"
+              description="A finished machine at a fixed price, with no parts to choose. We source each one, check it over and test it before it ships."
             />
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {stocked.map((item) => (
@@ -150,8 +157,8 @@ export default async function GamingPcsPage() {
             assembly and shipping. Neither is a quote until an order is placed.
           </p>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-300">
-            Machines listed as in stock are priced as sold, and that price does not move with the
-            parts catalogue. Shipping is added at checkout.
+            Complete machines are priced as sold, and that price does not move with the parts
+            catalogue. Shipping is added at checkout.
           </p>
         </div>
       </PageShell>

@@ -81,8 +81,13 @@ export async function resolveCart(input: ResolveCartInput): Promise<ResolvedCart
       for (const item of build) {
         const needed = item.quantity * line.quantity;
         if (item.component.stock_quantity < needed) {
+          // The count is deliberately not quoted. It is a sourcing judgement,
+          // not a shelf, and "3 available" invites a customer to argue with a
+          // number that does not mean what they would take it to mean.
           lineProblems.push(
-            `${displayName(item.component)} is out of stock (${item.component.stock_quantity} available, ${needed} needed).`,
+            needed > 1
+              ? `${displayName(item.component)} is not available in the quantity this build needs. Ask us and we will quote it.`
+              : `${displayName(item.component)} is not available to order right now.`,
           );
         }
       }
@@ -144,7 +149,9 @@ export async function resolveCart(input: ResolveCartInput): Promise<ResolvedCart
 
     if (component.stock_quantity < line.quantity) {
       lineProblems.push(
-        `${displayName(component)} is out of stock (${component.stock_quantity} available).`,
+        component.stock_quantity > 0
+          ? `${displayName(component)} is not available in that quantity. Ask us and we will quote it.`
+          : `${displayName(component)} is not available to order right now.`,
       );
     }
 

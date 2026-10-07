@@ -25,7 +25,7 @@ import {
   CONDITION_LABELS,
   displayName,
   productHref,
-  stockState,
+  describeAvailability,
   type PublicComponent,
 } from '@/lib/catalog/types';
 import { loadProductReviews } from '@/lib/reviews/repository';
@@ -170,7 +170,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   const name = displayName(product);
   const orderable = isOrderable(getCatalogSource());
-  const stock = stockState(product);
+  const availability = describeAvailability(product);
   const groups = buildSpecSheet(product);
   const chips = specChips(product);
 
@@ -291,22 +291,21 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 <span
                   aria-hidden
                   className={
-                    stock === 'out'
-                      ? 'size-2 rounded-full bg-ink-500'
-                      : stock === 'low'
-                        ? 'size-2 rounded-full bg-warn-400'
-                        : 'size-2 rounded-full bg-ok-400'
+                    availability.state === 'orderable'
+                      ? 'size-2 rounded-full bg-ok-400'
+                      : 'size-2 rounded-full bg-ink-500'
                   }
                 />
-                {stock === 'out' ? (
-                  <span className="text-ink-300">Out of stock</span>
-                ) : stock === 'low' ? (
-                  <span className="tnum text-warn-400">
-                    Low stock &mdash; only {product.stock_quantity} left
-                  </span>
-                ) : (
-                  <span className="text-ok-400">In stock</span>
-                )}
+                <span
+                  className={availability.state === 'orderable' ? 'text-ok-400' : 'text-ink-300'}
+                >
+                  {availability.label}
+                </span>
+              </p>
+              {/* The product page has room to say what "available to order"
+                  actually means, which a card does not. */}
+              <p className="mt-1.5 text-xs leading-relaxed text-ink-400">
+                {availability.detail}
               </p>
             </div>
 

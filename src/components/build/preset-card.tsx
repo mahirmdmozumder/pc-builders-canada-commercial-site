@@ -18,7 +18,14 @@ export interface PresetSummary {
   recommendedPsuWatts: number;
   compatible: boolean;
   keyParts: { category: ComponentCategory; name: string }[];
-  /** True when some part of the configuration is out of stock. */
+  /**
+   * True when some part of the configuration cannot currently be sourced.
+   *
+   * Computed in preset-summary.ts and not rendered anywhere yet. Kept because
+   * it is the right signal for a card to carry: a configuration whose graphics
+   * card cannot be obtained is worth flagging before somebody loads it into the
+   * configurator and finds out part by part.
+   */
   unavailable: boolean;
 }
 

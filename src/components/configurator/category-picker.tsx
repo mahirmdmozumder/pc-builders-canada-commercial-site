@@ -7,8 +7,8 @@ import { specChips, specRows } from '@/components/configurator/spec-chips';
 import { cn, formatMoney } from '@/lib/utils';
 import {
   CATEGORY_LABELS,
+  describeAvailability,
   displayName,
-  isLowStock,
   type ComponentCategory,
   type PublicComponent,
 } from '@/lib/catalog/types';
@@ -263,13 +263,12 @@ export function CategoryPicker({
 }
 
 function StockLabel({ component }: { component: PublicComponent }) {
-  if (component.stock_quantity <= 0) {
-    return <p className="mt-0.5 text-xs text-danger-400">Out of stock</p>;
-  }
-  if (isLowStock(component)) {
-    return <p className="mt-0.5 text-xs text-warn-400">Only {component.stock_quantity} left</p>;
-  }
-  return <p className="mt-0.5 text-xs text-ink-500">In stock</p>;
+  const { state, label } = describeAvailability(component);
+  return (
+    <p className={`mt-0.5 text-xs ${state === 'orderable' ? 'text-ink-500' : 'text-danger-400'}`}>
+      {label}
+    </p>
+  );
 }
 
 export function SelectedRow({
@@ -333,7 +332,9 @@ export function SelectedRow({
               {chip}
             </span>
           ))}
-          {isLowStock(component) ? <Badge tone="warn">Low stock</Badge> : null}
+          {component.stock_quantity <= 0 ? (
+            <Badge tone="warn">Not available right now</Badge>
+          ) : null}
         </div>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1.5">

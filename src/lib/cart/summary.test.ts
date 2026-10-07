@@ -82,7 +82,28 @@ describe('cart resolution', () => {
     });
 
     expect(cart.problems.length).toBe(1);
-    expect(cart.problems[0]).toContain('out of stock');
+    expect(cart.problems[0]).toContain('not available');
+  });
+
+  it('does not quote the stock count back at the customer', async () => {
+    /**
+     * The message used to read "out of stock (5 available, 9 needed)".
+     *
+     * No inventory is held here: the count is the operator's judgement about
+     * what can be sourced, and rows imported from a catalogue sheet all carry a
+     * nominal 5. Printing it told a customer about a shelf that does not exist,
+     * and invited them to argue with a number that does not mean what they
+     * would reasonably take it to mean.
+     */
+    const cart = await resolveCart({
+      lines: [{ kind: 'component', component_id: 'gpu-gigabyte-rtx-5080-gaming-oc', quantity: 9 }],
+      province: 'ON',
+    });
+
+    const problem = cart.problems[0];
+    expect(problem).not.toMatch(/available,/);
+    expect(problem).not.toMatch(/5/);
+    expect(problem).not.toContain('needed');
   });
 
   it('still returns a line for a component that no longer exists', async () => {

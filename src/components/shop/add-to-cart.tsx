@@ -49,7 +49,7 @@ export function AddToCart({
   if (stockQuantity <= 0) {
     return (
       <Button variant="secondary" size="sm" disabled>
-        Out of stock
+        Not available
       </Button>
     );
   }

@@ -76,7 +76,7 @@ export function BuyBox({
     return (
       <div className="rounded-lg border border-ink-700 bg-ink-900 p-4">
         <Button variant="secondary" size="lg" disabled className="w-full">
-          Out of stock
+          Not available right now
         </Button>
         <p className="mt-3 text-xs leading-relaxed text-ink-400">
           We can usually get this in within a few days. Tell us what you need and we will confirm a
@@ -156,9 +156,13 @@ export function BuyBox({
         </div>
       </div>
 
-      {quantity >= max && stockQuantity <= 20 ? (
-        <p className="tnum mt-3 text-xs text-ink-400">
-          {stockQuantity} in stock. Need more? <Link href="/quote" className="text-gold-400 hover:text-gold-300">Ask us</Link>.
+      {quantity >= max ? (
+        <p className="mt-3 text-xs text-ink-400">
+          Need more than {max}?{' '}
+          <Link href="/quote" className="text-gold-400 hover:text-gold-300">
+            Ask us
+          </Link>{' '}
+          and we will quote the quantity you want.
         </p>
       ) : null}
 

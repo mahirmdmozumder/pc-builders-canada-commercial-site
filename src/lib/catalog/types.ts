@@ -336,12 +336,15 @@ export function isLowStock(
 }
 
 /**
- * Availability as a customer would describe it.
+ * Availability for the ADMIN, in three states.
  *
- * Three states, all derived from the stock count and the row's own low-stock
- * threshold. Nothing here is hardcoded and nothing is invented: a product with
- * no stock says so rather than saying "ships in 2-3 days", which is a promise
- * the catalogue cannot make.
+ * This is an operational view, not a customer-facing one: the low-stock state
+ * is what drives the inventory screen's attention list and the dashboard's
+ * "low stock parts" count. It describes how many units could be supplied right
+ * now, which is the operator's question.
+ *
+ * For anything a customer reads, use describeAvailability() below. The two are
+ * deliberately separate, and the comment there explains why.
  */
 export type StockState = 'in-stock' | 'low' | 'out';
 
@@ -350,6 +353,76 @@ export function stockState(
 ): StockState {
   if (component.stock_quantity <= 0) return 'out';
   return isLowStock(component) ? 'low' : 'in-stock';
+}
+
+/**
+ * Availability as a CUSTOMER should read it.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY THIS IS NOT "IN STOCK"
+ * ---------------------------------------------------------------------------
+ * This business does not hold inventory. Parts are sourced after an order is
+ * paid, and the stock column exists so the operator can record what they
+ * believe they can supply — a sourcing judgement, not a shelf count. Printing
+ * "In stock" from it told every visitor something untrue about a warehouse that
+ * does not exist.
+ *
+ * "Available to order" is the same green tick and the same reassurance, and it
+ * is true: the part can be ordered, and the pre-order terms already set out
+ * that it is sourced once the order is placed.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY TWO STATES WHERE THE ADMIN HAS THREE
+ * ---------------------------------------------------------------------------
+ * The low-stock state does not survive the translation, and dropping it is the
+ * more important half of this change.
+ *
+ * "Only 2 left" is a scarcity signal, and a scarcity signal is a reason to
+ * hurry. It was being generated from a number that is not inventory — the rows
+ * imported from a catalogue sheet all carry a nominal 5 — so the urgency was
+ * manufactured from a figure that means nothing to the buyer. Pressure invented
+ * from a number nobody is counting is the kind of practice consumer-protection
+ * rules exist for, and it would be indefensible to explain afterwards.
+ *
+ * So a customer sees whether they can order the thing. The operator keeps all
+ * three states, where the low one is a genuine signal about sourcing.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY NOT "AVAILABLE SOON"
+ * ---------------------------------------------------------------------------
+ * Because it is a promise about a date, and nothing here knows one. Some parts
+ * at zero are between supplier runs and some are discontinued; the catalogue
+ * cannot tell them apart, and the first sheet of imported rows carried
+ * retailer notes saying exactly that. "Not available right now" is true in both
+ * cases and still implies it may return.
+ */
+export type Availability = 'orderable' | 'unavailable';
+
+export interface AvailabilityLabel {
+  state: Availability;
+  /** Short enough for a product card or a picker row. */
+  label: string;
+  /** One sentence for a product page, where there is room to say what happens. */
+  detail: string;
+}
+
+export function describeAvailability(
+  component: Pick<ComponentRecord, 'stock_quantity'>,
+): AvailabilityLabel {
+  if (component.stock_quantity > 0) {
+    return {
+      state: 'orderable',
+      label: 'Available to order',
+      detail:
+        'We source this once your order is placed, then ship it or build it into your system.',
+    };
+  }
+  return {
+    state: 'unavailable',
+    label: 'Not available right now',
+    detail:
+      'We cannot source this at the moment. Ask us and we will say whether it is coming back, or suggest something equivalent.',
+  };
 }
 
 /**
