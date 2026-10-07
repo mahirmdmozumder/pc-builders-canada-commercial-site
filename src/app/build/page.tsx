@@ -2,8 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Alert, PageHeader, PageShell } from '@/components/ui';
 import { Configurator } from '@/components/configurator/configurator';
-import { isOrderable, listComponentsWithSource } from '@/lib/catalog/repository';
-import { CONFIGURATOR_CATEGORIES } from '@/lib/catalog/types';
+import {
+  getComponentsByIds,
+  isOrderable,
+  listComponentsWithSource,
+} from '@/lib/catalog/repository';
+import type { ComponentCategory } from '@/lib/catalog/types';
 import { getPublishedPreset } from '@/lib/cms/repository';
 import { getSessionUser } from '@/lib/auth/session';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
@@ -24,25 +28,6 @@ export default async function BuildPage({
   const { preset: presetSlug, build: buildId } = await searchParams;
   const preset = presetSlug ? await getPublishedPreset(presetSlug) : null;
 
-  /**
-   * Only the categories the configurator walks.
-   *
-   * It used to ask for everything, so every switch, NAS enclosure, mini PC and
-   * resold machine was serialised into this page's HTML for a picker that never
-   * lists them. Seventeen rows of ninety-two at the time of writing, and they
-   * grow with the storefront rather than with the configurator.
-   *
-   * This is the cheap half of keeping this page small. The expensive half —
-   * fetching candidates per category on demand instead of shipping the whole
-   * catalogue to the browser — is still outstanding, and the note in
-   * CatalogResult.truncated explains the cliff at the far end of it.
-   */
-  const { components: catalogue, source, truncated } = await listComponentsWithSource({
-    categories: CONFIGURATOR_CATEGORIES,
-  });
-  const sampleData = source === 'sample';
-  const orderable = isOrderable(source);
-
   // Loading a saved build goes through the session client, so RLS decides
   // whether this user may see it. An id belonging to someone else returns
   // nothing and the configurator simply opens empty.
@@ -59,6 +44,61 @@ export default async function BuildPage({
       saved = (data as SavedBuild | null) ?? null;
     }
   }
+
+  /**
+   * The parts this page sends to the browser, and nothing else.
+   *
+   * ---------------------------------------------------------------------------
+   * WHY THIS IS NOT THE WHOLE CATALOGUE ANY MORE
+   * ---------------------------------------------------------------------------
+   * It was, and the cost grew with the shop rather than with the page. At 64
+   * rows nobody noticed; a 300-row motherboard import took this page to 273
+   * rows and 552 KB, with motherboards alone 73% of it. All of it blocking
+   * HTML, for a first screen that shows one picker.
+   *
+   * It was never only bytes. The configurator marks incompatible candidates by
+   * running the compatibility engine once per candidate, so opening the
+   * motherboard picker ran the engine 199 times, and again on every change to
+   * the build.
+   *
+   * So the server now sends two things, and the pickers fetch the rest from
+   * /api/catalog/components when they open:
+   *
+   *   PROCESSORS, because the processor picker is the one that opens by default
+   *   on an empty build. Fetching it would mean a visitor's first sight of the
+   *   configurator is a spinner.
+   *
+   *   THE PARTS ALREADY IN THE BUILD, so a saved build or a preset renders
+   *   complete on first paint rather than filling in. These are looked up by
+   *   id, which is a handful of rows however large the catalogue gets.
+   *
+   * Compatibility still runs in the browser against the SELECTED parts — a
+   * dozen rows at most — so the feedback stays instant. That was never the part
+   * that needed moving.
+   */
+  const PRELOADED: ComponentCategory[] = ['cpu'];
+
+  const { components: processors, source, truncated } = await listComponentsWithSource({
+    category: 'cpu',
+  });
+
+  // Resolved by id, so a build loaded from a preset or a saved configuration is
+  // complete on arrival even though its parts' categories are not loaded yet.
+  const selectedIds = (saved?.items ?? preset?.items ?? [])
+    .map((item) => item.component_id)
+    .filter(Boolean);
+  const selected = selectedIds.length > 0 ? await getComponentsByIds(selectedIds) : new Map();
+
+  // De-duplicated: a selected processor is in both lists.
+  const catalogue = [
+    ...processors,
+    ...[...selected.values()].filter(
+      (component) => !processors.some((p) => p.id === component.id),
+    ),
+  ];
+  const sampleData = source === 'sample';
+  const orderable = isOrderable(source);
+
 
   const initialItems = saved?.items ?? preset?.items ?? [];
   const initialName = saved?.name ?? preset?.name ?? 'My custom build';
@@ -89,6 +129,7 @@ export default async function BuildPage({
         ) : null}
         <Configurator
           catalogue={catalogue}
+          preloadedCategories={PRELOADED}
           initialItems={initialItems}
           initialName={initialName}
           sampleData={sampleData}

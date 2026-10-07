@@ -75,7 +75,22 @@ interface Draft {
 }
 
 interface ConfiguratorProps {
+  /**
+   * The rows the server resolved up front, NOT the whole catalogue.
+   *
+   * That means every part already in the build (so a saved build or a preset
+   * renders immediately) plus every part of each category named in
+   * `preloadedCategories`. Everything else is fetched when its picker opens.
+   */
   catalogue: PublicComponent[];
+  /**
+   * Categories whose COMPLETE option list is present in `catalogue`.
+   *
+   * This has to be explicit. A category is otherwise represented in `catalogue`
+   * by whichever one part the build already uses, and treating that as the full
+   * list would show a picker with a single option in it.
+   */
+  preloadedCategories: ComponentCategory[];
   initialItems: SavedBuildItem[];
   initialName: string;
   /** True when the catalogue is the in-repo sample set, not a live database. */
@@ -121,6 +136,7 @@ function ConfiguratorSkeleton() {
 
 function ConfiguratorInner({
   catalogue,
+  preloadedCategories,
   initialItems,
   initialName,
   sampleData,
@@ -142,16 +158,105 @@ function ConfiguratorInner({
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  const byId = useMemo(() => new Map(catalogue.map((c) => [c.id, c])), [catalogue]);
-  const byCategory = useMemo(() => {
+  /**
+   * Option lists, by category, filled in as pickers are opened.
+   *
+   * Seeded with the categories the server preloaded. A category absent from
+   * this map has not been fetched yet, which is a different state from a
+   * category that was fetched and came back empty — hence a Map with presence
+   * as the signal rather than an array that defaults to [].
+   */
+  const [optionsByCategory, setOptionsByCategory] = useState<
+    Map<ComponentCategory, PublicComponent[]>
+  >(() => {
     const map = new Map<ComponentCategory, PublicComponent[]>();
-    for (const component of catalogue) {
-      const list = map.get(component.category) ?? [];
-      list.push(component);
-      map.set(component.category, list);
+    for (const category of preloadedCategories) {
+      map.set(
+        category,
+        catalogue.filter((component) => component.category === category),
+      );
     }
     return map;
-  }, [catalogue]);
+  });
+  const [failedCategory, setFailedCategory] = useState<ComponentCategory | null>(null);
+  const [truncatedCategories, setTruncatedCategories] = useState<Set<ComponentCategory>>(
+    () => new Set(),
+  );
+
+  /**
+   * Derived rather than stored.
+   *
+   * A category is loading precisely when its picker is open, its options have
+   * not arrived, and the last attempt did not fail. Holding that in state meant
+   * setting it synchronously inside the effect, which is the pattern
+   * react-hooks/set-state-in-effect exists to catch: it is a second source of
+   * truth that can disagree with the first, and it forces a render that
+   * computing the same answer does not.
+   */
+  const loadingCategory =
+    openCategory && !optionsByCategory.has(openCategory) && failedCategory !== openCategory
+      ? openCategory
+      : null;
+
+  /**
+   * Fetches the open category if it has not been loaded.
+   *
+   * The engine still runs against the SELECTED parts, which is a dozen rows at
+   * most, so compatibility stays instant. What moved off the page is the
+   * candidate LIST — 199 motherboards was 73% of this page's HTML, and the same
+   * 199 rows were each run through the engine to mark the incompatible ones.
+   *
+   * The two early returns are not interchangeable. Loaded means done. Failed
+   * means wait, because retrying on every render would hammer a failing
+   * endpoint; the retry button clears `failedCategory`, which re-runs this.
+   */
+  useEffect(() => {
+    if (!openCategory) return;
+    if (optionsByCategory.has(openCategory)) return;
+    if (failedCategory === openCategory) return;
+
+    const category = openCategory;
+    const controller = new AbortController();
+
+    fetch(`/api/catalog/components?category=${encodeURIComponent(category)}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Could not load that category.');
+        return response.json() as Promise<{
+          components: PublicComponent[];
+          truncated?: boolean;
+        }>;
+      })
+      .then((data) => {
+        setOptionsByCategory((current) => new Map(current).set(category, data.components));
+        if (data.truncated) {
+          setTruncatedCategories((current) => new Set(current).add(category));
+        }
+      })
+      .catch((error: Error) => {
+        if (error.name === 'AbortError') return;
+        setFailedCategory(category);
+      });
+
+    return () => controller.abort();
+  }, [openCategory, optionsByCategory, failedCategory]);
+
+  /**
+   * Every part this component knows about, by id.
+   *
+   * Spans the server's seed and everything fetched since, because an item in
+   * the build has to stay resolvable after its category's list is replaced.
+   */
+  const byId = useMemo(() => {
+    const map = new Map<string, PublicComponent>(catalogue.map((c) => [c.id, c]));
+    for (const list of optionsByCategory.values()) {
+      for (const component of list) map.set(component.id, component);
+    }
+    return map;
+  }, [catalogue, optionsByCategory]);
+
+  const byCategory = optionsByCategory;
 
   // Persist the working draft so a refresh, or a detour to the quote form,
   // does not lose the configuration.
@@ -373,6 +478,11 @@ function ConfiguratorInner({
                     <CategoryPicker
                       category={category}
                       options={byCategory.get(category) ?? []}
+                      loading={loadingCategory === category}
+                      truncated={truncatedCategories.has(category)}
+                      onRetry={
+                        failedCategory === category ? () => setFailedCategory(null) : null
+                      }
                       selectedIds={selectedItems.map((i) => i.component_id)}
                       issues={candidateIssues}
                       onSelect={select}

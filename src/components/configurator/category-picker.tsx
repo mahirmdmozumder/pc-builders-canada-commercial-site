@@ -22,6 +22,9 @@ export interface CandidateIssue {
 export function CategoryPicker({
   category,
   options,
+  loading = false,
+  onRetry = null,
+  truncated = false,
   selectedIds,
   issues,
   onSelect,
@@ -29,6 +32,12 @@ export function CategoryPicker({
 }: {
   category: ComponentCategory;
   options: PublicComponent[];
+  /** True while this category's parts are still being fetched. */
+  loading?: boolean;
+  /** Set when the fetch failed, so the panel offers a retry rather than lying. */
+  onRetry?: (() => void) | null;
+  /** True when the server returned fewer parts than exist. */
+  truncated?: boolean;
   selectedIds: string[];
   /** Compatibility outcome for each candidate against the rest of the build. */
   issues: Map<string, CandidateIssue>;
@@ -97,7 +106,38 @@ export function CategoryPicker({
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {/*
+        An empty list has three possible meanings and they must not look alike.
+        The parts are still arriving; the request failed; or the filters really
+        do exclude everything. Showing "no parts match those filters" while a
+        fetch is in flight reads as an empty catalogue, and the customer closes
+        the picker before the answer lands.
+      */}
+      {truncated ? (
+        <p className="border-b border-warn-500/30 bg-warn-500/10 px-4 py-2.5 text-xs text-warn-300">
+          This list is incomplete — there are more {CATEGORY_LABELS[category].toLowerCase()} than
+          could be loaded. Ask us and we will go through the full range with you.
+        </p>
+      ) : null}
+
+      {loading && options.length === 0 ? (
+        <p className="px-4 py-8 text-center text-sm text-ink-400">
+          Loading {CATEGORY_LABELS[category].toLowerCase()}&hellip;
+        </p>
+      ) : onRetry ? (
+        <div className="px-4 py-8 text-center">
+          <p className="text-sm text-ink-300">
+            Could not load {CATEGORY_LABELS[category].toLowerCase()}.
+          </p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-2 text-sm font-medium text-gold-400 hover:text-gold-300"
+          >
+            Try again
+          </button>
+        </div>
+      ) : filtered.length === 0 ? (
         <p className="px-4 py-8 text-center text-sm text-ink-400">
           No {CATEGORY_LABELS[category].toLowerCase()} matches those filters.
         </p>
