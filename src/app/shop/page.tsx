@@ -148,7 +148,7 @@ export default async function ShopPage({
 
         {/* --- category tiles ------------------------------------------- */}
         <nav aria-label="Shop categories">
-          <ul className="thin-scroll -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0 sm:overflow-visible">
+          <ul className="thin-scroll -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1.5 sm:mx-0 sm:flex-wrap sm:gap-2 sm:px-0 sm:overflow-visible">
             {SHOP_FILTERS.map((filter) => {
               const count = items.filter(filter.matches).length;
               const active = filter.slug === activeFilter.slug;
@@ -159,7 +159,7 @@ export default async function ShopPage({
                     aria-current={active ? 'page' : undefined}
                     title={filter.description}
                     className={cn(
-                      'flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm transition-colors',
+                      'flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors sm:px-3 sm:text-sm',
                       active
                         ? 'border-gold-500 bg-gold-500 font-medium text-ink-950'
                         : 'border-ink-700 bg-ink-850 text-ink-200 hover:border-gold-600/50 hover:text-white',
@@ -168,7 +168,7 @@ export default async function ShopPage({
                     {filter.label}
                     <span
                       className={cn(
-                        'tnum rounded px-1.5 py-0.5 text-xs',
+                        'tnum rounded px-1 py-px text-[0.65rem] sm:px-1.5 sm:py-0.5 sm:text-xs',
                         active ? 'bg-ink-950/15 text-ink-950' : 'bg-ink-900 text-ink-400',
                       )}
                     >
@@ -192,14 +192,14 @@ export default async function ShopPage({
             absent tile tells them nothing and looks like we never sold any.
         ----------------------------------------------------------------- */}
         {activeFilter.subCategories ? (
-          <nav aria-label={`${activeFilter.label} subcategories`} className="mt-3">
-            <ul className="thin-scroll -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0 sm:overflow-visible">
+          <nav aria-label={`${activeFilter.label} subcategories`} className="mt-2">
+            <ul className="thin-scroll -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1.5 sm:mx-0 sm:flex-wrap sm:gap-2 sm:px-0 sm:overflow-visible">
               <li className="shrink-0">
                 <Link
                   href={hrefWith({ sub: undefined, page: undefined })}
                   aria-current={subCategory === null ? 'true' : undefined}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs transition-colors',
+                    'flex items-center gap-1 rounded-md border px-2 py-1 text-[0.7rem] transition-colors sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-xs',
                     subCategory === null
                       ? 'border-gold-600/60 bg-gold-600/15 font-medium text-gold-300'
                       : 'border-ink-700 bg-ink-900 text-ink-300 hover:border-gold-600/40 hover:text-white',
@@ -223,7 +223,7 @@ export default async function ShopPage({
                       aria-current={active ? 'true' : undefined}
                       aria-disabled={count === 0 ? 'true' : undefined}
                       className={cn(
-                        'flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs transition-colors',
+                        'flex items-center gap-1 rounded-md border px-2 py-1 text-[0.7rem] transition-colors sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-xs',
                         active
                           ? 'border-gold-600/60 bg-gold-600/15 font-medium text-gold-300'
                           : count === 0
@@ -241,7 +241,7 @@ export default async function ShopPage({
           </nav>
         ) : null}
 
-        <p className="mt-3 text-sm text-ink-400">
+        <p className="mt-2 text-xs text-ink-400 sm:text-sm">
           {subCategory
             ? `${CATEGORY_LABELS[subCategory]} within ${activeFilter.label.toLowerCase()}.`
             : activeFilter.description}
@@ -251,7 +251,7 @@ export default async function ShopPage({
         <form
           method="get"
           action="/shop"
-          className="mt-6 grid gap-3 rounded-lg border border-ink-700 bg-ink-850 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_minmax(0,11rem)_auto]"
+          className="mt-4 grid gap-2 rounded-lg border border-ink-700 bg-ink-850 p-2.5 sm:gap-3 sm:p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_minmax(0,11rem)_auto]"
         >
           {/* Carried through so searching does not drop the chosen category,
               or the subcategory under it. */}
@@ -267,10 +267,14 @@ export default async function ShopPage({
               name="q"
               defaultValue={query}
               placeholder="Search by name, brand or model"
-              className="w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2.5 text-sm text-ink-100 placeholder:text-ink-400 focus:border-gold-500 focus:outline-none"
+              className="w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-400 focus:border-gold-500 focus:outline-none"
             />
           </div>
 
+          {/* `sm:contents` dissolves this wrapper from the small breakpoint
+              up, so the four controls sit in the parent's four columns exactly
+              as before. It only exists to pair these two on a phone. */}
+          <div className="grid grid-cols-2 gap-2 sm:contents">
           <div>
             <label htmlFor="shop-condition" className="sr-only">
               Condition
@@ -279,7 +283,7 @@ export default async function ShopPage({
               id="shop-condition"
               name="condition"
               defaultValue={condition}
-              className="w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2.5 text-sm text-ink-100 focus:border-gold-500 focus:outline-none"
+              className="w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-ink-100 focus:border-gold-500 focus:outline-none"
             >
               <option value="all">Any condition</option>
               {COMPONENT_CONDITIONS.map((c) => (
@@ -298,7 +302,7 @@ export default async function ShopPage({
               id="shop-sort"
               name="sort"
               defaultValue={sort}
-              className="w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2.5 text-sm text-ink-100 focus:border-gold-500 focus:outline-none"
+              className="w-full rounded-md border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-ink-100 focus:border-gold-500 focus:outline-none"
             >
               <option value="featured">Featured first</option>
               <option value="price-asc">Price, low to high</option>
@@ -306,17 +310,19 @@ export default async function ShopPage({
               <option value="name">Name A&ndash;Z</option>
             </select>
           </div>
+          </div>
 
           <button
             type="submit"
-            className="rounded-md bg-gold-500 px-5 py-2.5 text-sm font-medium text-ink-950 transition-colors hover:bg-gold-400"
+            className="rounded-md bg-gold-500 px-4 py-2 text-sm font-medium text-ink-950 transition-colors hover:bg-gold-400 sm:px-5"
           >
-            Apply
+            <span className="sm:hidden">Apply filters</span>
+            <span className="hidden sm:inline">Apply</span>
           </button>
         </form>
 
         {/* --- results --------------------------------------------------- */}
-        <div className="mt-6 flex flex-wrap items-baseline justify-between gap-3">
+        <div className="mt-4 flex flex-wrap items-baseline justify-between gap-3">
           <p className="text-sm text-ink-400">
             {visible.length} {visible.length === 1 ? 'product' : 'products'}
             {query ? (
