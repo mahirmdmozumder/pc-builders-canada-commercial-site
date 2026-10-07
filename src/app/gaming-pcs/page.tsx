@@ -148,6 +148,22 @@ export default async function GamingPcsPage() {
           </section>
         ) : null}
 
+        <div className="mt-10 flex flex-col gap-4 rounded-lg border border-ink-700 bg-ink-850 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-2xl">
+            <h2 className="text-base font-semibold text-white">
+              Is the machine for work rather than games?
+            </h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-300">
+              Rendering, compiling, simulation and virtualisation each want something different
+              from a gaming build &mdash; usually more cores, more memory, or more drives rather
+              than a faster graphics card. Our workstation configurations start from the workload.
+            </p>
+          </div>
+          <ButtonLink href="/workstations" variant="secondary" className="shrink-0">
+            See workstations
+          </ButtonLink>
+        </div>
+
         <div className="mt-8 rounded-lg border border-ink-700 bg-ink-850 p-6">
           <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
             About these prices
