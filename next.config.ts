@@ -105,6 +105,53 @@ const nextConfig: NextConfig = {
           { key: 'Cache-Control', value: 'private, no-store, max-age=0, must-revalidate' },
         ],
       },
+      {
+        /**
+         * Keep the Vercel-assigned hostnames out of Google.
+         *
+         * -------------------------------------------------------------------
+         * THE PROBLEM
+         * -------------------------------------------------------------------
+         * Vercel gives every project a permanent *.vercel.app address beside
+         * the real domain, and it cannot be removed. So the entire site — all
+         * 334 URLs in the sitemap — is served a second time from
+         * pc-builders-canada-commercial-site.vercel.app, whose robots.txt says
+         * Allow: /. Every per-commit preview deployment is public the same way.
+         *
+         * That was theoretical while Google was not crawling the site at all.
+         * It stopped being theoretical the day the homepage was first crawled
+         * successfully: a duplicate of a site Google is actively indexing can
+         * win the canonical, and then the rankings, the favicon and the brand
+         * attach to an address nobody chose.
+         *
+         * -------------------------------------------------------------------
+         * WHY A HEADER AND NOT robots.txt
+         * -------------------------------------------------------------------
+         * `Disallow:` blocks CRAWLING, which is the opposite of what is needed.
+         * A URL Google may not crawl is a URL on which Google cannot read any
+         * instruction, so one discovered through a link elsewhere can still be
+         * indexed — as a bare result with no description. Blocking the crawl
+         * prevents Google from ever learning the page should not be indexed.
+         *
+         * `X-Robots-Tag: noindex` is fetched, read and obeyed: crawl allowed,
+         * indexing refused, existing entries dropped on the next visit.
+         *
+         * The canonical tag on those pages already points at the real domain
+         * and stays. It is a hint Google may overrule — the "Google-selected
+         * canonical" field in Search Console exists precisely because it can —
+         * so this is the instruction behind the hint.
+         *
+         * -------------------------------------------------------------------
+         * PRODUCTION IS NOT AFFECTED
+         * -------------------------------------------------------------------
+         * The rule fires only when the request's Host header ends in
+         * .vercel.app. www.pcbuilderscanada.com never matches and never
+         * receives this header. Verified both ways before shipping.
+         */
+        source: '/:path*',
+        has: [{ type: 'host', value: '(?<vercelHost>.*)\\.vercel\\.app' }],
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
     ];
   },
 };
