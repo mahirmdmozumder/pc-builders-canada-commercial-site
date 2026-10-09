@@ -104,9 +104,29 @@ export default function AboutPage() {
                 At a glance
               </h2>
               <dl className="mt-4 space-y-3 text-sm">
+                {/*
+                  The city, not the country.
+                  ---------------------------------------------------------
+                  This read "Canada", which made the first two rows say one
+                  fact twice: "Based in Canada" above "Ships Canada-wide" told
+                  a reader nothing the second row did not. Naming the city
+                  makes the pair informative -- based in one place, shipping to
+                  the whole country -- which is the actual business model.
+
+                  It also agreed with nothing else on the site. The
+                  LocalBusiness schema names Toronto and eight GTA cities, the
+                  service pages are titled for Toronto, REGION_LABEL is
+                  "Toronto & the GTA", and the note at the foot of this very
+                  card already says on-site work covers Toronto and the GTA.
+
+                  The province is included because Toronto exists in several
+                  countries, and it is what disambiguates the city for a reader
+                  and for a crawler. It does not imply a storefront; the note
+                  below says plainly there is no address to visit.
+                */}
                 <div>
                   <dt className="text-ink-400">Based in</dt>
-                  <dd className="text-ink-100">Canada</dd>
+                  <dd className="text-ink-100">Toronto, Ontario</dd>
                 </div>
                 <div>
                   <dt className="text-ink-400">Ships</dt>
